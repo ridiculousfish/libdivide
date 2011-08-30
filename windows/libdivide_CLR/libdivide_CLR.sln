@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual C++ Express 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libdivide_CLR", "libdivide_CLR\libdivide_CLR.vcxproj", "{5D23CE08-1C7F-4348-8B48-C1F5B67152C8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5D23CE08-1C7F-4348-8B48-C1F5B67152C8}.Debug|Win32.ActiveCfg = Debug|Win32
+		{5D23CE08-1C7F-4348-8B48-C1F5B67152C8}.Debug|Win32.Build.0 = Debug|Win32
+		{5D23CE08-1C7F-4348-8B48-C1F5B67152C8}.Release|Win32.ActiveCfg = Release|Win32
+		{5D23CE08-1C7F-4348-8B48-C1F5B67152C8}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
