@@ -1,4 +1,6 @@
-This is summary of how to use libdivide's testing tools to develop on libdivide itself.  See http://libdivide.com for more information on libdivide.
+libdivide is a "library" for optimizing integer division.  See http://libdivide.com for more information on libdivide.
+
+This is summary of how to use libdivide's testing tools to develop on libdivide itself.  
 
 libdivide proper consists of a single header file, libdivide.h, which compiles as both C and C++.
 
