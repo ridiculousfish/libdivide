@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <time.h>
 #include <iostream>
+#include <typeinfo>
+#include <string.h>
 
 #ifdef LIBDIVIDE_USE_SSE2
 #include <emmintrin.h>
