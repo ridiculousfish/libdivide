@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 #if __GNUC__
 #define NOINLINE __attribute__((__noinline__))
@@ -762,7 +763,7 @@ static void test_many_u64(const uint64_t *data) {
     for (d=1; d > 0; d++) {
         struct TestResult result = test_one_u64(d, data);
         char input_buff[32];
-        sprintf(input_buff, "%llu", d);
+        sprintf(input_buff, "%" PRIu64, d);
         report_result(input_buff, result);
     }    
 }
@@ -773,7 +774,7 @@ static void test_many_s64(const int64_t *data) {
     for (d=1; d != 0;) {
         struct TestResult result = test_one_s64(d, data);
         char input_buff[32];
-        sprintf(input_buff, "%lld", d);
+        sprintf(input_buff, "%" PRId64, d);
         report_result(input_buff, result);
         
         d = -d;
