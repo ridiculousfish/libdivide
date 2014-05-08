@@ -157,7 +157,7 @@ private:
         const divider<T> the_divider = divider<T>(denom);
         size_t j;
         for (j=0; j < 100000 / 4; j++) {
-            T numers[4] = {this->next_random(), this->next_random(), this->next_random(), this->next_random()};
+            T numers[4] = {(T)this->next_random(), (T)this->next_random(), (T)this->next_random(), (T)this->next_random()};
             test_one(numers[0], denom, the_divider);
             test_one(numers[1], denom, the_divider);
             test_one(numers[2], denom, the_divider);
