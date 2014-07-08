@@ -509,14 +509,19 @@ static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v,
     
     /* count leading zeros */
     s = libdivide__count_leading_zeros64(v); // 0 <= s <= 63.
-    
-    v = v << s;               // Normalize divisor.
+    if (s > 0) {
+        v = v << s;           // Normalize divisor.
+        un64 = (u1 << s) | ((u0 >> (64 - s)) & (-s >> 31));
+        un10 = u0 << s;       // Shift dividend left.
+    } else {
+        // Avoid undefined behavior.
+        un64 = u1 | u0;
+        un10 = u0;
+    }
+
     vn1 = v >> 32;            // Break divisor up into
     vn0 = v & 0xFFFFFFFF;     // two 32-bit digits.
-    
-    un64 = (u1 << s) | ((u0 >> (64 - s)) & (-s >> 31));
-    un10 = u0 << s;           // Shift dividend left.
-    
+
     un1 = un10 >> 32;         // Break right half of
     un0 = un10 & 0xFFFFFFFF;  // dividend into two digits.
     
