@@ -255,7 +255,7 @@ static inline int64_t libdivide__mullhi_s64(int64_t x, int64_t y) {
 #if LIBDIVIDE_USE_SSE2
 
 static inline __m128i libdivide__u64_to_m128(uint64_t x) {
-#if LIBDIVIDE_VC
+#if LIBDIVIDE_VC && ! _WIN64
     //64 bit windows doesn't seem to have an implementation of any of these load intrinsics, and 32 bit Visual C++ crashes
     _declspec(align(16)) uint64_t temp[2] = {x, x};
     return _mm_load_si128((const __m128i*)temp);
