@@ -32,7 +32,7 @@ x86_64: libdivide_test.cpp libdivide.h
 	$(CPP) $(DEBUG_FLAGS) $(ARCH_x64) -o tester libdivide_test.cpp $(LINKFLAGS)
 
 release: libdivide_test.cpp libdivide.h
-	$(CPP) $(RELEASE_FLAGS) $(ARCH_x64) $(ARCH_386) -o tester libdivide_test.cp $(LINKFLAGS)p
+	$(CPP) $(RELEASE_FLAGS) $(ARCH_x64) $(ARCH_386) -o tester libdivide_test.cpp $(LINKFLAGS)p
 
 benchmark: libdivide_benchmark.c libdivide.h
 	$(CC) $(RELEASE_FLAGS) $(ARCH_x64) $(ARCH_386) -o benchmark libdivide_benchmark.c $(LINKFLAGS)
