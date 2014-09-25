@@ -440,12 +440,18 @@ static inline int32_t libdivide__count_leading_zeros64(uint64_t val) {
 #if __GNUC__ || __has_builtin(__builtin_clzll)
     /* Fast way to count leading zeros */
     return __builtin_clzll(val);
-#elif LIBDIVIDE_VC && _WIN64
+#elif LIBDIVIDE_VC
+#ifdef _WIN64
     unsigned long result;
     if (_BitScanReverse64(&result, val)) {
         return 63 - result;
     }
     return 0;
+#else
+    uint32_t hi = val >> 32;
+    if (hi != 0) return libdivide__count_leading_zeros32(hi);
+    return 32 + libdivide__count_leading_zeros32(val & 0xFFFFFFFF);
+#endif
 #else
     /* Dorky way to count leading zeros.  Note that this hangs for val = 0! */
     int32_t result = 0;
