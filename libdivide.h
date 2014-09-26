@@ -450,7 +450,7 @@ static inline int32_t libdivide__count_leading_zeros64(uint64_t val) {
 #else
     uint32_t hi = val >> 32;
     if (hi != 0) return libdivide__count_leading_zeros32(hi);
-    return 32 + libdivide__count_leading_zeros32(val & 0xFFFFFFFF);
+    return 32 + libdivide__count_leading_zeros32((uint32_t)val);
 #endif
 #else
     /* Dorky way to count leading zeros.  Note that this hangs for val = 0! */
