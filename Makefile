@@ -19,8 +19,10 @@ CPP = c++
 DEBUG_FLAGS = -fstrict-aliasing -g -O0 -DLIBDIVIDE_ASSERTIONS_ON=1 -msse2 -DLIBDIVIDE_USE_SSE2=1 -W -Wall
 RELEASE_FLAGS = -fstrict-aliasing -W -Wall -g -O3 -msse2 -DLIBDIVIDE_USE_SSE2=1
 
+test: release
+	./tester
+
 tester: debug
-	
 
 debug: libdivide_test.cpp libdivide.h
 	$(CPP) $(DEBUG_FLAGS) $(ARCH_386) $(ARCH_x64) -g -o tester libdivide_test.cpp $(LINKFLAGS)
