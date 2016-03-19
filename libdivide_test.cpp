@@ -6,6 +6,7 @@
 #include <time.h>
 #include <iostream>
 #include <typeinfo>
+#include <limits>
 #include <string.h>
 
 #ifdef LIBDIVIDE_USE_SSE2
@@ -49,6 +50,8 @@ class DivideTest : private DivideTest_PRNG {
 
 private:
     
+    typedef std::numeric_limits<T> limits;
+    
     uint32_t base_random(void) {
         return this->next_random();
     }
@@ -71,6 +74,10 @@ private:
     }
     
     void test_one(T numer, T denom, const divider<T> & the_divider) {
+        // Don't crash with INT_MIN / -1
+        if (limits::is_signed && numer == limits::min() && denom == -1) {
+            return;
+        }
         T expect = numer / denom;
         T actual1 = numer / the_divider;
         T actual2 = -1;
@@ -164,31 +171,38 @@ private:
             test_one(numers[3], denom, the_divider);
             test_four(numers, denom, the_divider);
         }
-        const T min = std::numeric_limits<T>::min(), max = std::numeric_limits<T>::max();
+        const T min = limits::min(), max = limits::max();
         const T wellKnownNumers[] = {0, max, max-1, max/2, max/2 - 1, min, min/2, min/4, 1, 2, 3, 4, 5, 6, 7, 8, 10, 36847, 50683, SHRT_MAX};
         for (j=0; j < sizeof wellKnownNumers / sizeof *wellKnownNumers; j++) {
             if (wellKnownNumers[j] == 0 && j != 0) continue;
             test_one(wellKnownNumers[j], denom, the_divider);
         }
-        T powerOf2Numer = 1;
-        while (powerOf2Numer) {
+        T powerOf2Numer = (limits::max()>>1)+1;
+        while (powerOf2Numer != 0) {
             test_one(powerOf2Numer, denom, the_divider);
-            powerOf2Numer <<= 1;
+            powerOf2Numer /= 2;
         }
     }
     
 public:
     void run(void) {
         unsigned i;
-        for (i=0; i < 100000; i++) {
+        for (i=0; i < 10000; i++) {
             T denom = random_denominator();
             test_many(denom);
             //cout << typeid(T).name() << "\t\t" << i << " / " << 100000 << endl;
         }
-        T powerOf2Denom = 1;
-        while (powerOf2Denom) {
-            test_many(powerOf2Denom);
-            powerOf2Denom <<= 1;
+        
+        /* Test powers of 2, both positive and negative. Careful to do no signed left shift of negative values. */
+        T posPowOf2 = (limits::max() >> 1) + 1;
+        while (posPowOf2 != 0) {
+            test_many(posPowOf2);
+            posPowOf2 /= 2;
+        }
+        T negPowOf2 = limits::min(); // may be 0 already
+        while (negPowOf2 != 0) {
+            test_many(negPowOf2);
+            negPowOf2 /= 2; // assumes truncation towards 0
         }
     }
 };
