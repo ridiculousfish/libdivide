@@ -1184,6 +1184,8 @@ namespace libdivide_internal {
         DenomType denom;
         divider_base(IntType d) : denom(gen_func(d)) { }
         divider_base(const DenomType & d) : denom(d) { }
+        /* Default constructor to allow uninitialized uses in e.g. arrays */
+        divider_base() {}
         
         IntType perform_divide(IntType val) const { return do_func(val, &denom); }
 #if LIBDIVIDE_USE_SSE2
@@ -1249,8 +1251,6 @@ namespace libdivide_internal {
         /* Define two more bogus ones so that the same (templated, presumably) code can handle both signed and unsigned */
         template<int J> struct algo<3, J>  { typedef denom<crash_u64, MAYBE_VECTOR(crash_u64_vector)>::divider divider; };
         template<int J> struct algo<4, J>  { typedef denom<crash_u64, MAYBE_VECTOR(crash_u64_vector)>::divider divider; };
-
-
     };
     
     template<> struct divider_mid<int64_t> {
@@ -1284,8 +1284,8 @@ class divider
     /* Ordinary constructor, that takes the divisor as a parameter. */
     divider(T n) : sub(n) { }
     
-    /* Default constructor, that divides by 1 */
-    divider() : sub(1) { }
+    /* Default constructor. We leave this deliberately undefined so that creating an array of divider and then initializing them doesn't slow us down. */
+    divider() { }
     
     /* Divides the parameter by the divisor, returning the quotient */
     T perform_divide(T val) const { return sub.perform_divide(val); }
