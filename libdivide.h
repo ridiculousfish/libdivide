@@ -153,6 +153,12 @@ LIBDIVIDE_API uint32_t libdivide_u32_do(uint32_t numer, const struct libdivide_u
 LIBDIVIDE_API int64_t  libdivide_s64_do(int64_t numer, const struct libdivide_s64_t *denom);
 LIBDIVIDE_API uint64_t libdivide_u64_do(uint64_t y, const struct libdivide_u64_t *denom);
 
+LIBDIVIDE_API int32_t  libdivide_s32_recover(const struct libdivide_s32_t *denom);
+LIBDIVIDE_API uint32_t libdivide_u32_recover(const struct libdivide_u32_t *denom);
+LIBDIVIDE_API int64_t  libdivide_s64_recover(const struct libdivide_s64_t *denom);
+LIBDIVIDE_API uint64_t libdivide_u64_recover(const struct libdivide_u64_t *denom);
+
+
 LIBDIVIDE_API int libdivide_u32_get_algorithm(const struct libdivide_u32_t *denom);
 LIBDIVIDE_API uint32_t libdivide_u32_do_alg0(uint32_t numer, const struct libdivide_u32_t *denom);
 LIBDIVIDE_API uint32_t libdivide_u32_do_alg1(uint32_t numer, const struct libdivide_u32_t *denom);
@@ -612,6 +618,39 @@ uint32_t libdivide_u32_do(uint32_t numer, const struct libdivide_u32_t *denom) {
     }
 }
 
+uint32_t libdivide_u32_recover(const struct libdivide_u32_t *denom) {
+    uint8_t more = denom->more;
+    uint8_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
+    if (more & LIBDIVIDE_U32_SHIFT_PATH) {
+        return 1U << shift;
+    } else if (! (more & LIBDIVIDE_ADD_MARKER)) {
+        // We compute q = n/d = n*m / 2^(32 + shift)
+        // Therefore we have d = 2^(32 + shift) / m
+        // We need to ceil it.
+        // We know d is not a power of 2, so m is not a power of 2,
+        // so we can just add 1 to the floor
+        uint32_t hi_dividend = 1U << shift;
+        uint32_t rem_ignored;
+        return 1 + libdivide_64_div_32_to_32(hi_dividend, 0, denom->magic, &rem_ignored);
+    } else {
+        // Here we have d = 2^(32+shift+1)/(m+2^32)
+        // (m + 2^32) is a 33 bit number
+        // Use 64 bit division for now
+        // Also note that shift may be as high as 31, so shift + 1 will overflow
+        // So we have to compute it as 2^(32+shift)/(m+2^32), and then double the quotient and remainder
+        // TODO: do something better than 64 bit math
+        uint64_t half_n = 1LLU << (32 + shift);
+        uint64_t d = (1LLU << 32) | denom->magic;
+        // Note that the quotient is guaranteed <= 32 bits, but the remainder may need 33!
+        uint32_t half_q = half_n / d;
+        uint64_t rem = half_n % d;
+        // We computed 2^(32+shift)/(m+2^32)
+        // Need to double it, and then add 1 to the quotient if doubling the remainder would increase the quotient
+        // Note that rem<<1 cannot overflow, since rem < d and d is 33 bits
+        uint32_t full_q = half_q + half_q + ((rem<<1) >= d);
+        return full_q + 1;
+    }
+}
  
 int libdivide_u32_get_algorithm(const struct libdivide_u32_t *denom) {
     uint8_t more = denom->more;
@@ -732,7 +771,12 @@ uint64_t libdivide_u64_do(uint64_t numer, const struct libdivide_u64_t *denom) {
     }
 }
 
- 
+
+uint64_t libdivide_u64_recover(const struct libdivide_u64_t *denom) {
+    return 0;
+}
+
+    
 int libdivide_u64_get_algorithm(const struct libdivide_u64_t *denom) {
     uint8_t more = denom->more;
     if (more & LIBDIVIDE_U64_SHIFT_PATH) return 0;
@@ -826,8 +870,7 @@ struct libdivide_s32_t libdivide_s32_gen(int32_t d) {
         if (e < (1U << floor_log_2_d)) {
             /* This power works */
             more = floor_log_2_d - 1;
-        }
-        else {
+        } else {
             /* We need to go one higher.  This should not make proposed_m overflow, but it will make it negative when interpreted as an int32_t. */
             proposed_m += proposed_m;
             const uint32_t twice_rem = rem + rem;
@@ -862,7 +905,21 @@ int32_t libdivide_s32_do(int32_t numer, const struct libdivide_s32_t *denom) {
         q += (q < 0);
         return q;
     }
-}    
+}
+
+int32_t libdivide_s32_recover(const struct libdivide_s32_t *denom) {
+    uint8_t more = denom->more;
+    if (more & LIBDIVIDE_S32_SHIFT_PATH) {
+        uint32_t absD = 1U << (more & LIBDIVIDE_32_SHIFT_MASK);
+        if (absD & LIBDIVIDE_NEGATIVE_DIVISOR) {
+            absD = -absD;
+        }
+        return (int32_t)absD;
+    } else {
+        return 0;
+    }
+}
+
  
 int libdivide_s32_get_algorithm(const struct libdivide_s32_t *denom) {
     uint8_t more = denom->more;
@@ -1031,6 +1088,10 @@ int64_t libdivide_s64_do(int64_t numer, const struct libdivide_s64_t *denom) {
         return q;
     }
 }    
+
+int64_t libdivide_s64_recover(const struct libdivide_s64_t *denom) {
+    return 0;
+}
     
  
 int libdivide_s64_get_algorithm(const struct libdivide_s64_t *denom) {
@@ -1224,7 +1285,6 @@ namespace libdivide_internal {
             typedef divider_base<IntType, DenomType, libdivide_s32_gen, libdivide_s32_get_algorithm, do_func, vector_func> divider;
         };
         
-      
         template<int ALGO, int J = 0> struct algo { };
         template<int J> struct algo<-1, J> { typedef denom<libdivide_s32_do, MAYBE_VECTOR(libdivide_s32_do_vector)>::divider divider; };
         template<int J> struct algo<0, J>  { typedef denom<libdivide_s32_do_alg0, MAYBE_VECTOR(libdivide_s32_do_vector_alg0)>::divider divider; };
@@ -1279,6 +1339,12 @@ class divider
     template<int NEW_ALGO, typename S> friend divider<S, NEW_ALGO> unswitch(const divider<S, -1> & d);
     divider(const typename libdivide_internal::divider_mid<T>::DenomType & denom) : sub(denom) { }
     
+    /* Recover overloads */
+    static uint32_t recover(const libdivide_u32_t *s) { return libdivide_u32_recover(s); }
+    static int32_t  recover(const libdivide_s32_t *s) { return libdivide_s32_recover(s); }
+    static uint64_t recover(const libdivide_u64_t *s) { return libdivide_u64_recover(s); }
+    static int64_t  recover(const libdivide_s64_t *s) { return libdivide_s64_recover(s); }
+    
     public:
     
     /* Ordinary constructor, that takes the divisor as a parameter. */
@@ -1289,6 +1355,9 @@ class divider
     
     /* Divides the parameter by the divisor, returning the quotient */
     T perform_divide(T val) const { return sub.perform_divide(val); }
+    
+    /* Recovers the divisor that was used to initialize the divider */
+    T recover_divisor() const { return recover(&sub.denom); }
     
 #if LIBDIVIDE_USE_SSE2
     /* Treats the vector as either two or four packed values (depending on the size), and divides each of them by the divisor, returning the packed quotients. */

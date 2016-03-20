@@ -75,7 +75,7 @@ private:
     
     void test_one(T numer, T denom, const divider<T> & the_divider) {
         // Don't crash with INT_MIN / -1
-        if (limits::is_signed && numer == limits::min() && denom == -1) {
+        if (limits::is_signed && numer == limits::min() && denom == T(-1)) {
             return;
         }
         T expect = numer / denom;
@@ -88,7 +88,7 @@ private:
             case 3: actual2 = numer / unswitch<3>(the_divider); break;
             case 4: actual2 = numer / unswitch<4>(the_divider); break;
             default: 
-                cout << "Unexpected algorithm %d" << the_divider.get_algorithm() << endl;
+                cout << "Unexpected algorithm" << the_divider.get_algorithm() << endl;
                 while (1) ;
                 break;
         }
@@ -162,6 +162,11 @@ private:
     
     void test_many(T denom) {
         const divider<T> the_divider = divider<T>(denom);
+        T recovered = the_divider.recover_divisor(); 
+        if (recovered != denom) {
+            cout << "Failed to recover divisor for " << denom << " - got " << recovered << endl;
+        }
+        
         size_t j;
         for (j=0; j < 100000 / 4; j++) {
             T numers[4] = {(T)this->next_random(), (T)this->next_random(), (T)this->next_random(), (T)this->next_random()};
