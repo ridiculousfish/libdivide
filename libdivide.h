@@ -65,6 +65,12 @@ typedef unsigned __int8 uint8_t;
 #define LIBDIVIDE_GCC_STYLE_ASM 1
 #endif
 
+#if LIBDIVIDE_ASSERTIONS_ON
+#define LIBDIVIDE_ASSERT(x) do { if (! (x)) { fprintf(stderr, "Assertion failure on line %ld: %s\n", (long)__LINE__, #x); exit(-1); } } while (0)
+#else
+#define LIBDIVIDE_ASSERT(x)
+#endif
+
 
 /* libdivide may use the pmuldq (vector signed 32x32->64 mult instruction) which is in SSE 4.1.  However, signed multiplication can be emulated efficiently with unsigned multiplication, and SSE 4.1 is currently rare, so it is OK to not turn this on */
 #ifdef LIBDIVIDE_USE_SSE4_1
@@ -554,13 +560,113 @@ again2:
     return q1*b + q0;
 }
 #endif
-        
-#if LIBDIVIDE_ASSERTIONS_ON
-#define LIBDIVIDE_ASSERT(x) do { if (! (x)) { fprintf(stderr, "Assertion failure on line %ld: %s\n", (long)__LINE__, #x); exit(-1); } } while (0)
+
+// Bitshift a u128 in place, left (signed_shift > 0) or right (signed_shift < 0)
+static inline void libdivide_u128_shift(uint64_t *u1, uint64_t *u0, int32_t signed_shift)
+{
+    if (signed_shift > 0) {
+        uint32_t shift = signed_shift;
+        *u1 <<= shift;
+        *u1 |= *u0 >> (64 - shift);
+        *u0 <<= shift;
+    } else {
+        uint32_t shift = -signed_shift;
+        *u0 >>= shift;
+        *u0 |= *u1 << (64 - shift);
+        *u1 >>= shift;
+    }
+}
+    
+/* Computes a 128 / 128 -> 64 bit division, with a 128 bit remainder. */
+static uint64_t libdivide_128_div_128_to_64(uint64_t u_hi, uint64_t u_lo, uint64_t v_hi, uint64_t v_lo, uint64_t *r_hi, uint64_t *r_lo) {
+#if 0 && HAS_INT128_T
+    __uint128_t ufull = u_hi;
+    ufull = (ufull << 64) | u_lo;
+    __uint128_t vfull = v_hi;
+    vfull = (vfull << 64) | v_lo;
+    __uint128_t remainder = ufull % vfull;
+    *r_lo = (uint64_t)remainder;
+    *r_hi = (uint64_t)(remainder >> 64);
+    return (uint64_t)(ufull / vfull);
 #else
-#define LIBDIVIDE_ASSERT(x)    
+    // Adapted from "Unsigned Doubleword Division" in Hacker's Delight
+    // We want to compute u / v
+    typedef struct { uint64_t hi; uint64_t lo; } u128_t;
+    u128_t u = {u_hi, u_lo};
+    u128_t v = {v_hi, v_lo};
+    if (v.hi == 0) {
+        // divisor v is a 64 bit value, so we just need one 128/64 division
+        // Note that we are simpler than Hacker's Delight here, because we know the quotient fits in 64 bits
+        // whereas Hacker's Delight demands a full 128 bit quotient
+        *r_hi = 0;
+        return libdivide_128_div_64_to_64(u.hi, u.lo, v.lo, r_lo);
+    }
+    // Here v >= 2**64
+    // We know that v.hi != 0, so count leading zeros is OK
+    // We have 0 <= n <= 63
+    uint32_t n = libdivide__count_leading_zeros64(v.hi);
+    
+    // Normalize the divisor so its MSB is 1
+    u128_t v1t = v;
+    libdivide_u128_shift(&v1t.hi, &v1t.lo, n);
+    uint64_t v1 = v1t.hi; // i.e. v1 = v1t >> 64
+    
+    // To ensure no overflow
+    u128_t u1 = u;
+    libdivide_u128_shift(&u1.hi, &u1.lo, -1);
+    
+    // Get quotient from divide unsigned insn.
+    uint64_t rem_ignored;
+    uint64_t q1 = libdivide_128_div_64_to_64(u1.hi, u1.lo, v1, &rem_ignored);
+    
+    // Undo normalization and division of u by 2.
+    u128_t q0 = {0, q1};
+    libdivide_u128_shift(&q0.hi, &q0.lo, n);
+    libdivide_u128_shift(&q0.hi, &q0.lo, -63);
+    
+    // Make q0 correct or too small by 1
+    // Equivalent to `if (q0 != 0) q0 = q0 - 1;`
+    if (q0.hi != 0 || q0.lo != 0) {
+        q0.hi -= (q0.lo == 0); // borrow
+        q0.lo -= 1;
+    }
+    
+    // Now q0 is correct.
+    // Compute q0 * v as q0v
+    // = (q0.hi<<64 + q0.lo) * (v.hi<<64 + v.lo)
+    // = (q0.hi*v.hi<<128 + q0.hi*v.lo<<64 + q0.lo*v.hi<<64 + q0.lo*v.lo)
+    // Each term is 128 bit
+    // High half of full product (upper 128 bits!) are dropped
+    u128_t q0v = {0, 0};
+    q0v.hi = q0.hi*v.lo + q0.lo*v.hi + libdivide__mullhi_u64(q0.lo, v.lo);
+    q0v.lo = q0.lo*v.lo;
+    
+    // Compute u - q0v as u_q0v
+    // This is the remainder
+    u128_t u_q0v = u;
+    u_q0v.hi -= q0v.hi + (u.lo < q0v.lo); // second term is borrow
+    u_q0v.lo -= q0v.lo;
+    
+    // Check if u_q0v >= v
+    // This checks if our remainder is larger than the divisor
+    if ((u_q0v.hi > v.hi) || (u_q0v.hi == v.hi && u_q0v.lo >= v.lo)) {
+        // Increment q0
+        q0.lo += 1;
+        q0.hi += (q0.lo == 0); // carry
+        
+        // Subtract v from remainder
+        u_q0v.hi -= v.hi + (u_q0v.lo < v.lo);
+        u_q0v.lo -= v.lo;
+    }
+        
+    *r_hi = u_q0v.hi;
+    *r_lo = u_q0v.lo;
+    
+    LIBDIVIDE_ASSERT(q0.hi == 0);
+    return q0.lo;
 #endif
- 
+}
+
 #ifndef LIBDIVIDE_HEADER_ONLY
   
 ////////// UINT32
@@ -633,8 +739,7 @@ uint32_t libdivide_u32_recover(const struct libdivide_u32_t *denom) {
         uint32_t rem_ignored;
         return 1 + libdivide_64_div_32_to_32(hi_dividend, 0, denom->magic, &rem_ignored);
     } else {
-        // Here we have d = 2^(32+shift+1)/(m+2^32)
-        // (m + 2^32) is a 33 bit number
+        // Here we wish to compute d = 2^(32+shift+1)/(m+2^32). Notice (m + 2^32) is a 33 bit number
         // Use 64 bit division for now
         // Also note that shift may be as high as 31, so shift + 1 will overflow
         // So we have to compute it as 2^(32+shift)/(m+2^32), and then double the quotient and remainder
@@ -773,7 +878,42 @@ uint64_t libdivide_u64_do(uint64_t numer, const struct libdivide_u64_t *denom) {
 
 
 uint64_t libdivide_u64_recover(const struct libdivide_u64_t *denom) {
-    return 0;
+    uint8_t more = denom->more;
+    uint8_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
+    if (more & LIBDIVIDE_U64_SHIFT_PATH) {
+        return 1ULL << shift;
+    } else if (! (more & LIBDIVIDE_ADD_MARKER)) {
+        // We compute q = n/d = n*m / 2^(64 + shift)
+        // Therefore we have d = 2^(64 + shift) / m
+        // We need to ceil it.
+        // We know d is not a power of 2, so m is not a power of 2,
+        // so we can just add 1 to the floor
+        uint64_t hi_dividend = 1LLU << shift;
+        uint64_t rem_ignored;
+        return 1 + libdivide_128_div_64_to_64(hi_dividend, 0, denom->magic, &rem_ignored);
+    } else {
+        // Here we wish to compute d = 2^(64+shift+1)/(m+2^64). Notice (m + 2^64) is a 65 bit number
+        // This gets hairy. See libdivide_u32_recover for more on what we do here
+        // TODO: do something better than 128 bit math
+        
+        // Full n is a (potentially) 129 bit value
+        // half_n is a 128 bit value
+        // Compute the hi half of half_n. Low half is 0.
+        uint64_t half_n_hi = 1LLU << shift, half_n_lo = 0;
+        // d is a 65 bit value. The high bit is always set to 1.
+        const uint64_t d_hi = 1, d_lo = denom->magic;
+        // Note that the quotient is guaranteed <= 64 bits, but the remainder may need 65!
+        uint64_t r_hi, r_lo;
+        uint64_t half_q = libdivide_128_div_128_to_64(half_n_hi, half_n_lo, d_hi, d_lo, &r_hi, &r_lo);
+        // We computed 2^(64+shift)/(m+2^64)
+        // Double the remainder ('dr') and check if that is larger than d
+        // Note that d is a 65 bit value, so r1 is small and so r1 + r1 cannot overflow
+        uint64_t dr_lo = r_lo + r_lo;
+        uint64_t dr_hi = r_hi + r_hi + (dr_lo < r_lo); // last term is carry
+        int dr_exceeds_d = (dr_hi > d_hi) || (dr_hi == d_hi && dr_lo >= d_lo);        
+        uint64_t full_q = half_q + half_q + (dr_exceeds_d ? 1 : 0);
+        return full_q + 1;
+    }
 }
 
     
