@@ -1247,9 +1247,35 @@ int64_t libdivide_s64_do(int64_t numer, const struct libdivide_s64_t *denom) {
 }    
 
 int64_t libdivide_s64_recover(const struct libdivide_s64_t *denom) {
-    return 0;
+    uint8_t more = denom->more;
+    uint8_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
+    if (denom->magic == 0) { // shift path
+        uint64_t absD = 1LLU << shift;
+        if (more & LIBDIVIDE_NEGATIVE_DIVISOR) {
+            absD = -absD;
+        }
+        return (int64_t)absD;
+    } else {
+        // Unsigned math is much easier
+        int is_negative;
+        if (more & LIBDIVIDE_ADD_MARKER) {
+            // In this case, the sign will be given by the presence of LIBDIVIDE_NEGATIVE_DIVISOR
+            is_negative = !! (more & LIBDIVIDE_NEGATIVE_DIVISOR);
+        } else {
+            // In this case, the sign is given by the magic number itself
+            is_negative = (denom->magic < 0);
+        }
+        uint64_t d = (uint64_t)(is_negative ? -denom->magic : denom->magic);
+        uint64_t n_hi = 1LLU << shift, n_lo = 0;
+        uint64_t rem_ignored;
+        uint64_t q = libdivide_128_div_64_to_64(n_hi, n_lo, d, &rem_ignored);
+        int64_t result = (int64_t)(q + 1);
+        if (is_negative) {
+            result = -result;
+        }
+        return result;
+    }
 }
-    
  
 int libdivide_s64_get_algorithm(const struct libdivide_s64_t *denom) {
     uint8_t more = denom->more;
