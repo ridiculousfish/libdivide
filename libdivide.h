@@ -296,14 +296,6 @@ static inline __m128i libdivide_get_00000000FFFFFFFF(void) {
     return result;
 }
 
-static inline __m128i libdivide_get_0000FFFF(void) {
-    //returns the same as _mm_set1_epi32(0x0000FFFFULL) without touching memory
-    __m128i result; //we don't care what its contents are
-    result = _mm_cmpeq_epi8(result, result); //all 1s
-    result = _mm_srli_epi32(result, 16);
-    return result;    
-}
-
 static inline __m128i libdivide_s64_signbits(__m128i v) {
     //we want to compute v >> 63, that is, _mm_srai_epi64(v, 63).  But there is no 64 bit shift right arithmetic instruction in SSE2.  So we have to fake it by first duplicating the high 32 bit values, and then using a 32 bit shift.  Another option would be to use _mm_srli_epi64(v, 63) and then subtract that from 0, but that approach appears to be substantially slower for unknown reasons
     __m128i hiBitsDuped = _mm_shuffle_epi32(v, _MM_SHUFFLE(3, 3, 1, 1));
