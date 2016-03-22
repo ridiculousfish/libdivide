@@ -157,12 +157,22 @@ LIBDIVIDE_API struct libdivide_s32_t libdivide_s32_gen(int32_t y);
 LIBDIVIDE_API struct libdivide_u32_t libdivide_u32_gen(uint32_t y);
 LIBDIVIDE_API struct libdivide_s64_t libdivide_s64_gen(int64_t y);
 LIBDIVIDE_API struct libdivide_u64_t libdivide_u64_gen(uint64_t y);
- 
+
+LIBDIVIDE_API struct libdivide_s32_t libdivide_s32_branchfree_gen(int32_t y);
+LIBDIVIDE_API struct libdivide_u32_t libdivide_u32_branchfree_gen(uint32_t y);
+LIBDIVIDE_API struct libdivide_s64_t libdivide_s64_branchfree_gen(int64_t y);
+LIBDIVIDE_API struct libdivide_u64_t libdivide_u64_branchfree_gen(uint64_t y);
+    
 LIBDIVIDE_API int32_t  libdivide_s32_do(int32_t numer, const struct libdivide_s32_t *denom);
 LIBDIVIDE_API uint32_t libdivide_u32_do(uint32_t numer, const struct libdivide_u32_t *denom);
 LIBDIVIDE_API int64_t  libdivide_s64_do(int64_t numer, const struct libdivide_s64_t *denom);
 LIBDIVIDE_API uint64_t libdivide_u64_do(uint64_t y, const struct libdivide_u64_t *denom);
 
+LIBDIVIDE_API int32_t  libdivide_s32_branchfree_do(int32_t numer, const struct libdivide_s32_t *denom);
+LIBDIVIDE_API uint32_t libdivide_u32_branchfree_do(uint32_t numer, const struct libdivide_u32_t *denom);
+LIBDIVIDE_API int64_t  libdivide_s64_branchfree_do(int64_t numer, const struct libdivide_s64_t *denom);
+LIBDIVIDE_API uint64_t libdivide_u64_branchfree_do(uint64_t y, const struct libdivide_u64_t *denom);
+    
 LIBDIVIDE_API int32_t  libdivide_s32_recover(const struct libdivide_s32_t *denom);
 LIBDIVIDE_API uint32_t libdivide_u32_recover(const struct libdivide_u32_t *denom);
 LIBDIVIDE_API int64_t  libdivide_s64_recover(const struct libdivide_s64_t *denom);
@@ -667,28 +677,36 @@ static uint64_t libdivide_128_div_128_to_64(uint64_t u_hi, uint64_t u_lo, uint64
   
 ////////// UINT32
 
-struct libdivide_u32_t libdivide_u32_gen(uint32_t d) {
+inline struct libdivide_u32_t libdivide_internal_u32_gen(uint32_t d, int branchfree) {
+    /* 1 is not supported with branchfree algorithm */
+    LIBDIVIDE_ASSERT(!branchfree || d != 1);
+
     struct libdivide_u32_t result;
+    const uint32_t floor_log_2_d = 31 - libdivide__count_leading_zeros32(d);
     if ((d & (d - 1)) == 0) {
-        result.magic = 0;
-        result.more = libdivide__count_trailing_zeros32(d) | LIBDIVIDE_U32_SHIFT_PATH;
-    }
-    else {
-        const uint32_t floor_log_2_d = 31 - libdivide__count_leading_zeros32(d);
-        
+        // Power of 2
+        if (! branchfree) {
+            result.magic = 0;
+            result.more = floor_log_2_d | LIBDIVIDE_U32_SHIFT_PATH;
+        } else {
+            // We want a magic number of 2**32 and a shift of floor_log_2_d
+            // but one of the shifts is taken up by LIBDIVIDE_ADD_MARKER, so we subtract 1 from the shift
+            result.magic = 0;
+            result.more = (floor_log_2_d-1) | LIBDIVIDE_ADD_MARKER;
+        }
+    } else {
         uint8_t more;
         uint32_t rem, proposed_m;
         proposed_m = libdivide_64_div_32_to_32(1U << floor_log_2_d, 0, d, &rem);
-
+        
         LIBDIVIDE_ASSERT(rem > 0 && rem < d);
         const uint32_t e = d - rem;
         
-	/* This power works if e < 2**floor_log_2_d. */
-	if (e < (1U << floor_log_2_d)) {
+        /* This power works if e < 2**floor_log_2_d. */
+        if (!branchfree && (e < (1U << floor_log_2_d))) {
             /* This power works */
             more = floor_log_2_d;
-        }
-        else {
+        } else {
             /* We have to use the general 33-bit algorithm.  We need to compute (2**power) / d. However, we already have (2**(power-1))/d and its remainder.  By doubling both, and then correcting the remainder, we can compute the larger division. */
             proposed_m += proposed_m; //don't care about overflow here - in fact, we expect it
             const uint32_t twice_rem = rem + rem;
@@ -698,10 +716,18 @@ struct libdivide_u32_t libdivide_u32_gen(uint32_t d) {
         result.magic = 1 + proposed_m;
         result.more = more;
         //result.more's shift should in general be ceil_log_2_d.  But if we used the smaller power, we subtract one from the shift because we're using the smaller power. If we're using the larger power, we subtract one from the shift because it's taken care of by the add indicator.  So floor_log_2_d happens to be correct in both cases.
-        
     }
     return result;
 }
+    
+struct libdivide_u32_t libdivide_u32_gen(uint32_t d) {
+    return libdivide_internal_u32_gen(d, 0);
+}
+    
+struct libdivide_u32_t libdivide_u32_branchfree_gen(uint32_t d) {
+    return libdivide_internal_u32_gen(d, 1);
+}
+
 
 uint32_t libdivide_u32_do(uint32_t numer, const struct libdivide_u32_t *denom) {
     uint8_t more = denom->more;
@@ -718,6 +744,15 @@ uint32_t libdivide_u32_do(uint32_t numer, const struct libdivide_u32_t *denom) {
             return q >> more; //all upper bits are 0 - don't need to mask them off
         }
     }
+}
+    
+uint32_t libdivide_u32_branchfree_do(uint32_t numer, const struct libdivide_u32_t *denom) {
+    uint8_t more = denom->more;
+    uint32_t q = libdivide__mullhi_u32(denom->magic, numer);
+    uint32_t t = ((numer - q) >> 1) + q;
+    // Note that this mask is typically free. Only the low bits are meaningful to a shift, so
+    // compilers can optimize out this AND.
+    return t >> (more & LIBDIVIDE_32_SHIFT_MASK);
 }
 
 uint32_t libdivide_u32_recover(const struct libdivide_u32_t *denom) {
@@ -749,7 +784,10 @@ uint32_t libdivide_u32_recover(const struct libdivide_u32_t *denom) {
         // Need to double it, and then add 1 to the quotient if doubling the remainder would increase the quotient
         // Note that rem<<1 cannot overflow, since rem < d and d is 33 bits
         uint32_t full_q = half_q + half_q + ((rem<<1) >= d);
-        return full_q + 1;
+        
+        // We rounded down in gen unless we're a power of 2 (i.e. in branchfree case)
+        // We can detect that by looking at m. If m zero, we're a power of 2
+        return full_q + (denom->magic != 0);
     }
 }
  
@@ -820,7 +858,7 @@ __m128i libdivide_u32_do_vector_alg2(__m128i numers, const struct libdivide_u32_
  
 /////////// UINT64
 
-struct libdivide_u64_t libdivide_u64_gen(uint64_t d) {
+struct libdivide_u64_t libdivide_internal_u64_gen(uint64_t d, int branchfree) {
     struct libdivide_u64_t result;
     if ((d & (d - 1)) == 0) {
         result.more = libdivide__count_trailing_zeros64(d) | LIBDIVIDE_U64_SHIFT_PATH;
@@ -853,6 +891,16 @@ struct libdivide_u64_t libdivide_u64_gen(uint64_t d) {
         //result.more's shift should in general be ceil_log_2_d.  But if we used the smaller power, we subtract one from the shift because we're using the smaller power. If we're using the larger power, we subtract one from the shift because it's taken care of by the add indicator.  So floor_log_2_d happens to be correct in both cases, which is why we do it outside of the if statement.
     }
     return result;
+}
+
+struct libdivide_u64_t libdivide_u64_gen(uint64_t d)
+{
+    return libdivide_internal_u64_gen(d, 0);
+}
+
+struct libdivide_u64_t libdivide_u64_branchfree_gen(uint64_t d)
+{
+    return libdivide_internal_u64_gen(d, 1);
 }
 
 uint64_t libdivide_u64_do(uint64_t numer, const struct libdivide_u64_t *denom) {
@@ -983,7 +1031,7 @@ static inline int32_t libdivide__mullhi_s32(int32_t x, int32_t y) {
     return (int32_t)(rl >> 32); //needs to be arithmetic shift
 }
 
-struct libdivide_s32_t libdivide_s32_gen(int32_t d) {
+struct libdivide_s32_t libdivide_internal_s32_gen(int32_t d, int branchfree) {
     struct libdivide_s32_t result;
     
     /* If d is a power of 2, or negative a power of 2, we have to use a shift.  This is especially important because the magic algorithm fails for -1.  To check if d is a power of 2 or its inverse, it suffices to check whether its absolute value has exactly one bit set.  This works even for INT_MIN, because abs(INT_MIN) == INT_MIN, and INT_MIN has one bit set and is a power of 2.  */
@@ -1020,6 +1068,15 @@ struct libdivide_s32_t libdivide_s32_gen(int32_t d) {
     }
     return result;
 }
+
+struct libdivide_s32_t libdivide_s32_gen(int32_t d) {
+    return libdivide_internal_s32_gen(d, 0);
+}
+
+struct libdivide_s32_t libdivide_s32_branchfree_gen(int32_t d) {
+    return libdivide_internal_s32_gen(d, 0);
+}
+
 
 int32_t libdivide_s32_do(int32_t numer, const struct libdivide_s32_t *denom) {
     uint8_t more = denom->more;
@@ -1182,7 +1239,7 @@ __m128i libdivide_s32_do_vector_alg4(__m128i numers, const struct libdivide_s32_
 ///////////// SINT64
  
 
-struct libdivide_s64_t libdivide_s64_gen(int64_t d) {
+struct libdivide_s64_t libdivide_internal_s64_gen(int64_t d, int branchfree) {
     struct libdivide_s64_t result;
     
     /* If d is a power of 2, or negative a power of 2, we have to use a shift.  This is especially important because the magic algorithm fails for -1.  To check if d is a power of 2 or its inverse, it suffices to check whether its absolute value has exactly one bit set.  This works even for INT_MIN, because abs(INT_MIN) == INT_MIN, and INT_MIN has one bit set and is a power of 2.  */
@@ -1217,6 +1274,14 @@ struct libdivide_s64_t libdivide_s64_gen(int64_t d) {
         result.magic = (d < 0 ? -(int64_t)proposed_m : (int64_t)proposed_m);
     }
     return result;
+}
+
+struct libdivide_s64_t libdivide_s64_gen(int64_t d) {
+    return libdivide_internal_s64_gen(d, 0);
+}
+
+struct libdivide_s64_t libdivide_s64_branchfree_gen(int64_t d) {
+    return libdivide_internal_s64_gen(d, 1);
 }
 
 int64_t libdivide_s64_do(int64_t numer, const struct libdivide_s64_t *denom) {
@@ -1452,34 +1517,43 @@ namespace libdivide_internal {
     /* Type-specific dispatch */
     
     /* uint32 */
-    template<uint32_t do_func(uint32_t, const libdivide_u32_t*), MAYBE_VECTOR_PARAM(libdivide_u32_t)> struct denom_u32 {
-        typedef base<uint32_t, libdivide_u32_t, libdivide_u32_gen, do_func, vector_func> divider;
+    template<uint32_t do_func(uint32_t, const libdivide_u32_t*),
+             MAYBE_VECTOR_PARAM(libdivide_u32_t),
+             libdivide_u32_t gen_func(uint32_t) = libdivide_u32_gen>
+    struct denom_u32 {
+        typedef base<uint32_t, libdivide_u32_t, gen_func, do_func, vector_func> divider;
     };
     template<int ALGO> struct algo_u32 { };
     template<> struct algo_u32<BRANCHFULL> { typedef denom_u32<libdivide_u32_do, MAYBE_VECTOR(libdivide_u32_do_vector)>::divider divider; };
-    template<> struct algo_u32<BRANCHFREE> { typedef denom_u32<libdivide_u32_do, MAYBE_VECTOR(libdivide_u32_do_vector)>::divider divider; };
+    template<> struct algo_u32<BRANCHFREE> { typedef denom_u32<libdivide_u32_branchfree_do, MAYBE_VECTOR(libdivide_u32_do_vector), libdivide_u32_branchfree_gen>::divider divider; };
     template<> struct algo_u32<ALGORITHM0>  { typedef denom_u32<libdivide_u32_do_alg0, MAYBE_VECTOR(libdivide_u32_do_vector_alg0)>::divider divider; };
     template<> struct algo_u32<ALGORITHM1>  { typedef denom_u32<libdivide_u32_do_alg1, MAYBE_VECTOR(libdivide_u32_do_vector_alg1)>::divider divider; };
     template<> struct algo_u32<ALGORITHM2>  { typedef denom_u32<libdivide_u32_do_alg2, MAYBE_VECTOR(libdivide_u32_do_vector_alg2)>::divider divider; };
     
     /* uint64 */
-    template<uint64_t do_func(uint64_t, const libdivide_u64_t*), MAYBE_VECTOR_PARAM(libdivide_u64_t)> struct denom_u64 {
-        typedef base<uint64_t, libdivide_u64_t, libdivide_u64_gen, do_func, vector_func> divider;
+    template<uint64_t do_func(uint64_t, const libdivide_u64_t*),
+             MAYBE_VECTOR_PARAM(libdivide_u64_t),
+             libdivide_u64_t gen_func(uint64_t) = libdivide_u64_gen>
+    struct denom_u64 {
+        typedef base<uint64_t, libdivide_u64_t, gen_func, do_func, vector_func> divider;
     };
     template<int ALGO> struct algo_u64 { };
     template<> struct algo_u64<BRANCHFULL> { typedef denom_u64<libdivide_u64_do, MAYBE_VECTOR(libdivide_u64_do_vector)>::divider divider; };
-    template<> struct algo_u64<BRANCHFREE> { typedef denom_u64<libdivide_u64_do, MAYBE_VECTOR(libdivide_u64_do_vector)>::divider divider; };
+    template<> struct algo_u64<BRANCHFREE> { typedef denom_u64<libdivide_u64_do, MAYBE_VECTOR(libdivide_u64_do_vector), libdivide_u64_branchfree_gen>::divider divider; };
     template<> struct algo_u64<ALGORITHM0>  { typedef denom_u64<libdivide_u64_do_alg0, MAYBE_VECTOR(libdivide_u64_do_vector_alg0)>::divider divider; };
     template<> struct algo_u64<ALGORITHM1>  { typedef denom_u64<libdivide_u64_do_alg1, MAYBE_VECTOR(libdivide_u64_do_vector_alg1)>::divider divider; };
     template<> struct algo_u64<ALGORITHM2>  { typedef denom_u64<libdivide_u64_do_alg2, MAYBE_VECTOR(libdivide_u64_do_vector_alg2)>::divider divider; };
 
     /* int32  */
-    template<int32_t do_func(int32_t, const libdivide_s32_t*), MAYBE_VECTOR_PARAM(libdivide_s32_t)> struct denom_s32 {
-        typedef base<int32_t, libdivide_s32_t, libdivide_s32_gen, do_func, vector_func> divider;
+    template<int32_t do_func(int32_t, const libdivide_s32_t*),
+             MAYBE_VECTOR_PARAM(libdivide_s32_t),
+             libdivide_s32_t gen_func(int32_t) = libdivide_s32_gen>
+    struct denom_s32 {
+        typedef base<int32_t, libdivide_s32_t, gen_func, do_func, vector_func> divider;
     };
     template<int ALGO> struct algo_s32 { };
     template<> struct algo_s32<BRANCHFULL> { typedef denom_s32<libdivide_s32_do, MAYBE_VECTOR(libdivide_s32_do_vector)>::divider divider; };
-    template<> struct algo_s32<BRANCHFREE> { typedef denom_s32<libdivide_s32_do, MAYBE_VECTOR(libdivide_s32_do_vector)>::divider divider; };
+    template<> struct algo_s32<BRANCHFREE> { typedef denom_s32<libdivide_s32_do, MAYBE_VECTOR(libdivide_s32_do_vector), libdivide_s32_branchfree_gen>::divider divider; };
     template<> struct algo_s32<ALGORITHM0>  { typedef denom_s32<libdivide_s32_do_alg0, MAYBE_VECTOR(libdivide_s32_do_vector_alg0)>::divider divider; };
     template<> struct algo_s32<ALGORITHM1>  { typedef denom_s32<libdivide_s32_do_alg1, MAYBE_VECTOR(libdivide_s32_do_vector_alg1)>::divider divider; };
     template<> struct algo_s32<ALGORITHM2>  { typedef denom_s32<libdivide_s32_do_alg2, MAYBE_VECTOR(libdivide_s32_do_vector_alg2)>::divider divider; };
@@ -1487,12 +1561,15 @@ namespace libdivide_internal {
     template<> struct algo_s32<ALGORITHM4>  { typedef denom_s32<libdivide_s32_do_alg4, MAYBE_VECTOR(libdivide_s32_do_vector_alg4)>::divider divider; };
 
     /* int64 */
-    template<int64_t do_func(int64_t, const libdivide_s64_t*), MAYBE_VECTOR_PARAM(libdivide_s64_t)> struct denom_s64 {
-        typedef base<int64_t, libdivide_s64_t, libdivide_s64_gen, do_func, vector_func> divider;
+    template<int64_t do_func(int64_t, const libdivide_s64_t*),
+             MAYBE_VECTOR_PARAM(libdivide_s64_t),
+             libdivide_s64_t gen_func(int64_t) = libdivide_s64_gen>
+    struct denom_s64 {
+        typedef base<int64_t, libdivide_s64_t, gen_func, do_func, vector_func> divider;
     };
     template<int ALGO> struct algo_s64 { };
     template<> struct algo_s64<BRANCHFULL> { typedef denom_s64<libdivide_s64_do, MAYBE_VECTOR(libdivide_s64_do_vector)>::divider divider; };
-    template<> struct algo_s64<BRANCHFREE> { typedef denom_s64<libdivide_s64_do, MAYBE_VECTOR(libdivide_s64_do_vector)>::divider divider; };
+    template<> struct algo_s64<BRANCHFREE> { typedef denom_s64<libdivide_s64_do, MAYBE_VECTOR(libdivide_s64_do_vector), libdivide_s64_branchfree_gen>::divider divider; };
     template<> struct algo_s64<ALGORITHM0>  { typedef denom_s64<libdivide_s64_do_alg0, MAYBE_VECTOR(libdivide_s64_do_vector_alg0)>::divider divider; };
     template<> struct algo_s64<ALGORITHM1>  { typedef denom_s64<libdivide_s64_do_alg1, MAYBE_VECTOR(libdivide_s64_do_vector_alg1)>::divider divider; };
     template<> struct algo_s64<ALGORITHM2>  { typedef denom_s64<libdivide_s64_do_alg2, MAYBE_VECTOR(libdivide_s64_do_vector_alg2)>::divider divider; };
