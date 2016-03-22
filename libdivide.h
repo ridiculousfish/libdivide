@@ -1039,7 +1039,7 @@ int32_t libdivide_s32_do(int32_t numer, const struct libdivide_s32_t *denom) {
         int32_t q = libdivide__mullhi_s32(denom->magic, numer);
         if (more & LIBDIVIDE_ADD_MARKER) {
             int32_t sign = (int8_t)more >> 7; //must be arithmetic shift and then sign extend
-            q += ((numer ^ sign) - sign);
+            q += ((numer ^ sign) - sign); // q += (more < 0 ? -numer : numer)
         }
         q >>= more & LIBDIVIDE_32_SHIFT_MASK;
         q += (q < 0);
@@ -1049,17 +1049,34 @@ int32_t libdivide_s32_do(int32_t numer, const struct libdivide_s32_t *denom) {
 
 int32_t libdivide_s32_recover(const struct libdivide_s32_t *denom) {
     uint8_t more = denom->more;
+    uint8_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
     if (more & LIBDIVIDE_S32_SHIFT_PATH) {
-        uint32_t absD = 1U << (more & LIBDIVIDE_32_SHIFT_MASK);
-        if (absD & LIBDIVIDE_NEGATIVE_DIVISOR) {
+        uint32_t absD = 1U << shift;
+        if (more & LIBDIVIDE_NEGATIVE_DIVISOR) {
             absD = -absD;
         }
         return (int32_t)absD;
     } else {
-        return 0;
+        // Unsigned math is much easier
+        int is_negative;
+        if (more & LIBDIVIDE_ADD_MARKER) {
+            // In this case, the sign will be given by the presence of LIBDIVIDE_NEGATIVE_DIVISOR
+            is_negative = !! (more & LIBDIVIDE_NEGATIVE_DIVISOR);
+        } else {
+            // In this case, the sign is given by the magic number itself
+            is_negative = (denom->magic < 0);
+        }
+        uint32_t d = (uint32_t)(is_negative ? -denom->magic : denom->magic);
+        uint64_t n = 1LLU << (32 + shift); // Note that the shift cannot exceed 30
+        uint32_t q = n / d;
+        int32_t result = (int32_t)q;
+        result += 1;
+        if (is_negative) {
+            result = -result;
+        }
+        return result;
     }
 }
-
  
 int libdivide_s32_get_algorithm(const struct libdivide_s32_t *denom) {
     uint8_t more = denom->more;
