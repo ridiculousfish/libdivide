@@ -1388,20 +1388,11 @@ __m128i libdivide_s64_do_vector_alg4(__m128i numers, const struct libdivide_s64_
  
 #ifdef __cplusplus
 
-/* The C++ template design here is a total mess.  This needs to be fixed by someone better at templates than I.  The current design is:
-
-- The base is a template divider_base that takes the integer type, the libdivide struct, a generating function, a get algorithm function, a do function, and either a do vector function or a dummy int.
-- The base has storage for the libdivide struct.  This is the only storage (so the C++ class should be no larger than the libdivide struct).
-
-- Above that, there's divider_dispatcher.  This is an empty struct by default, but it is specialized against our four int types.  divider_dispatcher contains a template struct algo, that contains a typedef for a specialization of divider_base.  struct algo is specialized to take an "algorithm number," where -1 means to use the general algorithm.
-
-- Publicly we have class divider, which inherits from divider_dispatcher::algo.  This also take an algorithm number, which defaults to -1 (the general algorithm).
-- divider has a operator / which allows you to use a divider as the divisor in a quotient expression.
-
+/* Our divider struct is templated on both a type (like uint64_t) and an algorithm index.
+   BRANCHFULL is the default algorithm, BRANCHFREE is the branchfree variant, and the indexed variants
+   are for unswitching.
 */
-
-enum
-{
+enum {
     BRANCHFULL = -1,
     BRANCHFREE = -2,
     ALGORITHM0 = 0,
@@ -1415,10 +1406,11 @@ namespace libdivide_internal {
     
 #if LIBDIVIDE_USE_SSE2
 #define MAYBE_VECTOR(x) x
-#define MAYBE_VECTOR_PARAM __m128i vector_func(__m128i, const DenomType *)
+#define MAYBE_VECTOR_PARAM(X) __m128i vector_func(__m128i, const X *)
+
 #else
 #define MAYBE_VECTOR(x) 0
-#define MAYBE_VECTOR_PARAM int vector_func
+#define MAYBE_VECTOR_PARAM(X) int vector_func
 #endif
 
     /* Some bogus unswitch functions for unsigned types so the same (presumably templated) code can work for both signed and unsigned. */
@@ -1429,24 +1421,24 @@ namespace libdivide_internal {
     __m128i crash_u64_vector(__m128i, const libdivide_u64_t *) { abort(); return *(__m128i *)NULL; }
 #endif
 
-    template<typename IntType,
-             typename DenomType,
-             DenomType gen_func(IntType),
-             int get_algo(const DenomType *),
-             IntType do_func(IntType, const DenomType *),
-             MAYBE_VECTOR_PARAM>
-    struct divider_base {
+    /* Base divider, which provides storage for the actual divider */
+    template<typename IntType, // like uint32_t
+             typename DenomType, // like libdivide_u32_t
+             DenomType gen_func(IntType), // like libdivide_u32_gen
+             IntType do_func(IntType, const DenomType *), // like libdivide_u32_do
+             MAYBE_VECTOR_PARAM(DenomType)> // like libdivide_u32_do_vector
+    struct base {
         /* Storage for the actual divider */
         DenomType denom;
         
         /* Constructor that takes a divisor value, and applies the gen function */
-        divider_base(IntType d) : denom(gen_func(d)) { }
+        base(IntType d) : denom(gen_func(d)) { }
         
         /* Copy constructor */
-        divider_base(const DenomType & d) : denom(d) { }
+        base(const DenomType & d) : denom(d) { }
         
         /* Default constructor to allow uninitialized uses in e.g. arrays */
-        divider_base() {}
+        base() {}
         
         /* Scalar divide */
         IntType perform_divide(IntType val) const { return do_func(val, &denom); }
@@ -1455,107 +1447,97 @@ namespace libdivide_internal {
         /* Vector divide */
         __m128i perform_divide_vector(__m128i val) const { return vector_func(val, &denom); }
 #endif
+    };
+    
+    /* Type-specific dispatch */
+    
+    /* uint32 */
+    template<uint32_t do_func(uint32_t, const libdivide_u32_t*), MAYBE_VECTOR_PARAM(libdivide_u32_t)> struct denom_u32 {
+        typedef base<uint32_t, libdivide_u32_t, libdivide_u32_gen, do_func, vector_func> divider;
+    };
+    template<int ALGO> struct algo_u32 { };
+    template<> struct algo_u32<BRANCHFULL> { typedef denom_u32<libdivide_u32_do, MAYBE_VECTOR(libdivide_u32_do_vector)>::divider divider; };
+    template<> struct algo_u32<BRANCHFREE> { typedef denom_u32<libdivide_u32_do, MAYBE_VECTOR(libdivide_u32_do_vector)>::divider divider; };
+    template<> struct algo_u32<ALGORITHM0>  { typedef denom_u32<libdivide_u32_do_alg0, MAYBE_VECTOR(libdivide_u32_do_vector_alg0)>::divider divider; };
+    template<> struct algo_u32<ALGORITHM1>  { typedef denom_u32<libdivide_u32_do_alg1, MAYBE_VECTOR(libdivide_u32_do_vector_alg1)>::divider divider; };
+    template<> struct algo_u32<ALGORITHM2>  { typedef denom_u32<libdivide_u32_do_alg2, MAYBE_VECTOR(libdivide_u32_do_vector_alg2)>::divider divider; };
+    
+    /* uint64 */
+    template<uint64_t do_func(uint64_t, const libdivide_u64_t*), MAYBE_VECTOR_PARAM(libdivide_u64_t)> struct denom_u64 {
+        typedef base<uint64_t, libdivide_u64_t, libdivide_u64_gen, do_func, vector_func> divider;
+    };
+    template<int ALGO> struct algo_u64 { };
+    template<> struct algo_u64<BRANCHFULL> { typedef denom_u64<libdivide_u64_do, MAYBE_VECTOR(libdivide_u64_do_vector)>::divider divider; };
+    template<> struct algo_u64<BRANCHFREE> { typedef denom_u64<libdivide_u64_do, MAYBE_VECTOR(libdivide_u64_do_vector)>::divider divider; };
+    template<> struct algo_u64<ALGORITHM0>  { typedef denom_u64<libdivide_u64_do_alg0, MAYBE_VECTOR(libdivide_u64_do_vector_alg0)>::divider divider; };
+    template<> struct algo_u64<ALGORITHM1>  { typedef denom_u64<libdivide_u64_do_alg1, MAYBE_VECTOR(libdivide_u64_do_vector_alg1)>::divider divider; };
+    template<> struct algo_u64<ALGORITHM2>  { typedef denom_u64<libdivide_u64_do_alg2, MAYBE_VECTOR(libdivide_u64_do_vector_alg2)>::divider divider; };
 
-        int get_algorithm() const { return get_algo(&denom); }
+    /* int32  */
+    template<int32_t do_func(int32_t, const libdivide_s32_t*), MAYBE_VECTOR_PARAM(libdivide_s32_t)> struct denom_s32 {
+        typedef base<int32_t, libdivide_s32_t, libdivide_s32_gen, do_func, vector_func> divider;
     };
-    
-    
-    template<class T> struct divider_dispatcher { };
-    
-    template<> struct divider_dispatcher<uint32_t> {
-        typedef uint32_t IntType;
-        typedef struct libdivide_u32_t DenomType;
-        template<IntType do_func(IntType, const DenomType *), MAYBE_VECTOR_PARAM> struct denom {
-            typedef divider_base<IntType, DenomType, libdivide_u32_gen, libdivide_u32_get_algorithm, do_func, vector_func> divider;
-        };
-        
-        template<int ALGO, int J = 0> struct algo { };
-        template<int J> struct algo<BRANCHFULL, J> { typedef denom<libdivide_u32_do, MAYBE_VECTOR(libdivide_u32_do_vector)>::divider divider; };
-        template<int J> struct algo<BRANCHFREE, J> { typedef denom<libdivide_u32_do, MAYBE_VECTOR(libdivide_u32_do_vector)>::divider divider; };
-        template<int J> struct algo<ALGORITHM0, J>  { typedef denom<libdivide_u32_do_alg0, MAYBE_VECTOR(libdivide_u32_do_vector_alg0)>::divider divider; };
-        template<int J> struct algo<ALGORITHM1, J>  { typedef denom<libdivide_u32_do_alg1, MAYBE_VECTOR(libdivide_u32_do_vector_alg1)>::divider divider; };
-        template<int J> struct algo<ALGORITHM2, J>  { typedef denom<libdivide_u32_do_alg2, MAYBE_VECTOR(libdivide_u32_do_vector_alg2)>::divider divider; };
-      
-        /* Define two more bogus ones so that the same (templated, presumably) code can handle both signed and unsigned */  
-        template<int J> struct algo<ALGORITHM3, J>  { typedef denom<crash_u32, MAYBE_VECTOR(crash_u32_vector)>::divider divider; };
-        template<int J> struct algo<ALGORITHM4, J>  { typedef denom<crash_u32, MAYBE_VECTOR(crash_u32_vector)>::divider divider; };
+    template<int ALGO> struct algo_s32 { };
+    template<> struct algo_s32<BRANCHFULL> { typedef denom_s32<libdivide_s32_do, MAYBE_VECTOR(libdivide_s32_do_vector)>::divider divider; };
+    template<> struct algo_s32<BRANCHFREE> { typedef denom_s32<libdivide_s32_do, MAYBE_VECTOR(libdivide_s32_do_vector)>::divider divider; };
+    template<> struct algo_s32<ALGORITHM0>  { typedef denom_s32<libdivide_s32_do_alg0, MAYBE_VECTOR(libdivide_s32_do_vector_alg0)>::divider divider; };
+    template<> struct algo_s32<ALGORITHM1>  { typedef denom_s32<libdivide_s32_do_alg1, MAYBE_VECTOR(libdivide_s32_do_vector_alg1)>::divider divider; };
+    template<> struct algo_s32<ALGORITHM2>  { typedef denom_s32<libdivide_s32_do_alg2, MAYBE_VECTOR(libdivide_s32_do_vector_alg2)>::divider divider; };
+    template<> struct algo_s32<ALGORITHM3>  { typedef denom_s32<libdivide_s32_do_alg3, MAYBE_VECTOR(libdivide_s32_do_vector_alg3)>::divider divider; };
+    template<> struct algo_s32<ALGORITHM4>  { typedef denom_s32<libdivide_s32_do_alg4, MAYBE_VECTOR(libdivide_s32_do_vector_alg4)>::divider divider; };
 
+    /* int64 */
+    template<int64_t do_func(int64_t, const libdivide_s64_t*), MAYBE_VECTOR_PARAM(libdivide_s64_t)> struct denom_s64 {
+        typedef base<int64_t, libdivide_s64_t, libdivide_s64_gen, do_func, vector_func> divider;
     };
+    template<int ALGO> struct algo_s64 { };
+    template<> struct algo_s64<BRANCHFULL> { typedef denom_s64<libdivide_s64_do, MAYBE_VECTOR(libdivide_s64_do_vector)>::divider divider; };
+    template<> struct algo_s64<BRANCHFREE> { typedef denom_s64<libdivide_s64_do, MAYBE_VECTOR(libdivide_s64_do_vector)>::divider divider; };
+    template<> struct algo_s64<ALGORITHM0>  { typedef denom_s64<libdivide_s64_do_alg0, MAYBE_VECTOR(libdivide_s64_do_vector_alg0)>::divider divider; };
+    template<> struct algo_s64<ALGORITHM1>  { typedef denom_s64<libdivide_s64_do_alg1, MAYBE_VECTOR(libdivide_s64_do_vector_alg1)>::divider divider; };
+    template<> struct algo_s64<ALGORITHM2>  { typedef denom_s64<libdivide_s64_do_alg2, MAYBE_VECTOR(libdivide_s64_do_vector_alg2)>::divider divider; };
+    template<> struct algo_s64<ALGORITHM3>  { typedef denom_s64<libdivide_s64_do_alg3, MAYBE_VECTOR(libdivide_s64_do_vector_alg3)>::divider divider; };
+    template<> struct algo_s64<ALGORITHM4>  { typedef denom_s64<libdivide_s64_do_alg4, MAYBE_VECTOR(libdivide_s64_do_vector_alg4)>::divider divider; };
     
-    template<> struct divider_dispatcher<int32_t> {
-        typedef int32_t IntType;
-        typedef struct libdivide_s32_t DenomType;
-        template<IntType do_func(IntType, const DenomType *), MAYBE_VECTOR_PARAM> struct denom {
-            typedef divider_base<IntType, DenomType, libdivide_s32_gen, libdivide_s32_get_algorithm, do_func, vector_func> divider;
-        };
-        
-        template<int ALGO, int J = 0> struct algo { };
-        template<int J> struct algo<BRANCHFULL, J> { typedef denom<libdivide_s32_do, MAYBE_VECTOR(libdivide_s32_do_vector)>::divider divider; };
-        template<int J> struct algo<BRANCHFREE, J> { typedef denom<libdivide_s32_do, MAYBE_VECTOR(libdivide_s32_do_vector)>::divider divider; };
-        template<int J> struct algo<ALGORITHM0, J>  { typedef denom<libdivide_s32_do_alg0, MAYBE_VECTOR(libdivide_s32_do_vector_alg0)>::divider divider; };
-        template<int J> struct algo<ALGORITHM1, J>  { typedef denom<libdivide_s32_do_alg1, MAYBE_VECTOR(libdivide_s32_do_vector_alg1)>::divider divider; };
-        template<int J> struct algo<ALGORITHM2, J>  { typedef denom<libdivide_s32_do_alg2, MAYBE_VECTOR(libdivide_s32_do_vector_alg2)>::divider divider; };
-        template<int J> struct algo<ALGORITHM3, J>  { typedef denom<libdivide_s32_do_alg3, MAYBE_VECTOR(libdivide_s32_do_vector_alg3)>::divider divider; };
-        template<int J> struct algo<ALGORITHM4, J>  { typedef denom<libdivide_s32_do_alg4, MAYBE_VECTOR(libdivide_s32_do_vector_alg4)>::divider divider; };
-        
-    };
+    /* Bogus versions to allow templated code to operate on int and uint uniformly */
+    template<> struct algo_u32<ALGORITHM3>  { typedef denom_u32<crash_u32, MAYBE_VECTOR(crash_u32_vector)>::divider divider; };
+    template<> struct algo_u32<ALGORITHM4>  { typedef denom_u32<crash_u32, MAYBE_VECTOR(crash_u32_vector)>::divider divider; };
+    template<> struct algo_u64<ALGORITHM3>  { typedef denom_u64<crash_u64, MAYBE_VECTOR(crash_u64_vector)>::divider divider; };
+    template<> struct algo_u64<ALGORITHM4>  { typedef denom_u64<crash_u64, MAYBE_VECTOR(crash_u64_vector)>::divider divider; };
     
-    template<> struct divider_dispatcher<uint64_t> {
-        typedef uint64_t IntType;
-        typedef struct libdivide_u64_t DenomType;
-        template<IntType do_func(IntType, const DenomType *), MAYBE_VECTOR_PARAM> struct denom {
-            typedef divider_base<IntType, DenomType, libdivide_u64_gen, libdivide_u64_get_algorithm, do_func, vector_func> divider;
-        };
-        
-        template<int ALGO, int J = 0> struct algo { };
-        template<int J> struct algo<BRANCHFULL, J> { typedef denom<libdivide_u64_do, MAYBE_VECTOR(libdivide_u64_do_vector)>::divider divider; };
-        template<int J> struct algo<BRANCHFREE, J> { typedef denom<libdivide_u64_do, MAYBE_VECTOR(libdivide_u64_do_vector)>::divider divider; };
-        template<int J> struct algo<ALGORITHM0, J>  { typedef denom<libdivide_u64_do_alg0, MAYBE_VECTOR(libdivide_u64_do_vector_alg0)>::divider divider; };
-        template<int J> struct algo<ALGORITHM1, J>  { typedef denom<libdivide_u64_do_alg1, MAYBE_VECTOR(libdivide_u64_do_vector_alg1)>::divider divider; };
-        template<int J> struct algo<ALGORITHM2, J>  { typedef denom<libdivide_u64_do_alg2, MAYBE_VECTOR(libdivide_u64_do_vector_alg2)>::divider divider; };
-        
-        /* Define two more bogus ones so that the same (templated, presumably) code can handle both signed and unsigned */
-        template<int J> struct algo<ALGORITHM3, J>  { typedef denom<crash_u64, MAYBE_VECTOR(crash_u64_vector)>::divider divider; };
-        template<int J> struct algo<ALGORITHM4, J>  { typedef denom<crash_u64, MAYBE_VECTOR(crash_u64_vector)>::divider divider; };
-    };
+    /* Templated dispatch using partial specialization */
+    template<typename T, int ALGO> struct dispatcher{};
+    template<int ALGO> struct dispatcher<uint32_t, ALGO> { typedef struct algo_u32<ALGO> algo; };
+    template<int ALGO> struct dispatcher<int32_t, ALGO> { typedef struct algo_s32<ALGO> algo; };
+    template<int ALGO> struct dispatcher<uint64_t, ALGO> { typedef struct algo_u64<ALGO> algo; };
+    template<int ALGO> struct dispatcher<int64_t, ALGO> { typedef struct algo_s64<ALGO> algo; };
     
-    template<> struct divider_dispatcher<int64_t> {
-        typedef int64_t IntType;
-        typedef struct libdivide_s64_t DenomType;
-        template<IntType do_func(IntType, const DenomType *), MAYBE_VECTOR_PARAM> struct denom {
-            typedef divider_base<IntType, DenomType, libdivide_s64_gen, libdivide_s64_get_algorithm, do_func, vector_func> divider;
-        };
-        
-        template<int ALGO, int J = 0> struct algo { };
-        template<int J> struct algo<BRANCHFULL, J> { typedef denom<libdivide_s64_do, MAYBE_VECTOR(libdivide_s64_do_vector)>::divider divider; };
-        template<int J> struct algo<BRANCHFREE, J> { typedef denom<libdivide_s64_do, MAYBE_VECTOR(libdivide_s64_do_vector)>::divider divider; };
-        template<int J> struct algo<ALGORITHM0, J>  { typedef denom<libdivide_s64_do_alg0, MAYBE_VECTOR(libdivide_s64_do_vector_alg0)>::divider divider; };
-        template<int J> struct algo<ALGORITHM1, J>  { typedef denom<libdivide_s64_do_alg1, MAYBE_VECTOR(libdivide_s64_do_vector_alg1)>::divider divider; };
-        template<int J> struct algo<ALGORITHM2, J>  { typedef denom<libdivide_s64_do_alg2, MAYBE_VECTOR(libdivide_s64_do_vector_alg2)>::divider divider; };
-        template<int J> struct algo<ALGORITHM3, J>  { typedef denom<libdivide_s64_do_alg3, MAYBE_VECTOR(libdivide_s64_do_vector_alg3)>::divider divider; };
-        template<int J> struct algo<ALGORITHM4, J>  { typedef denom<libdivide_s64_do_alg4, MAYBE_VECTOR(libdivide_s64_do_vector_alg4)>::divider divider; };
-    };
+    /* Overloads that don't depend on the algorithm. */
+    uint32_t recover(const libdivide_u32_t *s) { return libdivide_u32_recover(s); }
+    int32_t  recover(const libdivide_s32_t *s) { return libdivide_s32_recover(s); }
+    uint64_t recover(const libdivide_u64_t *s) { return libdivide_u64_recover(s); }
+    int64_t  recover(const libdivide_s64_t *s) { return libdivide_s64_recover(s); }
+
+    int get_algorithm(const libdivide_u32_t *s) { return libdivide_u32_get_algorithm(s); }
+    int get_algorithm(const libdivide_s32_t *s) { return libdivide_s32_get_algorithm(s); }
+    int get_algorithm(const libdivide_u64_t *s) { return libdivide_u64_get_algorithm(s); }
+    int get_algorithm(const libdivide_s64_t *s) { return libdivide_s64_get_algorithm(s); }
 }
 
 template<typename T, int ALGO = BRANCHFULL>
 class divider
 {
     private:
-    /* Here's the actual divider (instance of divider_base) */
-    typename libdivide_internal::divider_dispatcher<T>::template algo<ALGO>::divider sub;
+    /* Here's the actual divider */
+    typedef typename libdivide_internal::dispatcher<T, ALGO>::algo::divider div_t;
+    div_t sub;
     
     /* unswitch() friend declaration */
     template<int NEW_ALGO, typename S> friend divider<S, NEW_ALGO> unswitch(const divider<S, BRANCHFREE> & d);
     template<int NEW_ALGO, typename S> friend divider<S, NEW_ALGO> unswitch(const divider<S, BRANCHFULL> & d);
     
     /* Constructor used by the unswitch friend */
-    divider(const typename libdivide_internal::divider_dispatcher<T>::DenomType & denom) : sub(denom) { }
-    
-    /* Recover overloads */
-    static uint32_t recover(const libdivide_u32_t *s) { return libdivide_u32_recover(s); }
-    static int32_t  recover(const libdivide_s32_t *s) { return libdivide_s32_recover(s); }
-    static uint64_t recover(const libdivide_u64_t *s) { return libdivide_u64_recover(s); }
-    static int64_t  recover(const libdivide_s64_t *s) { return libdivide_s64_recover(s); }
+    divider(const div_t &denom) : sub(denom) { }
     
     public:
     
@@ -1569,7 +1551,7 @@ class divider
     T perform_divide(T val) const { return sub.perform_divide(val); }
     
     /* Recovers the divisor that was used to initialize the divider */
-    T recover_divisor() const { return recover(&sub.denom); }
+    T recover_divisor() const { return libdivide_internal::recover(&sub.denom); }
     
 #if LIBDIVIDE_USE_SSE2
     /* Treats the vector as either two or four packed values (depending on the size), and divides each of them by the divisor, returning the packed quotients. */
@@ -1577,7 +1559,7 @@ class divider
 #endif
 
     /* Returns the index of algorithm, for use in the unswitch function */
-    int get_algorithm() const { return sub.get_algorithm(); } // returns the algorithm for unswitching
+    int get_algorithm() const { return libdivide_internal::get_algorithm(&sub.denom); } // returns the algorithm for unswitching
     
     /* operator== */
     bool operator==(const divider<T, ALGO> & him) const { return sub.denom.magic == him.sub.denom.magic && sub.denom.more == him.sub.denom.more; }
