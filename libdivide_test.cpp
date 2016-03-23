@@ -73,7 +73,8 @@ private:
         return result;
     }
     
-    void test_one(T numer, T denom, const divider<T> & the_divider) {
+    template<int ALGO>
+    void test_one(T numer, T denom, const divider<T, ALGO> & the_divider) {
         // Don't crash with INT_MIN / -1
         if (limits::is_signed && numer == limits::min() && denom == T(-1)) {
             return;
@@ -113,7 +114,8 @@ private:
         
     }
     
-    void test_four(const T *numers, T denom, const divider<T> & the_divider) {
+    template<int ALGO>
+    void test_four(const T *numers, T denom, const divider<T, ALGO> & the_divider) {
         if (sizeof(T) == 4) {
 #if LIBDIVIDE_VC
             _declspec(align(16)) T results[4];
@@ -160,8 +162,9 @@ private:
         }
     }
     
+    template<int ALGO>
     void test_many(T denom) {
-        const divider<T> the_divider = divider<T>(denom);
+        const divider<T, ALGO> the_divider = divider<T, ALGO>(denom);
         T recovered = the_divider.recover_divisor(); 
         if (recovered != denom) {
             cout << "Failed to recover divisor for " << denom << " - got " << recovered << endl;
@@ -194,19 +197,22 @@ public:
         unsigned i;
         for (i=0; i < 10000; i++) {
             T denom = random_denominator();
-            test_many(denom);
+            test_many<BRANCHFULL>(denom);
+            test_many<BRANCHFREE>(denom);
             //cout << typeid(T).name() << "\t\t" << i << " / " << 100000 << endl;
         }
         
         /* Test powers of 2, both positive and negative. Careful to do no signed left shift of negative values. */
         T posPowOf2 = (limits::max() >> 1) + 1;
         while (posPowOf2 != 0) {
-            test_many(posPowOf2);
+            test_many<BRANCHFULL>(posPowOf2);
+            test_many<BRANCHFREE>(posPowOf2);
             posPowOf2 /= 2;
         }
         T negPowOf2 = limits::min(); // may be 0 already
         while (negPowOf2 != 0) {
-            test_many(negPowOf2);
+            test_many<BRANCHFULL>(negPowOf2);
+            test_many<BRANCHFREE>(negPowOf2);
             negPowOf2 /= 2; // assumes truncation towards 0
         }
     }
