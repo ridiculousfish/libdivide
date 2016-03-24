@@ -745,15 +745,6 @@ uint32_t libdivide_u32_do(uint32_t numer, const struct libdivide_u32_t *denom) {
         }
     }
 }
-    
-uint32_t libdivide_u32_branchfree_do(uint32_t numer, const struct libdivide_u32_t *denom) {
-    uint8_t more = denom->more;
-    uint32_t q = libdivide__mullhi_u32(denom->magic, numer);
-    uint32_t t = ((numer - q) >> 1) + q;
-    // Note that this mask is typically free. Only the low bits are meaningful to a shift, so
-    // compilers can optimize out this AND.
-    return t >> (more & LIBDIVIDE_32_SHIFT_MASK);
-}
 
 uint32_t libdivide_u32_recover(const struct libdivide_u32_t *denom) {
     uint8_t more = denom->more;
@@ -811,10 +802,14 @@ uint32_t libdivide_u32_do_alg2(uint32_t numer, const struct libdivide_u32_t *den
     // denom->add != 0
     uint32_t q = libdivide__mullhi_u32(denom->magic, numer);
     uint32_t t = ((numer - q) >> 1) + q;
+    // Note that this mask is typically free. Only the low bits are meaningful to a shift, so
+    // compilers can optimize out this AND.
     return t >> (denom->more & LIBDIVIDE_32_SHIFT_MASK);
 }
 
-
+uint32_t libdivide_u32_branchfree_do(uint32_t numer, const struct libdivide_u32_t *denom) {
+    return libdivide_u32_do_alg2(numer, denom);
+}
 
     
 #if LIBDIVIDE_USE_SSE2    
@@ -858,34 +853,42 @@ __m128i libdivide_u32_do_vector_alg2(__m128i numers, const struct libdivide_u32_
  
 /////////// UINT64
 
-struct libdivide_u64_t libdivide_internal_u64_gen(uint64_t d, int branchfree) {
+inline struct libdivide_u64_t libdivide_internal_u64_gen(uint64_t d, int branchfree) {
+    /* 1 is not supported with branchfree algorithm */
+    LIBDIVIDE_ASSERT(!branchfree || d != 1);
+    
     struct libdivide_u64_t result;
+    const uint32_t floor_log_2_d = 63 - libdivide__count_leading_zeros64(d);
     if ((d & (d - 1)) == 0) {
-        result.more = libdivide__count_trailing_zeros64(d) | LIBDIVIDE_U64_SHIFT_PATH;
-        result.magic = 0;
-    }
-    else {
-        const uint32_t floor_log_2_d = 63 - libdivide__count_leading_zeros64(d);
-        
+        // Power of 2
+        if (! branchfree) {
+            result.magic = 0;
+            result.more = floor_log_2_d | LIBDIVIDE_U64_SHIFT_PATH;
+        } else {
+            // We want a magic number of 2**64 and a shift of floor_log_2_d
+            // but one of the shifts is taken up by LIBDIVIDE_ADD_MARKER, so we subtract 1 from the shift
+            result.magic = 0;
+            result.more = (floor_log_2_d-1) | LIBDIVIDE_ADD_MARKER;
+        }
+    } else {
         uint64_t proposed_m, rem;
         uint8_t more;
         proposed_m = libdivide_128_div_64_to_64(1ULL << floor_log_2_d, 0, d, &rem); //== (1 << (64 + floor_log_2_d)) / d
-
+        
         LIBDIVIDE_ASSERT(rem > 0 && rem < d);
         const uint64_t e = d - rem;
-	
-	/* This power works if e < 2**floor_log_2_d. */
-	if (e < (1ULL << floor_log_2_d)) {
+        
+        /* This power works if e < 2**floor_log_2_d. */
+        if (!branchfree && e < (1ULL << floor_log_2_d)) {
             /* This power works */
             more = floor_log_2_d;
-        }
-        else {
+        } else {
             /* We have to use the general 65-bit algorithm.  We need to compute (2**power) / d. However, we already have (2**(power-1))/d and its remainder.  By doubling both, and then correcting the remainder, we can compute the larger division. */
             proposed_m += proposed_m; //don't care about overflow here - in fact, we expect it
             const uint64_t twice_rem = rem + rem;
             if (twice_rem >= d || twice_rem < rem) proposed_m += 1;
-            more = floor_log_2_d | LIBDIVIDE_ADD_MARKER;
-        }
+                more = floor_log_2_d | LIBDIVIDE_ADD_MARKER;
+                }
         result.magic = 1 + proposed_m;
         result.more = more;
         //result.more's shift should in general be ceil_log_2_d.  But if we used the smaller power, we subtract one from the shift because we're using the smaller power. If we're using the larger power, we subtract one from the shift because it's taken care of by the add indicator.  So floor_log_2_d happens to be correct in both cases, which is why we do it outside of the if statement.
@@ -940,6 +943,14 @@ uint64_t libdivide_u64_recover(const struct libdivide_u64_t *denom) {
         // This gets hairy. See libdivide_u32_recover for more on what we do here
         // TODO: do something better than 128 bit math
         
+        // Hack: if d is not a power of 2, this is a 128/128->64 divide
+        // If d is a power of 2, this may be a bigger divide
+        // However we can optimize that easily
+        if (denom->magic == 0) {
+            // 2^(64 + shift + 1) / (2^64) == 2^(shift + 1)
+            return 1LLU << (shift + 1);
+        }
+        
         // Full n is a (potentially) 129 bit value
         // half_n is a 128 bit value
         // Compute the hi half of half_n. Low half is 0.
@@ -982,7 +993,12 @@ uint64_t libdivide_u64_do_alg2(uint64_t numer, const struct libdivide_u64_t *den
     uint64_t t = ((numer - q) >> 1) + q;
     return t >> (denom->more & LIBDIVIDE_64_SHIFT_MASK);
 }
- 
+
+uint64_t libdivide_u64_branchfree_do(uint64_t numer, const struct libdivide_u64_t *denom) {
+    return libdivide_u64_do_alg2(numer, denom);
+}
+
+
 #if LIBDIVIDE_USE_SSE2    
 __m128i libdivide_u64_do_vector(__m128i numers, const struct libdivide_u64_t * denom) {
     uint8_t more = denom->more;
@@ -1539,7 +1555,7 @@ namespace libdivide_internal {
     };
     template<int ALGO> struct algo_u64 { };
     template<> struct algo_u64<BRANCHFULL> { typedef denom_u64<libdivide_u64_do, MAYBE_VECTOR(libdivide_u64_do_vector)>::divider divider; };
-    template<> struct algo_u64<BRANCHFREE> { typedef denom_u64<libdivide_u64_do, MAYBE_VECTOR(libdivide_u64_do_vector), libdivide_u64_branchfree_gen>::divider divider; };
+    template<> struct algo_u64<BRANCHFREE> { typedef denom_u64<libdivide_u64_branchfree_do, MAYBE_VECTOR(libdivide_u64_do_vector), libdivide_u64_branchfree_gen>::divider divider; };
     template<> struct algo_u64<ALGORITHM0>  { typedef denom_u64<libdivide_u64_do_alg0, MAYBE_VECTOR(libdivide_u64_do_vector_alg0)>::divider divider; };
     template<> struct algo_u64<ALGORITHM1>  { typedef denom_u64<libdivide_u64_do_alg1, MAYBE_VECTOR(libdivide_u64_do_vector_alg1)>::divider divider; };
     template<> struct algo_u64<ALGORITHM2>  { typedef denom_u64<libdivide_u64_do_alg2, MAYBE_VECTOR(libdivide_u64_do_vector_alg2)>::divider divider; };
