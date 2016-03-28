@@ -96,7 +96,8 @@ private:
         }
         
         if (actual1 != expect) {
-            cout << "Failure for " << (typeid(T).name()) << ": " <<  numer << " / " << denom << " expected " << expect << " actual " << actual1 << endl;
+            const char *maybe_branchfree = (ALGO == BRANCHFREE) ? " (branchfree)" : "";
+            cout << "Failure for " << (typeid(T).name()) << maybe_branchfree << ": " <<  numer << " / " << denom << " expected " << expect << " actual " << actual1 << endl;
 			while (1) ;
 		}
         else {
