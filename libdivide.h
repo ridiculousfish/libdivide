@@ -1076,7 +1076,10 @@ static struct libdivide_s32_t libdivide_internal_s32_gen(int32_t d, int branchfr
             proposed_m += proposed_m;
             const uint32_t twice_rem = rem + rem;
             if (twice_rem >= absD || twice_rem < rem) proposed_m += 1;
-            more = floor_log_2_d | LIBDIVIDE_ADD_MARKER; //use the general algorithm
+            // note that we only set the LIBDIVIDE_NEGATIVE_DIVISOR bit if we also set ADD_MARKER
+            // this is an annoying optimization that enables algorithm #4 to avoid the mask.
+            // however we always set it in the branchfree case
+            more = floor_log_2_d | LIBDIVIDE_ADD_MARKER | (d < 0 ? LIBDIVIDE_NEGATIVE_DIVISOR : 0); //use the general algorithm
         }
         
         proposed_m += 1;
@@ -1085,11 +1088,10 @@ static struct libdivide_s32_t libdivide_internal_s32_gen(int32_t d, int branchfr
         /* Mark if we are negative */
         if (d < 0) {
             magic = -magic;
-            more |= LIBDIVIDE_NEGATIVE_DIVISOR;
         }
         
-        result.magic = magic;
         result.more = more;
+        result.magic = magic;
         
     }
     return result;
