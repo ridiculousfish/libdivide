@@ -201,8 +201,20 @@ private:
     
 public:
     void run(void) {
-        unsigned i;
-        for (i=0; i < 10000; i++) {
+        // Test small values
+        for (T denom = 1; denom < 257; denom++) {
+            // powers of 2 get tested later
+            if (denom & (denom - 1) == 0) continue;
+            test_many<BRANCHFULL>(denom);
+            test_many<BRANCHFREE>(denom);
+            if (limits::is_signed) {
+                test_many<BRANCHFULL>(-denom);
+                test_many<BRANCHFREE>(-denom);
+            }
+        }
+        
+        // Test randomish values
+        for (unsigned i=0; i < 10000; i++) {
             T denom = random_denominator();
             test_many<BRANCHFULL>(denom);
             test_many<BRANCHFREE>(denom);
