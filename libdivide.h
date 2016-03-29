@@ -575,7 +575,7 @@ static inline void libdivide_u128_shift(uint64_t *u1, uint64_t *u0, int32_t sign
     
 /* Computes a 128 / 128 -> 64 bit division, with a 128 bit remainder. */
 static uint64_t libdivide_128_div_128_to_64(uint64_t u_hi, uint64_t u_lo, uint64_t v_hi, uint64_t v_lo, uint64_t *r_hi, uint64_t *r_lo) {
-#if 0 && HAS_INT128_T
+#if HAS_INT128_T
     __uint128_t ufull = u_hi;
     ufull = (ufull << 64) | u_lo;
     __uint128_t vfull = v_hi;
