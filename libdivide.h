@@ -1055,13 +1055,9 @@ static struct libdivide_s32_t libdivide_internal_s32_gen(int32_t d, int branchfr
     uint32_t absD = (uint32_t)(d < 0 ? -d : d); //gcc optimizes this to the fast abs trick
     const uint32_t floor_log_2_d = 31 - libdivide__count_leading_zeros32(absD);
     if ((absD & (absD - 1)) == 0) { //check if exactly one bit is set, don't care if absD is 0 since that's divide by zero
-        if (! branchfree) {
-            result.magic = 0;
-            result.more = floor_log_2_d | (d < 0 ? LIBDIVIDE_NEGATIVE_DIVISOR : 0) | LIBDIVIDE_S32_SHIFT_PATH;
-        } else {
-            result.magic = 0;
-            result.more = floor_log_2_d | (d < 0 ? LIBDIVIDE_NEGATIVE_DIVISOR : 0) | LIBDIVIDE_S32_SHIFT_PATH;
-        }
+        // Branchfree and normal paths are exactly the same
+        result.magic = 0;
+        result.more = floor_log_2_d | (d < 0 ? LIBDIVIDE_NEGATIVE_DIVISOR : 0) | LIBDIVIDE_S32_SHIFT_PATH;
     } else {
         LIBDIVIDE_ASSERT(floor_log_2_d >= 1);    
         
@@ -1086,13 +1082,9 @@ static struct libdivide_s32_t libdivide_internal_s32_gen(int32_t d, int branchfr
         proposed_m += 1;
         int32_t magic = (int32_t)proposed_m;
         
-        /* In the normal case, we negate the magic number, but in the branchfree case, we maybe negate after the division. This helps us handle power of 2s. */
+        /* Mark if we are negative */
         if (d < 0) {
             magic = -magic;
-        }
-        
-        /* mark if the divisor is negative */
-        if (d < 0) {
             more |= LIBDIVIDE_NEGATIVE_DIVISOR;
         }
         
@@ -1145,12 +1137,11 @@ int32_t libdivide_s32_branchfree_do(int32_t numer, const struct libdivide_s32_t 
     int32_t q = libdivide__mullhi_s32(magic, numer);
     q += numer;
     
-    // Add (2**shift)-1 if q is negative
-    // If q is non-negative, then q_sign is 0, and we change nothing
-    // If q is negative, then q_sign is all bits 1. q_sign << shift is a value like -8
-    // So (q_sign<<shift) - q_sign is a value like -7
+    // If q is non-negative, we have nothing to do
+    // If q is negative, we want to add either (2**shift)-1 if d is a power of 2, or (2**shift) if it is not a power of 2
+    uint32_t is_power_of_2 = (magic == 0);
     uint32_t q_sign = (uint32_t)(q >> 31);
-    q -= (q_sign << shift) - q_sign;
+    q += q_sign & ((1 << shift) - is_power_of_2);
     
     // Now logical right shift
     q >>= shift;
@@ -1316,13 +1307,9 @@ static inline struct libdivide_s64_t libdivide_internal_s64_gen(int64_t d, int b
     const uint64_t absD = (uint64_t)(d < 0 ? -d : d); //gcc optimizes this to the fast abs trick
     const uint32_t floor_log_2_d = 63 - libdivide__count_leading_zeros64(absD);
     if ((absD & (absD - 1)) == 0) { //check if exactly one bit is set, don't care if absD is 0 since that's divide by zero
-        if (! branchfree) {
-            result.magic = 0;
-            result.more = floor_log_2_d | (d < 0 ? LIBDIVIDE_NEGATIVE_DIVISOR : 0);
-        } else {
-            result.magic = 0;
-            result.more = floor_log_2_d | (d < 0 ? LIBDIVIDE_NEGATIVE_DIVISOR : 0);
-        }
+        // Branchfree and non-branchfree cases are the same
+        result.magic = 0;
+        result.more = floor_log_2_d | (d < 0 ? LIBDIVIDE_NEGATIVE_DIVISOR : 0);
     } else {
         //the dividend here is 2**(floor_log_2_d + 63), so the low 64 bit word is 0 and the high word is floor_log_2_d - 1
         uint8_t more;
@@ -1344,15 +1331,11 @@ static inline struct libdivide_s64_t libdivide_internal_s64_gen(int64_t d, int b
         proposed_m += 1;
         int64_t magic = (int64_t)proposed_m;
         
+        // Mark if we are negative
         if (d < 0) {
             magic = -magic;
-        }
-        
-        /* mark if the divisor is negative */
-        if (d < 0) {
             more |= LIBDIVIDE_NEGATIVE_DIVISOR;
         }
-        
         
         result.more = more;
         result.magic = magic;
@@ -1403,10 +1386,13 @@ int64_t libdivide_s64_branchfree_do(int64_t numer, const struct libdivide_s64_t 
     int64_t q = libdivide__mullhi_s64(magic, numer);
     q += numer;
     
-    // Add (2**shift)-1 if q is negative
+    // If q is non-negative, we have nothing to do
+    // If q is negative, we want to add either (2**shift)-1 if d is a power of 2, or (2**shift) if it is not a power of 2
+    uint32_t is_power_of_2 = (magic == 0);
     uint64_t q_sign = (uint64_t)(q >> 63);
-    q -= (q_sign << shift) - q_sign;
+    q += q_sign & ((1LLU << shift) - is_power_of_2);
     
+    // Logical right shift
     q >>= shift;
     
     // Negate if needed
