@@ -148,7 +148,7 @@ struct libdivide_s64_t {
         /* In C++, we don't want our public functions to be static, because they are arguments to templates and static functions can't do that.  They get internal linkage through virtue of the anonymous namespace.  In C, they should be static. */
         #define LIBDIVIDE_API
     #else
-        #define LIBDIVIDE_API static
+        #define LIBDIVIDE_API static inline
     #endif
 #endif
 
