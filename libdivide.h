@@ -1326,7 +1326,10 @@ static inline struct libdivide_s64_t libdivide_internal_s64_gen(int64_t d, int b
             proposed_m += proposed_m;
             const uint64_t twice_rem = rem + rem;
             if (twice_rem >= absD || twice_rem < rem) proposed_m += 1;
-            more = floor_log_2_d | LIBDIVIDE_ADD_MARKER;
+            // note that we only set the LIBDIVIDE_NEGATIVE_DIVISOR bit if we also set ADD_MARKER
+            // this is an annoying optimization that enables algorithm #4 to avoid the mask.
+            // however we always set it in the branchfree case
+            more = floor_log_2_d | LIBDIVIDE_ADD_MARKER | (d < 0 ? LIBDIVIDE_NEGATIVE_DIVISOR : 0);
         }
         proposed_m += 1;
         int64_t magic = (int64_t)proposed_m;
@@ -1334,7 +1337,6 @@ static inline struct libdivide_s64_t libdivide_internal_s64_gen(int64_t d, int b
         // Mark if we are negative
         if (d < 0) {
             magic = -magic;
-            more |= LIBDIVIDE_NEGATIVE_DIVISOR;
         }
         
         result.more = more;
