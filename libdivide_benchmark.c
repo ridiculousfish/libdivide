@@ -796,11 +796,11 @@ struct TestResult test_one_s64(int64_t d, const int64_t *data) {
  
  
 static void report_header(void) {
-    printf("%6s%8s%8s%8s%8s%8s%8s%6s\n", "#", "system", "scalar", "scl_us", "vector", "vec_us", "gener", "algo");
+    printf("%6s%8s%8s%8s%8s%8s%8s%8s%6s\n", "#", "system", "scalar", "scl_bf", "scl_us", "vector", "vec_us", "gener", "algo");
 }
  
 static void report_result(const char *input, struct TestResult result) {
-    printf("%6s%8.3f%8.3f%8.3f%8.3f%8.3f%8.3f%6d\n", input, result.his_time, result.my_base_time, result.my_unswitched_time, result.my_vector_time, result.my_vector_unswitched_time, result.gen_time, result.algo);
+    printf("%6s%8.3f%8.3f%8.3f%8.3f%8.3f%8.3f%8.3f%6d\n", input, result.his_time, result.my_base_time, result.my_branchfree_time, result.my_unswitched_time, result.my_vector_time, result.my_vector_unswitched_time, result.gen_time, result.algo);
 }
  
 static void test_many_u32(const uint32_t *data) {
