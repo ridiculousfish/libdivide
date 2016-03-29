@@ -1146,8 +1146,11 @@ int32_t libdivide_s32_branchfree_do(int32_t numer, const struct libdivide_s32_t 
     q += numer;
     
     // Add (2**shift)-1 if q is negative
+    // If q is non-negative, then q_sign is 0, and we change nothing
+    // If q is negative, then q_sign is all bits 1. q_sign << shift is a value like -8
+    // So (q_sign<<shift) - q_sign is a value like -7
     uint32_t q_sign = (uint32_t)(q >> 31);
-    q += (int32_t)(q_sign >> (32 - shift));
+    q -= (q_sign << shift) - q_sign;
     
     // Now logical right shift
     q >>= shift;
@@ -1306,17 +1309,21 @@ __m128i libdivide_s32_do_vector_alg4(__m128i numers, const struct libdivide_s32_
  
 
 static inline struct libdivide_s64_t libdivide_internal_s64_gen(int64_t d, int branchfree) {
+    LIBDIVIDE_ASSERT(!branchfree || (d != 1 && d != -1));
     struct libdivide_s64_t result;
     
     /* If d is a power of 2, or negative a power of 2, we have to use a shift.  This is especially important because the magic algorithm fails for -1.  To check if d is a power of 2 or its inverse, it suffices to check whether its absolute value has exactly one bit set.  This works even for INT_MIN, because abs(INT_MIN) == INT_MIN, and INT_MIN has one bit set and is a power of 2.  */
     const uint64_t absD = (uint64_t)(d < 0 ? -d : d); //gcc optimizes this to the fast abs trick
+    const uint32_t floor_log_2_d = 63 - libdivide__count_leading_zeros64(absD);
     if ((absD & (absD - 1)) == 0) { //check if exactly one bit is set, don't care if absD is 0 since that's divide by zero
-        result.more = libdivide__count_trailing_zeros64(absD) | (d < 0 ? LIBDIVIDE_NEGATIVE_DIVISOR : 0);
-        result.magic = 0;
-    }
-    else {
-        const uint32_t floor_log_2_d = 63 - libdivide__count_leading_zeros64(absD);  
-        
+        if (! branchfree) {
+            result.magic = 0;
+            result.more = floor_log_2_d | (d < 0 ? LIBDIVIDE_NEGATIVE_DIVISOR : 0);
+        } else {
+            result.magic = 0;
+            result.more = floor_log_2_d | (d < 0 ? LIBDIVIDE_NEGATIVE_DIVISOR : 0);
+        }
+    } else {
         //the dividend here is 2**(floor_log_2_d + 63), so the low 64 bit word is 0 and the high word is floor_log_2_d - 1
         uint8_t more;
         uint64_t rem, proposed_m;
@@ -1324,20 +1331,31 @@ static inline struct libdivide_s64_t libdivide_internal_s64_gen(int64_t d, int b
         const uint64_t e = absD - rem;
         
         /* We are going to start with a power of floor_log_2_d - 1.  This works if works if e < 2**floor_log_2_d. */
-        if (e < (1ULL << floor_log_2_d)) {
+        if (!branchfree && e < (1ULL << floor_log_2_d)) {
             /* This power works */
             more = floor_log_2_d - 1;
-        }
-        else {
+        } else {
             /* We need to go one higher.  This should not make proposed_m overflow, but it will make it negative when interpreted as an int32_t. */
             proposed_m += proposed_m;
             const uint64_t twice_rem = rem + rem;
             if (twice_rem >= absD || twice_rem < rem) proposed_m += 1;
-            more = floor_log_2_d | LIBDIVIDE_ADD_MARKER | (d < 0 ? LIBDIVIDE_NEGATIVE_DIVISOR : 0);
+            more = floor_log_2_d | LIBDIVIDE_ADD_MARKER;
         }
         proposed_m += 1;
+        int64_t magic = (int64_t)proposed_m;
+        
+        if (d < 0) {
+            magic = -magic;
+        }
+        
+        /* mark if the divisor is negative */
+        if (d < 0) {
+            more |= LIBDIVIDE_NEGATIVE_DIVISOR;
+        }
+        
+        
         result.more = more;
-        result.magic = (d < 0 ? -(int64_t)proposed_m : (int64_t)proposed_m);
+        result.magic = magic;
     }
     return result;
 }
@@ -1371,7 +1389,30 @@ int64_t libdivide_s64_do(int64_t numer, const struct libdivide_s64_t *denom) {
         q += (q < 0);
         return q;
     }
-}    
+}
+
+int64_t libdivide_s64_branchfree_do(int64_t numer, const struct libdivide_s64_t *denom) {
+    uint8_t more = denom->more;
+    uint32_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
+    int64_t sign = (int8_t)more >> 7; //must be arithmetic shift and then sign extend
+    
+    /// Invert the sign of magic if we are negative
+    int64_t magic = denom->magic;
+    magic = ((magic ^ sign) - sign);
+    
+    int64_t q = libdivide__mullhi_s64(magic, numer);
+    q += numer;
+    
+    // Add (2**shift)-1 if q is negative
+    uint64_t q_sign = (uint64_t)(q >> 63);
+    q -= (q_sign << shift) - q_sign;
+    
+    q >>= shift;
+    
+    // Negate if needed
+    q = ((q ^ sign) - sign);
+    return q;
+}
 
 int64_t libdivide_s64_recover(const struct libdivide_s64_t *denom) {
     uint8_t more = denom->more;
@@ -1635,7 +1676,7 @@ namespace libdivide_internal {
     };
     template<int ALGO> struct algo_s64 { };
     template<> struct algo_s64<BRANCHFULL> { typedef denom_s64<libdivide_s64_do, MAYBE_VECTOR(libdivide_s64_do_vector)>::divider divider; };
-    template<> struct algo_s64<BRANCHFREE> { typedef denom_s64<libdivide_s64_do, MAYBE_VECTOR(libdivide_s64_do_vector), libdivide_s64_branchfree_gen>::divider divider; };
+    template<> struct algo_s64<BRANCHFREE> { typedef denom_s64<libdivide_s64_branchfree_do, MAYBE_VECTOR(libdivide_s64_do_vector), libdivide_s64_branchfree_gen>::divider divider; };
     template<> struct algo_s64<ALGORITHM0>  { typedef denom_s64<libdivide_s64_do_alg0, MAYBE_VECTOR(libdivide_s64_do_vector_alg0)>::divider divider; };
     template<> struct algo_s64<ALGORITHM1>  { typedef denom_s64<libdivide_s64_do_alg1, MAYBE_VECTOR(libdivide_s64_do_vector_alg1)>::divider divider; };
     template<> struct algo_s64<ALGORITHM2>  { typedef denom_s64<libdivide_s64_do_alg2, MAYBE_VECTOR(libdivide_s64_do_vector_alg2)>::divider divider; };
