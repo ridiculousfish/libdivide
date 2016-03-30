@@ -213,6 +213,19 @@ public:
             }
         }
         
+        
+        /* Test key values */
+        const T keyValues[] = {(1<<15)+1, (1<<31)+1, (1<<63)+1};
+        for (size_t i=0; i < sizeof keyValues / sizeof *keyValues; i++) {
+            T denom = keyValues[i];
+            test_many<BRANCHFULL>(denom);
+            test_many<BRANCHFREE>(denom);
+            if (limits::is_signed) {
+                test_many<BRANCHFULL>(-denom);
+                test_many<BRANCHFREE>(-denom);
+            }
+        }
+        
         // Test randomish values
         for (unsigned i=0; i < 10000; i++) {
             T denom = random_denominator();
