@@ -39,8 +39,11 @@ release: libdivide_test.cpp libdivide.h
 benchmark: libdivide_benchmark.c libdivide.h
 	$(CC) $(RELEASE_FLAGS) $(ARCH_x64) $(ARCH_386) -o benchmark libdivide_benchmark.c $(LINKFLAGS)
 
+primes: primes_benchmark.cpp libdivide.h
+	$(CPP) -O3 -std=c++14 primes_benchmark.cpp -o $@
+
 clean:
-	rm -Rf tester tester.dSYM benchmark benchmark.dSYM
+	rm -Rf primes tester tester.dSYM benchmark benchmark.dSYM
 
 install:
 	@echo "libdivide does not install! Just copy the header libdivide.h into your projects."
