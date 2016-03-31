@@ -106,7 +106,7 @@ private:
         
         
         if (actual2 != expect) {
-            cout << "Unswitched failure for " << (typeid(T).name()) << ": " <<  numer << " / " << denom << " expected " << expect << " actual " << actual1 << endl;
+            cout << "Unswitched failure for " << (typeid(T).name()) << ": " <<  numer << " / " << denom << " expected " << expect << " actual " << actual2 <<  " algo " << the_divider.get_algorithm() << endl;
             while (1) ;
         }
         else {

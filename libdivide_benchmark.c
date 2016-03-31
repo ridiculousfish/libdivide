@@ -694,7 +694,7 @@ typedef uint64_t (*TestFunc_t)(struct FunctionParams_t *params);
  
 NOINLINE
 struct TestResult test_one(TestFunc_t mine, TestFunc_t mine_branchfree, TestFunc_t mine_vector, TestFunc_t mine_unswitched, TestFunc_t mine_vector_unswitched, TestFunc_t his, TestFunc_t generate, struct FunctionParams_t *params) {
-#define TEST_COUNT 3
+#define TEST_COUNT 30
     struct TestResult result;
     memset(&result, 0, sizeof result);
     

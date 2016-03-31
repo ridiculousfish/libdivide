@@ -1087,7 +1087,8 @@ static struct libdivide_s32_t libdivide_internal_s32_gen(int32_t d, int branchfr
         
         /* Mark if we are negative */
         if (d < 0) {
-            magic = -magic;
+            //magic = -magic;
+            more |= LIBDIVIDE_NEGATIVE_DIVISOR;
         }
         
         result.more = more;
@@ -1108,22 +1109,21 @@ LIBDIVIDE_API struct libdivide_s32_t libdivide_s32_branchfree_gen(int32_t d) {
 
 int32_t libdivide_s32_do(int32_t numer, const struct libdivide_s32_t *denom) {
     uint8_t more = denom->more;
+    uint32_t sign = (int8_t)more >> 7;
     if (more & LIBDIVIDE_S32_SHIFT_PATH) {
         uint8_t shifter = more & LIBDIVIDE_32_SHIFT_MASK;
         int32_t q = numer + ((numer >> 31) & ((1 << shifter) - 1));
         q = q >> shifter;
-        int32_t signMask = (int8_t)more >> 7; //must be arithmetic shift and then sign-extend
-        q = (q ^ signMask) - signMask;
+        q = (q ^ sign) - sign;
         return q;
     } else {
         int32_t q = libdivide__mullhi_s32(denom->magic, numer);
         if (more & LIBDIVIDE_ADD_MARKER) {
-            int32_t sign = (int8_t)more >> 7; //must be arithmetic shift and then sign extend
-            q += ((numer ^ sign) - sign); // q += (more < 0 ? -numer : numer)
+            q += numer; // q += (more < 0 ? -numer : numer)
         }
         q >>= more & LIBDIVIDE_32_SHIFT_MASK;
         q += (q < 0);
-        return q;
+        return (q ^ sign) - sign;
     }
 }
 
@@ -1134,8 +1134,6 @@ int32_t libdivide_s32_branchfree_do(int32_t numer, const struct libdivide_s32_t 
     
     /* Invert the sign of magic if we are negative */
     int32_t magic = denom->magic;
-    magic = ((magic ^ sign) - sign);
-
     int32_t q = libdivide__mullhi_s32(magic, numer);
     q += numer;
     
@@ -1166,27 +1164,20 @@ int32_t libdivide_s32_recover(const struct libdivide_s32_t *denom) {
         return (int32_t)absD;
     } else {
         // Unsigned math is much easier
-        int is_negative;
-        if (more & LIBDIVIDE_ADD_MARKER) {
-            // In this case, the sign will be given by the presence of LIBDIVIDE_NEGATIVE_DIVISOR
-            is_negative = !! (more & LIBDIVIDE_NEGATIVE_DIVISOR);
-        } else {
-            // In this case, the sign is given by the magic number itself
-            is_negative = (denom->magic < 0);
-        }
-        
+        int negate = !!(more & LIBDIVIDE_NEGATIVE_DIVISOR);
+
         // Handle the branchfree power of 2 case
         if ((more & LIBDIVIDE_ADD_MARKER) && denom->magic == 0) {
             int32_t result = 1 << shift;
-            return is_negative ? -result : result;
+            return negate ? -result : result;
         }
         
-        uint32_t d = (uint32_t)(is_negative ? -denom->magic : denom->magic);
+        uint32_t d = (uint32_t)denom->magic;
         uint64_t n = 1LLU << (32 + shift); // Note that the shift cannot exceed 30
         uint32_t q = n / d;
         int32_t result = (int32_t)q;
         result += 1;
-        if (is_negative) {
+        if (negate) {
             result = -result;
         }
         return result;
@@ -1222,7 +1213,7 @@ int32_t libdivide_s32_do_alg2(int32_t numer, const struct libdivide_s32_t *denom
 }
  
 int32_t libdivide_s32_do_alg3(int32_t numer, const struct libdivide_s32_t *denom) {
-    int32_t q = libdivide__mullhi_s32(denom->magic, numer);
+    int32_t q = libdivide__mullhi_s32(-denom->magic, numer);
     q -= numer;
     q >>= denom->more & LIBDIVIDE_32_SHIFT_MASK;
     q += (q < 0);    
@@ -1230,10 +1221,11 @@ int32_t libdivide_s32_do_alg3(int32_t numer, const struct libdivide_s32_t *denom
 }
  
 int32_t libdivide_s32_do_alg4(int32_t numer, const struct libdivide_s32_t *denom) {
+    int32_t sign = ((int8_t)denom->more >> 7);
     int32_t q = libdivide__mullhi_s32(denom->magic, numer);
     q >>= denom->more & LIBDIVIDE_32_SHIFT_MASK;
-    q += (q < 0);    
-    return q;
+    q += (q < 0);
+    return (q ^ sign) - sign;
 }
 
 #if LIBDIVIDE_USE_SSE2    
@@ -1250,12 +1242,13 @@ __m128i libdivide_s32_do_vector(__m128i numers, const struct libdivide_s32_t * d
     }
     else {
         __m128i q = libdivide_mullhi_s32_flat_vector(numers, _mm_set1_epi32(denom->magic));
+        __m128i sign = _mm_set1_epi32((int32_t)(int8_t)more >> 7); //must be arithmetic shift
         if (more & LIBDIVIDE_ADD_MARKER) {
-            __m128i sign = _mm_set1_epi32((int32_t)(int8_t)more >> 7); //must be arithmetic shift
-            q = _mm_add_epi32(q, _mm_sub_epi32(_mm_xor_si128(numers, sign), sign)); // q += ((numer ^ sign) - sign);        
+            q = _mm_add_epi32(q, numers); // q += numers
         }
         q = _mm_sra_epi32(q, libdivide_u32_to_m128i(more & LIBDIVIDE_32_SHIFT_MASK)); //q >>= shift
         q = _mm_add_epi32(q, _mm_srli_epi32(q, 31)); // q += (q < 0)
+        q = _mm_sub_epi32(_mm_xor_si128(q, sign), sign);  // q += ((q ^ sign) - sign);
         return q;
     }
 }
@@ -1283,7 +1276,7 @@ __m128i libdivide_s32_do_vector_alg2(__m128i numers, const struct libdivide_s32_
 }
 
 __m128i libdivide_s32_do_vector_alg3(__m128i numers, const struct libdivide_s32_t *denom) {
-    __m128i q = libdivide_mullhi_s32_flat_vector(numers, _mm_set1_epi32(denom->magic));
+    __m128i q = libdivide_mullhi_s32_flat_vector(numers, _mm_set1_epi32(-denom->magic));
     q = _mm_sub_epi32(q, numers);
     q = _mm_sra_epi32(q, libdivide_u32_to_m128i(denom->more & LIBDIVIDE_32_SHIFT_MASK));
     q = _mm_add_epi32(q, _mm_srli_epi32(q, 31));    
@@ -1291,10 +1284,13 @@ __m128i libdivide_s32_do_vector_alg3(__m128i numers, const struct libdivide_s32_
 }
 
 __m128i libdivide_s32_do_vector_alg4(__m128i numers, const struct libdivide_s32_t *denom) {
+    uint8_t more = denom->more;
+    __m128i sign = _mm_set1_epi32((int32_t)(int8_t)more >> 7); //must be arithmetic shift
     __m128i q = libdivide_mullhi_s32_flat_vector(numers, _mm_set1_epi32(denom->magic));
-    q = _mm_sra_epi32(q, libdivide_u32_to_m128i(denom->more)); //q >>= shift
+    q = _mm_sra_epi32(q, libdivide_u32_to_m128i(more & LIBDIVIDE_32_SHIFT_MASK)); //q >>= shift
     q = _mm_add_epi32(q, _mm_srli_epi32(q, 31)); // q += (q < 0)
-    return q;    
+    q = _mm_sub_epi32(_mm_xor_si128(q, sign), sign);
+    return q;
 }
 #endif
     
