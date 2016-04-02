@@ -1570,7 +1570,7 @@ int64_t libdivide_s64_do_alg3(int64_t numer, const struct libdivide_s64_t *denom
     
 int64_t libdivide_s64_do_alg4(int64_t numer, const struct libdivide_s64_t *denom) {
     int64_t q = libdivide__mullhi_s64(denom->magic, numer);
-    q >>= denom->more;
+    q >>= denom->more & LIBDIVIDE_64_SHIFT_MASK;
     q += (q < 0);
     return q;   
 }
@@ -1635,7 +1635,7 @@ __m128i libdivide_s64_do_vector_alg3(__m128i numers, const struct libdivide_s64_
 
 __m128i libdivide_s64_do_vector_alg4(__m128i numers, const struct libdivide_s64_t *denom) {
     __m128i q = libdivide_mullhi_s64_flat_vector(numers, libdivide__u64_to_m128(denom->magic));
-    q = libdivide_s64_shift_right_vector(q, denom->more);
+    q = libdivide_s64_shift_right_vector(q, denom->more & LIBDIVIDE_64_SHIFT_MASK);
     q = _mm_add_epi64(q, _mm_srli_epi64(q, 63));
     return q;   
 }
