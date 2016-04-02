@@ -209,7 +209,7 @@ public:
         // Test small values
         for (T denom = 1; denom < 257; denom++) {
             // powers of 2 get tested later
-            if (denom & (denom - 1) == 0) continue;
+            if ((denom & (denom - 1)) == 0) continue;
             test_many<BRANCHFULL>(denom);
             test_many<BRANCHFREE>(denom);
             if (limits::is_signed) {
@@ -220,7 +220,7 @@ public:
         
         
         /* Test key values */
-        const T keyValues[] = {(1<<15)+1, (1<<31)+1, (1<<63)+1};
+        const T keyValues[] = {T((1<<15)+1), T((1<<31)+1), T((1LL<<63)+1)};
         for (size_t i=0; i < sizeof keyValues / sizeof *keyValues; i++) {
             T denom = keyValues[i];
             test_many<BRANCHFULL>(denom);
