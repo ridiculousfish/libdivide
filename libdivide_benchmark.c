@@ -118,7 +118,7 @@ static uint64_t mine_u32(struct FunctionParams_t *params) {
 NOINLINE
 static uint64_t mine_u32_branchfree(struct FunctionParams_t *params) {
     unsigned iter;
-    const struct libdivide_u32_t denom = *(struct libdivide_u32_t *)params->denomBranchfreePtr;
+    const struct libdivide_u32_branchfree_t denom = *(struct libdivide_u32_branchfree_t *)params->denomBranchfreePtr;
     const uint32_t *data = (const uint32_t *)params->data;
     uint32_t sum = 0;
     for (iter = 0; iter < ITERATIONS; iter++) {
@@ -243,7 +243,7 @@ static uint64_t mine_s32(struct FunctionParams_t *params) {
 NOINLINE
 static uint64_t mine_s32_branchfree(struct FunctionParams_t *params) {
     unsigned iter;
-    const struct libdivide_s32_t denom = *(struct libdivide_s32_t *)params->denomBranchfreePtr;
+    const struct libdivide_s32_branchfree_t denom = *(struct libdivide_s32_branchfree_t *)params->denomBranchfreePtr;
     const int32_t *data = (const int32_t *)params->data;
     int32_t sum = 0;
     for (iter = 0; iter < ITERATIONS; iter++) {
@@ -397,7 +397,7 @@ static uint64_t mine_u64(struct FunctionParams_t *params) {
 NOINLINE
 static uint64_t mine_u64_branchfree(struct FunctionParams_t *params) {
     unsigned iter;
-    const struct libdivide_u64_t denom = *(struct libdivide_u64_t *)params->denomBranchfreePtr;
+    const struct libdivide_u64_branchfree_t denom = *(struct libdivide_u64_branchfree_t *)params->denomBranchfreePtr;
     const uint64_t *data = (const uint64_t *)params->data;
     uint64_t sum = 0;
     for (iter = 0; iter < ITERATIONS; iter++) {
@@ -519,7 +519,7 @@ static uint64_t mine_s64(struct FunctionParams_t *params) {
 NOINLINE
 static uint64_t mine_s64_branchfree(struct FunctionParams_t *params) {
     unsigned iter;
-    const struct libdivide_s64_t denom = *(struct libdivide_s64_t *)params->denomBranchfreePtr;
+    const struct libdivide_s64_branchfree_t denom = *(struct libdivide_s64_branchfree_t *)params->denomBranchfreePtr;
     const int64_t *data = (const int64_t *)params->data;
     int64_t sum = 0;
     for (iter = 0; iter < ITERATIONS; iter++) {
@@ -734,7 +734,7 @@ NOINLINE
 struct TestResult test_one_u32(uint32_t d, const uint32_t *data) {
     int no_branchfree = (d == 1);
     struct libdivide_u32_t div_struct = libdivide_u32_gen(d);
-    struct libdivide_u32_t div_struct_bf = no_branchfree ? div_struct : libdivide_u32_branchfree_gen(d);
+    struct libdivide_u32_branchfree_t div_struct_bf = libdivide_u32_branchfree_gen(no_branchfree ? 2 : d);
     struct FunctionParams_t params;
     params.d = &d;
     params.denomPtr = &div_struct;
@@ -750,7 +750,7 @@ NOINLINE
 struct TestResult test_one_s32(int32_t d, const int32_t *data) {
     int no_branchfree = (d == 1 || d == -1);
     struct libdivide_s32_t div_struct = libdivide_s32_gen(d);
-    struct libdivide_s32_t div_struct_bf = no_branchfree ? div_struct : libdivide_s32_branchfree_gen(d);
+    struct libdivide_s32_branchfree_t div_struct_bf = libdivide_s32_branchfree_gen(no_branchfree ? 2 : d);
     struct FunctionParams_t params;
     params.d = &d;
     params.denomPtr = &div_struct;
@@ -766,7 +766,7 @@ NOINLINE
 struct TestResult test_one_u64(uint64_t d, const uint64_t *data) {
     int no_branchfree = (d == 1);
     struct libdivide_u64_t div_struct = libdivide_u64_gen(d);
-    struct libdivide_u64_t div_struct_bf = no_branchfree ? div_struct : libdivide_u64_branchfree_gen(d);
+    struct libdivide_u64_branchfree_t div_struct_bf = libdivide_u64_branchfree_gen(no_branchfree ? 2 : d);
     struct FunctionParams_t params;
     params.d = &d;
     params.denomPtr = &div_struct;
@@ -782,11 +782,11 @@ NOINLINE
 struct TestResult test_one_s64(int64_t d, const int64_t *data) {
     int no_branchfree = (d == 1 || d == -1);
     struct libdivide_s64_t div_struct = libdivide_s64_gen(d);
-    struct libdivide_s64_t div_struct_bf = no_branchfree ? div_struct : libdivide_s64_branchfree_gen(d);
+    struct libdivide_s64_branchfree_t div_struct_bf = libdivide_s64_branchfree_gen(no_branchfree ? 2 : d);
     struct FunctionParams_t params;
     params.d = &d;
     params.denomPtr = &div_struct;
-    params.denomBranchfreePtr = &div_struct_bf;
+    params.denomBranchfreePtr = no_branchfree ? (void *)&div_struct : (void *)&div_struct_bf;
     params.data = data;
     
     struct TestResult result = test_one(mine_s64, no_branchfree ? mine_s64 : mine_s64_branchfree, mine_s64_vector, mine_s64_unswitched, mine_s64_vector_unswitched, his_s64, mine_s64_generate, &params);

@@ -182,9 +182,9 @@ LIBDIVIDE_API struct libdivide_s64_t libdivide_s64_gen(int64_t y);
 LIBDIVIDE_API struct libdivide_u64_t libdivide_u64_gen(uint64_t y);
 
 LIBDIVIDE_API struct libdivide_s32_branchfree_t libdivide_s32_branchfree_gen(int32_t y);
-LIBDIVIDE_API struct libdivide_u32_t libdivide_u32_branchfree_gen(uint32_t y);
+LIBDIVIDE_API struct libdivide_u32_branchfree_t libdivide_u32_branchfree_gen(uint32_t y);
 LIBDIVIDE_API struct libdivide_s64_branchfree_t libdivide_s64_branchfree_gen(int64_t y);
-LIBDIVIDE_API struct libdivide_u64_t libdivide_u64_branchfree_gen(uint64_t y);
+LIBDIVIDE_API struct libdivide_u64_branchfree_t libdivide_u64_branchfree_gen(uint64_t y);
     
 LIBDIVIDE_API int32_t  libdivide_s32_do(int32_t numer, const struct libdivide_s32_t *denom);
 LIBDIVIDE_API uint32_t libdivide_u32_do(uint32_t numer, const struct libdivide_u32_t *denom);
@@ -192,9 +192,9 @@ LIBDIVIDE_API int64_t  libdivide_s64_do(int64_t numer, const struct libdivide_s6
 LIBDIVIDE_API uint64_t libdivide_u64_do(uint64_t y, const struct libdivide_u64_t *denom);
 
 LIBDIVIDE_API int32_t  libdivide_s32_branchfree_do(int32_t numer, const struct libdivide_s32_branchfree_t *denom);
-LIBDIVIDE_API uint32_t libdivide_u32_branchfree_do(uint32_t numer, const struct libdivide_u32_t *denom);
+LIBDIVIDE_API uint32_t libdivide_u32_branchfree_do(uint32_t numer, const struct libdivide_u32_branchfree_t *denom);
 LIBDIVIDE_API int64_t  libdivide_s64_branchfree_do(int64_t numer, const struct libdivide_s64_branchfree_t *denom);
-LIBDIVIDE_API uint64_t libdivide_u64_branchfree_do(uint64_t y, const struct libdivide_u64_t *denom);
+LIBDIVIDE_API uint64_t libdivide_u64_branchfree_do(uint64_t y, const struct libdivide_u64_branchfree_t *denom);
     
 LIBDIVIDE_API int32_t  libdivide_s32_recover(const struct libdivide_s32_t *denom);
 LIBDIVIDE_API uint32_t libdivide_u32_recover(const struct libdivide_u32_t *denom);
@@ -256,8 +256,11 @@ LIBDIVIDE_API __m128i libdivide_s64_do_vector_alg2(__m128i numers, const struct 
 LIBDIVIDE_API __m128i libdivide_s64_do_vector_alg3(__m128i numers, const struct libdivide_s64_t * denom);
 LIBDIVIDE_API __m128i libdivide_s64_do_vector_alg4(__m128i numers, const struct libdivide_s64_t * denom);
 
+LIBDIVIDE_API __m128i libdivide_u32_branchfree_do_vector(__m128i numers, const struct libdivide_u32_branchfree_t * denom);
 LIBDIVIDE_API __m128i libdivide_s32_branchfree_do_vector(__m128i numers, const struct libdivide_s32_branchfree_t * denom);
+LIBDIVIDE_API __m128i libdivide_u64_branchfree_do_vector(__m128i numers, const struct libdivide_u64_branchfree_t * denom);
 LIBDIVIDE_API __m128i libdivide_s64_branchfree_do_vector(__m128i numers, const struct libdivide_s64_branchfree_t * denom);
+
 #endif
  
  
@@ -768,8 +771,10 @@ struct libdivide_u32_t libdivide_u32_gen(uint32_t d) {
     return libdivide_internal_u32_gen(d, 0);
 }
     
-struct libdivide_u32_t libdivide_u32_branchfree_gen(uint32_t d) {
-    return libdivide_internal_u32_gen(d, 1);
+struct libdivide_u32_branchfree_t libdivide_u32_branchfree_gen(uint32_t d) {
+    struct libdivide_u32_t tmp = libdivide_internal_u32_gen(d, 1);
+    struct libdivide_u32_branchfree_t ret = {tmp.magic, tmp.more};
+    return ret;
 }
 
 
@@ -855,8 +860,11 @@ uint32_t libdivide_u32_do_alg2(uint32_t numer, const struct libdivide_u32_t *den
     return t >> (denom->more & LIBDIVIDE_32_SHIFT_MASK);
 }
 
-uint32_t libdivide_u32_branchfree_do(uint32_t numer, const struct libdivide_u32_t *denom) {
-    return libdivide_u32_do_alg2(numer, denom);
+uint32_t libdivide_u32_branchfree_do(uint32_t numer, const struct libdivide_u32_branchfree_t *denom) {
+    // same as alg 2
+    uint32_t q = libdivide__mullhi_u32(denom->magic, numer);
+    uint32_t t = ((numer - q) >> 1) + q;
+    return t >> (denom->more & LIBDIVIDE_32_SHIFT_MASK);
 }
 
     
@@ -892,6 +900,13 @@ __m128i libdivide_u32_do_vector_alg1(__m128i numers, const struct libdivide_u32_
 }
 
 __m128i libdivide_u32_do_vector_alg2(__m128i numers, const struct libdivide_u32_t *denom) {
+    __m128i q = libdivide__mullhi_u32_flat_vector(numers, _mm_set1_epi32(denom->magic));
+    __m128i t = _mm_add_epi32(_mm_srli_epi32(_mm_sub_epi32(numers, q), 1), q);
+    return _mm_srl_epi32(t, libdivide_u32_to_m128i(denom->more & LIBDIVIDE_32_SHIFT_MASK));
+}
+
+LIBDIVIDE_API __m128i libdivide_u32_branchfree_do_vector(__m128i numers, const struct libdivide_u32_branchfree_t * denom) {
+    // same as alg 2
     __m128i q = libdivide__mullhi_u32_flat_vector(numers, _mm_set1_epi32(denom->magic));
     __m128i t = _mm_add_epi32(_mm_srli_epi32(_mm_sub_epi32(numers, q), 1), q);
     return _mm_srl_epi32(t, libdivide_u32_to_m128i(denom->more & LIBDIVIDE_32_SHIFT_MASK));
@@ -949,9 +964,11 @@ struct libdivide_u64_t libdivide_u64_gen(uint64_t d)
     return libdivide_internal_u64_gen(d, 0);
 }
 
-struct libdivide_u64_t libdivide_u64_branchfree_gen(uint64_t d)
+struct libdivide_u64_branchfree_t libdivide_u64_branchfree_gen(uint64_t d)
 {
-    return libdivide_internal_u64_gen(d, 1);
+    struct libdivide_u64_t tmp = libdivide_internal_u64_gen(d, 1);
+    struct libdivide_u64_branchfree_t ret = {tmp.magic, tmp.more};
+    return ret;
 }
 
 uint64_t libdivide_u64_do(uint64_t numer, const struct libdivide_u64_t *denom) {
@@ -1045,10 +1062,12 @@ uint64_t libdivide_u64_do_alg2(uint64_t numer, const struct libdivide_u64_t *den
     return t >> (denom->more & LIBDIVIDE_64_SHIFT_MASK);
 }
 
-uint64_t libdivide_u64_branchfree_do(uint64_t numer, const struct libdivide_u64_t *denom) {
-    return libdivide_u64_do_alg2(numer, denom);
+uint64_t libdivide_u64_branchfree_do(uint64_t numer, const struct libdivide_u64_branchfree_t *denom) {
+    // same as alg 2
+    uint64_t q = libdivide__mullhi_u64(denom->magic, numer);
+    uint64_t t = ((numer - q) >> 1) + q;
+    return t >> (denom->more & LIBDIVIDE_64_SHIFT_MASK);
 }
-
 
 #if LIBDIVIDE_USE_SSE2    
 __m128i libdivide_u64_do_vector(__m128i numers, const struct libdivide_u64_t * denom) {
@@ -1086,6 +1105,11 @@ __m128i libdivide_u64_do_vector_alg2(__m128i numers, const struct libdivide_u64_
     return _mm_srl_epi64(t, libdivide_u32_to_m128i(denom->more & LIBDIVIDE_64_SHIFT_MASK));
 }
 
+__m128i libdivide_u64_branchfree_do_vector(__m128i numers, const struct libdivide_u64_branchfree_t * denom) {
+    __m128i q = libdivide_mullhi_u64_flat_vector(numers, libdivide__u64_to_m128(denom->magic));
+    __m128i t = _mm_add_epi64(_mm_srli_epi64(_mm_sub_epi64(numers, q), 1), q);
+    return _mm_srl_epi64(t, libdivide_u32_to_m128i(denom->more & LIBDIVIDE_64_SHIFT_MASK));
+}
     
 #endif
  
@@ -1714,10 +1738,10 @@ namespace libdivide_internal {
     };
     template<int ALGO> struct algo_u32 { };
     template<> struct algo_u32<BRANCHFULL> { typedef denom_u32<libdivide_u32_do, MAYBE_VECTOR(libdivide_u32_do_vector)>::divider divider; };
-    template<> struct algo_u32<BRANCHFREE> { typedef denom_u32<libdivide_u32_branchfree_do, MAYBE_VECTOR(libdivide_u32_do_vector), libdivide_u32_branchfree_gen>::divider divider; };
     template<> struct algo_u32<ALGORITHM0>  { typedef denom_u32<libdivide_u32_do_alg0, MAYBE_VECTOR(libdivide_u32_do_vector_alg0)>::divider divider; };
     template<> struct algo_u32<ALGORITHM1>  { typedef denom_u32<libdivide_u32_do_alg1, MAYBE_VECTOR(libdivide_u32_do_vector_alg1)>::divider divider; };
     template<> struct algo_u32<ALGORITHM2>  { typedef denom_u32<libdivide_u32_do_alg2, MAYBE_VECTOR(libdivide_u32_do_vector_alg2)>::divider divider; };
+    template<> struct algo_u32<BRANCHFREE> { typedef base<uint32_t, libdivide_u32_branchfree_t, libdivide_u32_branchfree_gen, libdivide_u32_branchfree_do, MAYBE_VECTOR(libdivide_u32_branchfree_do_vector)> divider;  };
     
     /* uint64 */
     template<uint64_t do_func(uint64_t, const libdivide_u64_t*),
@@ -1728,10 +1752,11 @@ namespace libdivide_internal {
     };
     template<int ALGO> struct algo_u64 { };
     template<> struct algo_u64<BRANCHFULL> { typedef denom_u64<libdivide_u64_do, MAYBE_VECTOR(libdivide_u64_do_vector)>::divider divider; };
-    template<> struct algo_u64<BRANCHFREE> { typedef denom_u64<libdivide_u64_branchfree_do, MAYBE_VECTOR(libdivide_u64_do_vector), libdivide_u64_branchfree_gen>::divider divider; };
     template<> struct algo_u64<ALGORITHM0>  { typedef denom_u64<libdivide_u64_do_alg0, MAYBE_VECTOR(libdivide_u64_do_vector_alg0)>::divider divider; };
     template<> struct algo_u64<ALGORITHM1>  { typedef denom_u64<libdivide_u64_do_alg1, MAYBE_VECTOR(libdivide_u64_do_vector_alg1)>::divider divider; };
     template<> struct algo_u64<ALGORITHM2>  { typedef denom_u64<libdivide_u64_do_alg2, MAYBE_VECTOR(libdivide_u64_do_vector_alg2)>::divider divider; };
+    template<> struct algo_u64<BRANCHFREE> { typedef base<uint64_t, libdivide_u64_branchfree_t, libdivide_u64_branchfree_gen, libdivide_u64_branchfree_do, MAYBE_VECTOR(libdivide_u64_branchfree_do_vector)> divider;  };
+    
 
     /* int32  */
     template<int32_t do_func(int32_t, const libdivide_s32_t*),
