@@ -1219,7 +1219,7 @@ int32_t libdivide_s32_branchfree_do(int32_t numer, const struct libdivide_s32_br
     uint32_t q_sign = (uint32_t)(q >> 31);
     q += q_sign & ((1 << shift) - is_power_of_2);
     
-    // Now logical right shift
+    // Now arithmetic right shift
     q >>= shift;
     
     // Negate if needed
@@ -1493,7 +1493,7 @@ int64_t libdivide_s64_branchfree_do(int64_t numer, const struct libdivide_s64_br
     uint64_t q_sign = (uint64_t)(q >> 63);
     q += q_sign & ((1LLU << shift) - is_power_of_2);
     
-    // Logical right shift
+    // Arithmetic right shift
     q >>= shift;
     
     // Negate if needed
