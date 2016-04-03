@@ -1215,7 +1215,7 @@ int32_t libdivide_s32_branchfree_do(int32_t numer, const struct libdivide_s32_br
     
     // If q is non-negative, we have nothing to do
     // If q is negative, we want to add either (2**shift)-1 if d is a power of 2, or (2**shift) if it is not a power of 2
-    uint32_t is_power_of_2 = (magic == 0);
+    uint32_t is_power_of_2 = !!(more & LIBDIVIDE_S32_SHIFT_PATH);
     uint32_t q_sign = (uint32_t)(q >> 31);
     q += q_sign & ((1 << shift) - is_power_of_2);
     
