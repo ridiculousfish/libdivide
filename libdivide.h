@@ -47,10 +47,8 @@ typedef unsigned __int8 uint8_t;
 #define __has_builtin(x) 0  // Compatibility with non-clang compilers.
 #endif
 
-#ifdef __ICC
-#define HAS_INT128_T 0
-#else
-#define HAS_INT128_T __LP64__
+#if defined(__SIZEOF_INT128__)
+#define HAS_INT128_T 1
 #endif
 
 #if defined(__x86_64__) || defined(_WIN64) || defined(_M_64)
