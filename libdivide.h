@@ -1049,9 +1049,9 @@ int32_t libdivide_s32_recover(const struct libdivide_s32_t *denom) {
         if (more & LIBDIVIDE_NEGATIVE_DIVISOR) {
 #if LIBDIVIDE_VC
 #pragma warning( suppress : 4146 )
-			absD = -absD;
+            absD = -absD;
 #else
-			absD = -absD;
+            absD = -absD;
 #endif      
         }
         return (int32_t)absD;
@@ -1253,7 +1253,7 @@ int64_t libdivide_s64_recover(const struct libdivide_s64_t *denom) {
         if (more & LIBDIVIDE_NEGATIVE_DIVISOR) {
 #if LIBDIVIDE_VC
 #pragma warning( suppress : 4146 )
-			absD = -absD;
+            absD = -absD;
 #else
             absD = -absD;
 #endif
