@@ -79,9 +79,6 @@ typedef unsigned __int8 uint8_t;
 #define LIBDIVIDE_OPEN_BRACKET {
 #define LIBDIVIDE_CLOSE_BRACKET }
 
-/* Silly defines to defeat VC++ warnings */
-
-
 #ifdef __cplusplus
 /* We place libdivide within the libdivide namespace, and that goes in an anonymous namespace so that the functions are only visible to files that #include this header and don't get external linkage.  At least that's the theory. */
 namespace LIBDIVIDE_OPEN_BRACKET
