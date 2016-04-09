@@ -124,7 +124,7 @@ private:
 #endif
 		__m128i resultVector = _mm_loadu_si128((const __m128i *)numers) / the_divider;
 		*(__m128i *)results = resultVector;
-		int i;
+		size_t i;
 		for (i = 0; i < count; i++) {
 			T numer = numers[i];
 			T actual = results[i];

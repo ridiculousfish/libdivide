@@ -1050,7 +1050,9 @@ int32_t libdivide_s32_recover(const struct libdivide_s32_t *denom) {
     if (more & LIBDIVIDE_S32_SHIFT_PATH) {
         uint32_t absD = 1U << shift;
         if (more & LIBDIVIDE_NEGATIVE_DIVISOR) {
+#if LIBDIVIDE_VC
 #pragma warning( suppress : 4146 )
+#endif
             absD = -absD;
         }
         return (int32_t)absD;
@@ -1250,7 +1252,9 @@ int64_t libdivide_s64_recover(const struct libdivide_s64_t *denom) {
     if (denom->magic == 0) { // shift path
         uint64_t absD = 1LLU << shift;
         if (more & LIBDIVIDE_NEGATIVE_DIVISOR) {
+#if LIBDIVIDE_VC
 #pragma warning( suppress : 4146 )
+#endif
             absD = -absD;
         }
         return (int64_t)absD;
