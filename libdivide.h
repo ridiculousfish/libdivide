@@ -771,7 +771,7 @@ struct libdivide_u32_t libdivide_u32_gen(uint32_t d) {
     
 struct libdivide_u32_branchfree_t libdivide_u32_branchfree_gen(uint32_t d) {
     struct libdivide_u32_t tmp = libdivide_internal_u32_gen(d, 1);
-    struct libdivide_u32_branchfree_t ret = {tmp.magic, tmp.more};
+    struct libdivide_u32_branchfree_t ret = {tmp.magic, tmp.more & LIBDIVIDE_32_SHIFT_MASK};
     return ret;
 }
 
@@ -830,7 +830,8 @@ uint32_t libdivide_u32_recover(const struct libdivide_u32_t *denom) {
 }
 
 uint32_t libdivide_u32_branchfree_recover(const struct libdivide_u32_branchfree_t *denom) {
-    return libdivide_u32_recover((const struct libdivide_u32_t *)denom);
+    struct libdivide_u32_t denom_u32 = {denom->magic, denom->more | LIBDIVIDE_ADD_MARKER};
+    return libdivide_u32_recover(&denom_u32);
 }
 
 int libdivide_u32_get_algorithm(const struct libdivide_u32_t *denom) {
@@ -862,7 +863,7 @@ uint32_t libdivide_u32_branchfree_do(uint32_t numer, const struct libdivide_u32_
     // same as alg 2
     uint32_t q = libdivide__mullhi_u32(denom->magic, numer);
     uint32_t t = ((numer - q) >> 1) + q;
-    return t >> (denom->more & LIBDIVIDE_32_SHIFT_MASK);
+    return t >> denom->more;
 }
 
     
@@ -965,7 +966,7 @@ struct libdivide_u64_t libdivide_u64_gen(uint64_t d)
 struct libdivide_u64_branchfree_t libdivide_u64_branchfree_gen(uint64_t d)
 {
     struct libdivide_u64_t tmp = libdivide_internal_u64_gen(d, 1);
-    struct libdivide_u64_branchfree_t ret = {tmp.magic, tmp.more};
+    struct libdivide_u64_branchfree_t ret = {tmp.magic, tmp.more & LIBDIVIDE_64_SHIFT_MASK};
     return ret;
 }
 
@@ -1035,7 +1036,8 @@ uint64_t libdivide_u64_recover(const struct libdivide_u64_t *denom) {
 }
 
 uint64_t libdivide_u64_branchfree_recover(const struct libdivide_u64_branchfree_t *denom) {
-    return libdivide_u64_recover((const struct libdivide_u64_t *)denom);
+    struct libdivide_u64_t denom_u64 = {denom->magic, denom->more | LIBDIVIDE_ADD_MARKER};
+    return libdivide_u64_recover(&denom_u64);
 }
     
 int libdivide_u64_get_algorithm(const struct libdivide_u64_t *denom) {
@@ -1064,7 +1066,7 @@ uint64_t libdivide_u64_branchfree_do(uint64_t numer, const struct libdivide_u64_
     // same as alg 2
     uint64_t q = libdivide__mullhi_u64(denom->magic, numer);
     uint64_t t = ((numer - q) >> 1) + q;
-    return t >> (denom->more & LIBDIVIDE_64_SHIFT_MASK);
+    return t >> denom->more;
 }
 
 #if LIBDIVIDE_USE_SSE2    
