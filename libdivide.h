@@ -79,6 +79,9 @@ typedef unsigned __int8 uint8_t;
 #define LIBDIVIDE_OPEN_BRACKET {
 #define LIBDIVIDE_CLOSE_BRACKET }
 
+/* Silly defines to defeat VC++ warnings */
+
+
 #ifdef __cplusplus
 /* We place libdivide within the libdivide namespace, and that goes in an anonymous namespace so that the functions are only visible to files that #include this header and don't get external linkage.  At least that's the theory. */
 namespace LIBDIVIDE_OPEN_BRACKET
@@ -816,7 +819,7 @@ uint32_t libdivide_u32_recover(const struct libdivide_u32_t *denom) {
         uint64_t half_n = 1LLU << (32 + shift);
         uint64_t d = (1LLU << 32) | denom->magic;
         // Note that the quotient is guaranteed <= 32 bits, but the remainder may need 33!
-        uint32_t half_q = half_n / d;
+        uint32_t half_q = (uint32_t)(half_n / d);
         uint64_t rem = half_n % d;
         // We computed 2^(32+shift)/(m+2^32)
         // Need to double it, and then add 1 to the quotient if doubling the remainder would increase the quotient
@@ -1235,6 +1238,9 @@ int32_t libdivide_s32_recover(const struct libdivide_s32_t *denom) {
     if (more & LIBDIVIDE_S32_SHIFT_PATH) {
         uint32_t absD = 1U << shift;
         if (more & LIBDIVIDE_NEGATIVE_DIVISOR) {
+#if LIBDIVIDE_VC
+#pragma warning( suppress : 4146 )
+#endif
             absD = -absD;
         }
         return (int32_t)absD;
@@ -1256,7 +1262,7 @@ int32_t libdivide_s32_recover(const struct libdivide_s32_t *denom) {
         
         uint32_t d = (uint32_t)(magic_was_negated ? -denom->magic : denom->magic);
         uint64_t n = 1LLU << (32 + shift); // Note that the shift cannot exceed 30
-        uint32_t q = n / d;
+        uint32_t q = (uint32_t)(n / d);
         int32_t result = (int32_t)q;
         result += 1;
         return negative_divisor ? -result : result;
@@ -1507,6 +1513,9 @@ int64_t libdivide_s64_recover(const struct libdivide_s64_t *denom) {
     if (denom->magic == 0) { // shift path
         uint64_t absD = 1LLU << shift;
         if (more & LIBDIVIDE_NEGATIVE_DIVISOR) {
+#if LIBDIVIDE_VC
+#pragma warning( suppress : 4146 )
+#endif
             absD = -absD;
         }
         return (int64_t)absD;
