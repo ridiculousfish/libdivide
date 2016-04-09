@@ -908,7 +908,7 @@ LIBDIVIDE_API __m128i libdivide_u32_branchfree_do_vector(__m128i numers, const s
     // same as alg 2
     __m128i q = libdivide__mullhi_u32_flat_vector(numers, _mm_set1_epi32(denom->magic));
     __m128i t = _mm_add_epi32(_mm_srli_epi32(_mm_sub_epi32(numers, q), 1), q);
-    return _mm_srl_epi32(t, libdivide_u32_to_m128i(denom->more & LIBDIVIDE_32_SHIFT_MASK));
+    return _mm_srl_epi32(t, libdivide_u32_to_m128i(denom->more));
 }
 
 #endif
@@ -1108,7 +1108,7 @@ __m128i libdivide_u64_do_vector_alg2(__m128i numers, const struct libdivide_u64_
 __m128i libdivide_u64_branchfree_do_vector(__m128i numers, const struct libdivide_u64_branchfree_t * denom) {
     __m128i q = libdivide_mullhi_u64_flat_vector(numers, libdivide__u64_to_m128(denom->magic));
     __m128i t = _mm_add_epi64(_mm_srli_epi64(_mm_sub_epi64(numers, q), 1), q);
-    return _mm_srl_epi64(t, libdivide_u32_to_m128i(denom->more & LIBDIVIDE_64_SHIFT_MASK));
+    return _mm_srl_epi64(t, libdivide_u32_to_m128i(denom->more));
 }
     
 #endif
