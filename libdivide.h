@@ -816,7 +816,7 @@ uint32_t libdivide_u32_recover(const struct libdivide_u32_t *denom) {
         uint64_t half_n = 1LLU << (32 + shift);
         uint64_t d = (1LLU << 32) | denom->magic;
         // Note that the quotient is guaranteed <= 32 bits, but the remainder may need 33!
-        uint32_t half_q = half_n / d;
+        uint32_t half_q = (uint32_t)(half_n / d);
         uint64_t rem = half_n % d;
         // We computed 2^(32+shift)/(m+2^32)
         // Need to double it, and then add 1 to the quotient if doubling the remainder would increase the quotient
@@ -908,7 +908,7 @@ LIBDIVIDE_API __m128i libdivide_u32_branchfree_do_vector(__m128i numers, const s
     // same as alg 2
     __m128i q = libdivide__mullhi_u32_flat_vector(numers, _mm_set1_epi32(denom->magic));
     __m128i t = _mm_add_epi32(_mm_srli_epi32(_mm_sub_epi32(numers, q), 1), q);
-    return _mm_srl_epi32(t, libdivide_u32_to_m128i(denom->more & LIBDIVIDE_32_SHIFT_MASK));
+    return _mm_srl_epi32(t, libdivide_u32_to_m128i(denom->more));
 }
 
 #endif
@@ -1108,7 +1108,7 @@ __m128i libdivide_u64_do_vector_alg2(__m128i numers, const struct libdivide_u64_
 __m128i libdivide_u64_branchfree_do_vector(__m128i numers, const struct libdivide_u64_branchfree_t * denom) {
     __m128i q = libdivide_mullhi_u64_flat_vector(numers, libdivide__u64_to_m128(denom->magic));
     __m128i t = _mm_add_epi64(_mm_srli_epi64(_mm_sub_epi64(numers, q), 1), q);
-    return _mm_srl_epi64(t, libdivide_u32_to_m128i(denom->more & LIBDIVIDE_64_SHIFT_MASK));
+    return _mm_srl_epi64(t, libdivide_u32_to_m128i(denom->more));
 }
     
 #endif
@@ -1235,7 +1235,12 @@ int32_t libdivide_s32_recover(const struct libdivide_s32_t *denom) {
     if (more & LIBDIVIDE_S32_SHIFT_PATH) {
         uint32_t absD = 1U << shift;
         if (more & LIBDIVIDE_NEGATIVE_DIVISOR) {
+#if LIBDIVIDE_VC
+#pragma warning( suppress : 4146 )
             absD = -absD;
+#else
+            absD = -absD;
+#endif      
         }
         return (int32_t)absD;
     } else {
@@ -1256,7 +1261,7 @@ int32_t libdivide_s32_recover(const struct libdivide_s32_t *denom) {
         
         uint32_t d = (uint32_t)(magic_was_negated ? -denom->magic : denom->magic);
         uint64_t n = 1LLU << (32 + shift); // Note that the shift cannot exceed 30
-        uint32_t q = n / d;
+        uint32_t q = (uint32_t)(n / d);
         int32_t result = (int32_t)q;
         result += 1;
         return negative_divisor ? -result : result;
@@ -1507,7 +1512,12 @@ int64_t libdivide_s64_recover(const struct libdivide_s64_t *denom) {
     if (denom->magic == 0) { // shift path
         uint64_t absD = 1LLU << shift;
         if (more & LIBDIVIDE_NEGATIVE_DIVISOR) {
+#if LIBDIVIDE_VC
+#pragma warning( suppress : 4146 )
             absD = -absD;
+#else
+            absD = -absD;
+#endif
         }
         return (int64_t)absD;
     } else {
