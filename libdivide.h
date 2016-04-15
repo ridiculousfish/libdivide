@@ -770,7 +770,7 @@ struct libdivide_u32_t libdivide_u32_gen(uint32_t d) {
 }
     
 struct libdivide_u32_branchfree_t libdivide_u32_branchfree_gen(uint32_t d) {
-    struct libdivide_u32_t tmp = libdivide_internal_u32_gen(d, 1);)
+    struct libdivide_u32_t tmp = libdivide_internal_u32_gen(d, 1);
     struct libdivide_u32_branchfree_t ret = {tmp.magic, (uint8_t)(tmp.more & LIBDIVIDE_32_SHIFT_MASK)};
     return ret;
 }
