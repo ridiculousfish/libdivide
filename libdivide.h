@@ -1129,7 +1129,8 @@ static inline struct libdivide_s32_t libdivide_internal_s32_gen(int32_t d, int b
     struct libdivide_s32_t result;
     
     /* If d is a power of 2, or negative a power of 2, we have to use a shift.  This is especially important because the magic algorithm fails for -1.  To check if d is a power of 2 or its inverse, it suffices to check whether its absolute value has exactly one bit set.  This works even for INT_MIN, because abs(INT_MIN) == INT_MIN, and INT_MIN has one bit set and is a power of 2.  */
-    uint32_t absD = (uint32_t)(d < 0 ? -d : d); //gcc optimizes this to the fast abs trick
+    uint32_t ud = (uint32_t)d;
+    uint32_t absD = (d < 0 ? -ud : ud); //gcc optimizes this to the fast abs trick
     const uint32_t floor_log_2_d = 31 - libdivide__count_leading_zeros32(absD);
     if ((absD & (absD - 1)) == 0) { //check if exactly one bit is set, don't care if absD is 0 since that's divide by zero
         // Branchfree and normal paths are exactly the same
@@ -1188,16 +1189,18 @@ int32_t libdivide_s32_do(int32_t numer, const struct libdivide_s32_t *denom) {
     uint32_t sign = (int8_t)more >> 7;
     if (more & LIBDIVIDE_S32_SHIFT_PATH) {
         uint8_t shifter = more & LIBDIVIDE_32_SHIFT_MASK;
-        int32_t q = numer + ((numer >> 31) & ((1 << shifter) - 1));
+        uint32_t uq = (uint32_t)(numer + ((numer >> 31) & ((1U << shifter) - 1)));
+        int32_t q = (int32_t)uq;
         q = q >> shifter;
         q = (q ^ sign) - sign;
         return q;
     } else {
-        int32_t q = libdivide__mullhi_s32(denom->magic, numer);
+        uint32_t uq = (uint32_t)libdivide__mullhi_s32(denom->magic, numer);
         if (more & LIBDIVIDE_ADD_MARKER) {
             int32_t sign = (int8_t)more >> 7; //must be arithmetic shift and then sign extend
-            q += ((numer ^ sign) - sign); // q += (more < 0 ? -numer : numer)
+            uq += (((uint32_t)numer ^ sign) - sign); // q += (more < 0 ? -numer : numer), casts to avoid UB
         }
+        int32_t q = (int32_t)uq;
         q >>= more & LIBDIVIDE_32_SHIFT_MASK;
         q += (q < 0);
         return q;
@@ -1282,13 +1285,13 @@ int libdivide_s32_get_algorithm(const struct libdivide_s32_t *denom) {
  
 int32_t libdivide_s32_do_alg0(int32_t numer, const struct libdivide_s32_t *denom) {
     uint8_t shifter = denom->more & LIBDIVIDE_32_SHIFT_MASK;
-    int32_t q = numer + ((numer >> 31) & ((1 << shifter) - 1));
+    int32_t q = numer + ((numer >> 31) & ((1U << shifter) - 1));
     return q >> shifter;
 }
  
 int32_t libdivide_s32_do_alg1(int32_t numer, const struct libdivide_s32_t *denom) {
     uint8_t shifter = denom->more & LIBDIVIDE_32_SHIFT_MASK;
-    int32_t q = numer + ((numer >> 31) & ((1 << shifter) - 1));
+    int32_t q = numer + ((numer >> 31) & ((1U << shifter) - 1));
     return - (q >> shifter);
 }
  
@@ -1320,7 +1323,7 @@ __m128i libdivide_s32_do_vector(__m128i numers, const struct libdivide_s32_t * d
     uint8_t more = denom->more;
     if (more & LIBDIVIDE_S32_SHIFT_PATH) {
         uint32_t shifter = more & LIBDIVIDE_32_SHIFT_MASK;
-        __m128i roundToZeroTweak = _mm_set1_epi32((1 << shifter) - 1); //could use _mm_srli_epi32 with an all -1 register        
+        __m128i roundToZeroTweak = _mm_set1_epi32((1U << shifter) - 1); //could use _mm_srli_epi32 with an all -1 register
         __m128i q = _mm_add_epi32(numers, _mm_and_si128(_mm_srai_epi32(numers, 31), roundToZeroTweak)); //q = numer + ((numer >> 31) & roundToZeroTweak);
         q = _mm_sra_epi32(q, libdivide_u32_to_m128i(shifter)); // q = q >> shifter
         __m128i shiftMask = _mm_set1_epi32((int32_t)((int8_t)more >> 7)); //set all bits of shift mask = to the sign bit of more
@@ -1341,14 +1344,14 @@ __m128i libdivide_s32_do_vector(__m128i numers, const struct libdivide_s32_t * d
 
 __m128i libdivide_s32_do_vector_alg0(__m128i numers, const struct libdivide_s32_t *denom) {
     uint8_t shifter = denom->more & LIBDIVIDE_32_SHIFT_MASK;
-    __m128i roundToZeroTweak = _mm_set1_epi32((1 << shifter) - 1);
+    __m128i roundToZeroTweak = _mm_set1_epi32((1U << shifter) - 1);
     __m128i q = _mm_add_epi32(numers, _mm_and_si128(_mm_srai_epi32(numers, 31), roundToZeroTweak));
     return _mm_sra_epi32(q, libdivide_u32_to_m128i(shifter));
 }
 
 __m128i libdivide_s32_do_vector_alg1(__m128i numers, const struct libdivide_s32_t *denom) {
     uint8_t shifter = denom->more & LIBDIVIDE_32_SHIFT_MASK;
-    __m128i roundToZeroTweak = _mm_set1_epi32((1 << shifter) - 1);
+    __m128i roundToZeroTweak = _mm_set1_epi32((1U << shifter) - 1);
     __m128i q = _mm_add_epi32(numers, _mm_and_si128(_mm_srai_epi32(numers, 31), roundToZeroTweak));
     return _mm_sub_epi32(_mm_setzero_si128(), _mm_sra_epi32(q, libdivide_u32_to_m128i(shifter)));
 }
@@ -1405,7 +1408,8 @@ static inline struct libdivide_s64_t libdivide_internal_s64_gen(int64_t d, int b
     struct libdivide_s64_t result;
     
     /* If d is a power of 2, or negative a power of 2, we have to use a shift.  This is especially important because the magic algorithm fails for -1.  To check if d is a power of 2 or its inverse, it suffices to check whether its absolute value has exactly one bit set.  This works even for INT_MIN, because abs(INT_MIN) == INT_MIN, and INT_MIN has one bit set and is a power of 2.  */
-    const uint64_t absD = (uint64_t)(d < 0 ? -d : d); //gcc optimizes this to the fast abs trick
+    const uint64_t ud = (uint64_t)d;
+    const uint64_t absD = (d < 0 ? -ud : ud); //gcc optimizes this to the fast abs trick
     const uint32_t floor_log_2_d = 63 - libdivide__count_leading_zeros64(absD);
     if ((absD & (absD - 1)) == 0) { //check if exactly one bit is set, don't care if absD is 0 since that's divide by zero
         // Branchfree and non-branchfree cases are the same
@@ -1464,18 +1468,19 @@ int64_t libdivide_s64_do(int64_t numer, const struct libdivide_s64_t *denom) {
     int64_t magic = denom->magic;
     if (magic == 0) { //shift path
         uint32_t shifter = more & LIBDIVIDE_64_SHIFT_MASK;
-        int64_t q = numer + ((numer >> 63) & ((1LL << shifter) - 1));
+        uint64_t uq = (uint64_t)numer + ((numer >> 63) & ((1ULL << shifter) - 1));
+        int64_t q = (int64_t)uq;
         q = q >> shifter;
         int64_t shiftMask = (int8_t)more >> 7; //must be arithmetic shift and then sign-extend
         q = (q ^ shiftMask) - shiftMask;
         return q;
-    }
-    else {
-        int64_t q = libdivide__mullhi_s64(magic, numer);
+    } else {
+        uint64_t uq = (uint64_t)libdivide__mullhi_s64(magic, numer);
         if (more & LIBDIVIDE_ADD_MARKER) {
             int64_t sign = (int8_t)more >> 7; //must be arithmetic shift and then sign extend
-            q += ((numer ^ sign) - sign);
+            uq += (((uint64_t)numer ^ sign) - sign);
         }
+        int64_t q = (int64_t)uq;
         q >>= more & LIBDIVIDE_64_SHIFT_MASK;
         q += (q < 0);
         return q;
@@ -1551,14 +1556,14 @@ int libdivide_s64_get_algorithm(const struct libdivide_s64_t *denom) {
  
 int64_t libdivide_s64_do_alg0(int64_t numer, const struct libdivide_s64_t *denom) {
     uint32_t shifter = denom->more & LIBDIVIDE_64_SHIFT_MASK;
-    int64_t q = numer + ((numer >> 63) & ((1LL << shifter) - 1));
+    int64_t q = numer + ((numer >> 63) & ((1ULL << shifter) - 1));
     return q >> shifter;    
 }
  
 int64_t libdivide_s64_do_alg1(int64_t numer, const struct libdivide_s64_t *denom) {
     //denom->shifter != -1 && demo->shiftMask != 0
     uint32_t shifter = denom->more & LIBDIVIDE_64_SHIFT_MASK;
-    int64_t q = numer + ((numer >> 63) & ((1LL << shifter) - 1));
+    int64_t q = numer + ((numer >> 63) & ((1ULL << shifter) - 1));
     return - (q >> shifter);
 }
  
@@ -1592,7 +1597,7 @@ __m128i libdivide_s64_do_vector(__m128i numers, const struct libdivide_s64_t * d
     int64_t magic = denom->magic;
     if (magic == 0) { //shift path
         uint32_t shifter = more & LIBDIVIDE_64_SHIFT_MASK;
-        __m128i roundToZeroTweak = libdivide__u64_to_m128((1LL << shifter) - 1);
+        __m128i roundToZeroTweak = libdivide__u64_to_m128((1ULL << shifter) - 1);
         __m128i q = _mm_add_epi64(numers, _mm_and_si128(libdivide_s64_signbits(numers), roundToZeroTweak)); //q = numer + ((numer >> 63) & roundToZeroTweak);
         q = libdivide_s64_shift_right_vector(q, shifter); // q = q >> shifter
         __m128i shiftMask = _mm_set1_epi32((int32_t)((int8_t)more >> 7));
@@ -1613,7 +1618,7 @@ __m128i libdivide_s64_do_vector(__m128i numers, const struct libdivide_s64_t * d
 
 __m128i libdivide_s64_do_vector_alg0(__m128i numers, const struct libdivide_s64_t *denom) {
     uint32_t shifter = denom->more & LIBDIVIDE_64_SHIFT_MASK;
-    __m128i roundToZeroTweak = libdivide__u64_to_m128((1LL << shifter) - 1);
+    __m128i roundToZeroTweak = libdivide__u64_to_m128((1ULL << shifter) - 1);
     __m128i q = _mm_add_epi64(numers, _mm_and_si128(libdivide_s64_signbits(numers), roundToZeroTweak));
     q = libdivide_s64_shift_right_vector(q, shifter);
     return q;
@@ -1621,7 +1626,7 @@ __m128i libdivide_s64_do_vector_alg0(__m128i numers, const struct libdivide_s64_
 
 __m128i libdivide_s64_do_vector_alg1(__m128i numers, const struct libdivide_s64_t *denom) {
     uint32_t shifter = denom->more & LIBDIVIDE_64_SHIFT_MASK;
-    __m128i roundToZeroTweak = libdivide__u64_to_m128((1LL << shifter) - 1);
+    __m128i roundToZeroTweak = libdivide__u64_to_m128((1ULL << shifter) - 1);
     __m128i q = _mm_add_epi64(numers, _mm_and_si128(libdivide_s64_signbits(numers), roundToZeroTweak));
     q = libdivide_s64_shift_right_vector(q, shifter);
     return _mm_sub_epi64(_mm_setzero_si128(), q);
