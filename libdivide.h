@@ -1753,9 +1753,9 @@ namespace libdivide_internal {
     };
     template<int ALGO> struct algo_u32 { };
     template<> struct algo_u32<BRANCHFULL> { typedef denom_u32<libdivide_u32_do, MAYBE_VECTOR(libdivide_u32_do_vector)>::divider divider; };
-    template<> struct algo_u32<ALGORITHM0>  { typedef denom_u32<libdivide_u32_do_alg0, MAYBE_VECTOR(libdivide_u32_do_vector_alg0)>::divider divider; };
-    template<> struct algo_u32<ALGORITHM1>  { typedef denom_u32<libdivide_u32_do_alg1, MAYBE_VECTOR(libdivide_u32_do_vector_alg1)>::divider divider; };
-    template<> struct algo_u32<ALGORITHM2>  { typedef denom_u32<libdivide_u32_do_alg2, MAYBE_VECTOR(libdivide_u32_do_vector_alg2)>::divider divider; };
+    template<> struct algo_u32<ALGORITHM0> { typedef denom_u32<libdivide_u32_do_alg0, MAYBE_VECTOR(libdivide_u32_do_vector_alg0)>::divider divider; };
+    template<> struct algo_u32<ALGORITHM1> { typedef denom_u32<libdivide_u32_do_alg1, MAYBE_VECTOR(libdivide_u32_do_vector_alg1)>::divider divider; };
+    template<> struct algo_u32<ALGORITHM2> { typedef denom_u32<libdivide_u32_do_alg2, MAYBE_VECTOR(libdivide_u32_do_vector_alg2)>::divider divider; };
     template<> struct algo_u32<BRANCHFREE> { typedef base<uint32_t, libdivide_u32_branchfree_t, libdivide_u32_branchfree_gen, libdivide_u32_branchfree_do, MAYBE_VECTOR(libdivide_u32_branchfree_do_vector)> divider;  };
     
     /* uint64 */
@@ -1767,9 +1767,9 @@ namespace libdivide_internal {
     };
     template<int ALGO> struct algo_u64 { };
     template<> struct algo_u64<BRANCHFULL> { typedef denom_u64<libdivide_u64_do, MAYBE_VECTOR(libdivide_u64_do_vector)>::divider divider; };
-    template<> struct algo_u64<ALGORITHM0>  { typedef denom_u64<libdivide_u64_do_alg0, MAYBE_VECTOR(libdivide_u64_do_vector_alg0)>::divider divider; };
-    template<> struct algo_u64<ALGORITHM1>  { typedef denom_u64<libdivide_u64_do_alg1, MAYBE_VECTOR(libdivide_u64_do_vector_alg1)>::divider divider; };
-    template<> struct algo_u64<ALGORITHM2>  { typedef denom_u64<libdivide_u64_do_alg2, MAYBE_VECTOR(libdivide_u64_do_vector_alg2)>::divider divider; };
+    template<> struct algo_u64<ALGORITHM0> { typedef denom_u64<libdivide_u64_do_alg0, MAYBE_VECTOR(libdivide_u64_do_vector_alg0)>::divider divider; };
+    template<> struct algo_u64<ALGORITHM1> { typedef denom_u64<libdivide_u64_do_alg1, MAYBE_VECTOR(libdivide_u64_do_vector_alg1)>::divider divider; };
+    template<> struct algo_u64<ALGORITHM2> { typedef denom_u64<libdivide_u64_do_alg2, MAYBE_VECTOR(libdivide_u64_do_vector_alg2)>::divider divider; };
     template<> struct algo_u64<BRANCHFREE> { typedef base<uint64_t, libdivide_u64_branchfree_t, libdivide_u64_branchfree_gen, libdivide_u64_branchfree_do, MAYBE_VECTOR(libdivide_u64_branchfree_do_vector)> divider;  };
     
 
@@ -1781,11 +1781,11 @@ namespace libdivide_internal {
     };
     template<int ALGO> struct algo_s32 { };
     template<> struct algo_s32<BRANCHFULL> { typedef denom_s32<libdivide_s32_do, MAYBE_VECTOR(libdivide_s32_do_vector)>::divider divider; };
-    template<> struct algo_s32<ALGORITHM0>  { typedef denom_s32<libdivide_s32_do_alg0, MAYBE_VECTOR(libdivide_s32_do_vector_alg0)>::divider divider; };
-    template<> struct algo_s32<ALGORITHM1>  { typedef denom_s32<libdivide_s32_do_alg1, MAYBE_VECTOR(libdivide_s32_do_vector_alg1)>::divider divider; };
-    template<> struct algo_s32<ALGORITHM2>  { typedef denom_s32<libdivide_s32_do_alg2, MAYBE_VECTOR(libdivide_s32_do_vector_alg2)>::divider divider; };
-    template<> struct algo_s32<ALGORITHM3>  { typedef denom_s32<libdivide_s32_do_alg3, MAYBE_VECTOR(libdivide_s32_do_vector_alg3)>::divider divider; };
-    template<> struct algo_s32<ALGORITHM4>  { typedef denom_s32<libdivide_s32_do_alg4, MAYBE_VECTOR(libdivide_s32_do_vector_alg4)>::divider divider; };
+    template<> struct algo_s32<ALGORITHM0> { typedef denom_s32<libdivide_s32_do_alg0, MAYBE_VECTOR(libdivide_s32_do_vector_alg0)>::divider divider; };
+    template<> struct algo_s32<ALGORITHM1> { typedef denom_s32<libdivide_s32_do_alg1, MAYBE_VECTOR(libdivide_s32_do_vector_alg1)>::divider divider; };
+    template<> struct algo_s32<ALGORITHM2> { typedef denom_s32<libdivide_s32_do_alg2, MAYBE_VECTOR(libdivide_s32_do_vector_alg2)>::divider divider; };
+    template<> struct algo_s32<ALGORITHM3> { typedef denom_s32<libdivide_s32_do_alg3, MAYBE_VECTOR(libdivide_s32_do_vector_alg3)>::divider divider; };
+    template<> struct algo_s32<ALGORITHM4> { typedef denom_s32<libdivide_s32_do_alg4, MAYBE_VECTOR(libdivide_s32_do_vector_alg4)>::divider divider; };
     template<> struct algo_s32<BRANCHFREE> { typedef base<int32_t, libdivide_s32_branchfree_t, libdivide_s32_branchfree_gen, libdivide_s32_branchfree_do, MAYBE_VECTOR(libdivide_s32_branchfree_do_vector)> divider; };
     
     
@@ -1797,11 +1797,11 @@ namespace libdivide_internal {
     };
     template<int ALGO> struct algo_s64 { };
     template<> struct algo_s64<BRANCHFULL> { typedef denom_s64<libdivide_s64_do, MAYBE_VECTOR(libdivide_s64_do_vector)>::divider divider; };
-    template<> struct algo_s64<ALGORITHM0>  { typedef denom_s64<libdivide_s64_do_alg0, MAYBE_VECTOR(libdivide_s64_do_vector_alg0)>::divider divider; };
-    template<> struct algo_s64<ALGORITHM1>  { typedef denom_s64<libdivide_s64_do_alg1, MAYBE_VECTOR(libdivide_s64_do_vector_alg1)>::divider divider; };
-    template<> struct algo_s64<ALGORITHM2>  { typedef denom_s64<libdivide_s64_do_alg2, MAYBE_VECTOR(libdivide_s64_do_vector_alg2)>::divider divider; };
-    template<> struct algo_s64<ALGORITHM3>  { typedef denom_s64<libdivide_s64_do_alg3, MAYBE_VECTOR(libdivide_s64_do_vector_alg3)>::divider divider; };
-    template<> struct algo_s64<ALGORITHM4>  { typedef denom_s64<libdivide_s64_do_alg4, MAYBE_VECTOR(libdivide_s64_do_vector_alg4)>::divider divider; };
+    template<> struct algo_s64<ALGORITHM0> { typedef denom_s64<libdivide_s64_do_alg0, MAYBE_VECTOR(libdivide_s64_do_vector_alg0)>::divider divider; };
+    template<> struct algo_s64<ALGORITHM1> { typedef denom_s64<libdivide_s64_do_alg1, MAYBE_VECTOR(libdivide_s64_do_vector_alg1)>::divider divider; };
+    template<> struct algo_s64<ALGORITHM2> { typedef denom_s64<libdivide_s64_do_alg2, MAYBE_VECTOR(libdivide_s64_do_vector_alg2)>::divider divider; };
+    template<> struct algo_s64<ALGORITHM3> { typedef denom_s64<libdivide_s64_do_alg3, MAYBE_VECTOR(libdivide_s64_do_vector_alg3)>::divider divider; };
+    template<> struct algo_s64<ALGORITHM4> { typedef denom_s64<libdivide_s64_do_alg4, MAYBE_VECTOR(libdivide_s64_do_vector_alg4)>::divider divider; };
     template<> struct algo_s64<BRANCHFREE> { typedef base<int64_t, libdivide_s64_branchfree_t, libdivide_s64_branchfree_gen, libdivide_s64_branchfree_do, MAYBE_VECTOR(libdivide_s64_branchfree_do_vector)> divider; };
     
     /* Bogus versions to allow templated code to operate on int and uint uniformly */
@@ -1813,9 +1813,9 @@ namespace libdivide_internal {
     /* Templated dispatch using partial specialization */
     template<typename T, int ALGO> struct dispatcher{};
     template<int ALGO> struct dispatcher<uint32_t, ALGO> { typedef struct algo_u32<ALGO> algo; };
-    template<int ALGO> struct dispatcher<int32_t, ALGO> { typedef struct algo_s32<ALGO> algo; };
+    template<int ALGO> struct dispatcher<int32_t, ALGO>  { typedef struct algo_s32<ALGO> algo; };
     template<int ALGO> struct dispatcher<uint64_t, ALGO> { typedef struct algo_u64<ALGO> algo; };
-    template<int ALGO> struct dispatcher<int64_t, ALGO> { typedef struct algo_s64<ALGO> algo; };
+    template<int ALGO> struct dispatcher<int64_t, ALGO>  { typedef struct algo_s64<ALGO> algo; };
     
     /* Overloads that don't depend on the algorithm. */
     inline uint32_t recover(const libdivide_u32_t *s) { return libdivide_u32_recover(s); }
