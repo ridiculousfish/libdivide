@@ -63,7 +63,13 @@ typedef unsigned __int8 uint8_t;
 #endif
 
 #if LIBDIVIDE_ASSERTIONS_ON
-#define LIBDIVIDE_ASSERT(x) do { if (! (x)) { fprintf(stderr, "Assertion failure on line %ld: %s\n", (long)__LINE__, #x); exit(-1); } } while (0)
+#define LIBDIVIDE_ASSERT(x) \
+    do { \
+        if (! (x)) { \
+            fprintf(stderr, "Assertion failure on line %ld: %s\n", (long)__LINE__, #x); \
+            exit(-1); \
+        } \
+    } while (0)
 #else
 #define LIBDIVIDE_ASSERT(x)
 #endif
@@ -386,7 +392,7 @@ static inline __m128i libdivide_s64_shift_right_vector(__m128i v, int amt) {
     const int b = 64 - amt;
     __m128i m = libdivide__u64_to_m128(1ULL << (b - 1));
     __m128i x = _mm_srl_epi64(v, libdivide_u32_to_m128i(amt));
-    __m128i result = _mm_sub_epi64(_mm_xor_si128(x, m), m); //result = x^m - m
+    __m128i result = _mm_sub_epi64(_mm_xor_si128(x, m), m); // result = x^m - m
     return result;
 }
 
