@@ -472,7 +472,8 @@ static inline int32_t libdivide__count_trailing_zeros32(uint32_t val) {
 #else
     // Dorky way to count trailing zeros. Note that this hangs for val = 0!
     int32_t result = 0;
-    val = (val ^ (val - 1)) >> 1; // Set v's trailing 0s to 1s and zero rest
+    // Set v's trailing 0s to 1s and zero rest
+    val = (val ^ (val - 1)) >> 1;
     while (val) {
         val >>= 1;
         result++;
@@ -789,7 +790,8 @@ static inline struct libdivide_u32_t libdivide_internal_u32_gen(uint32_t d, int 
             // (2**power) / d. However, we already have (2**(power-1))/d and
             // its remainder.  By doubling both, and then correcting the
             // remainder, we can compute the larger division.
-            proposed_m += proposed_m; // don't care about overflow here - in fact, we expect it
+            // don't care about overflow here - in fact, we expect it
+            proposed_m += proposed_m;
             const uint32_t twice_rem = rem + rem;
             if (twice_rem >= d || twice_rem < rem) proposed_m += 1;
             more = floor_log_2_d | LIBDIVIDE_ADD_MARKER;
@@ -977,7 +979,7 @@ static inline struct libdivide_u64_t libdivide_internal_u64_gen(uint64_t d, int 
     } else {
         uint64_t proposed_m, rem;
         uint8_t more;
-        proposed_m = libdivide_128_div_64_to_64(1ULL << floor_log_2_d, 0, d, &rem); //== (1 << (64 + floor_log_2_d)) / d
+        proposed_m = libdivide_128_div_64_to_64(1ULL << floor_log_2_d, 0, d, &rem); // == (1 << (64 + floor_log_2_d)) / d
         
         LIBDIVIDE_ASSERT(rem > 0 && rem < d);
         const uint64_t e = d - rem;
@@ -991,7 +993,8 @@ static inline struct libdivide_u64_t libdivide_internal_u64_gen(uint64_t d, int 
             // (2**power) / d. However, we already have (2**(power-1))/d and
             // its remainder. By doubling both, and then correcting the
             // remainder, we can compute the larger division.
-            proposed_m += proposed_m; // don't care about overflow here - in fact, we expect it
+            // don't care about overflow here - in fact, we expect it
+            proposed_m += proposed_m;
             const uint64_t twice_rem = rem + rem;
             if (twice_rem >= d || twice_rem < rem) proposed_m += 1;
                 more = floor_log_2_d | LIBDIVIDE_ADD_MARKER;
@@ -1188,7 +1191,9 @@ static inline struct libdivide_s32_t libdivide_internal_s32_gen(int32_t d, int b
     uint32_t ud = (uint32_t)d;
     uint32_t absD = (d < 0 ? -ud : ud); // gcc optimizes this to the fast abs trick
     const uint32_t floor_log_2_d = 31 - libdivide__count_leading_zeros32(absD);
-    if ((absD & (absD - 1)) == 0) { // check if exactly one bit is set, don't care if absD is 0 since that's divide by zero
+    // check if exactly one bit is set,
+    // don't care if absD is 0 since that's divide by zero
+    if ((absD & (absD - 1)) == 0) {
         // Branchfree and normal paths are exactly the same
         result.magic = 0;
         result.more = floor_log_2_d | (d < 0 ? LIBDIVIDE_NEGATIVE_DIVISOR : 0) | LIBDIVIDE_S32_SHIFT_PATH;
@@ -1477,7 +1482,9 @@ static inline struct libdivide_s64_t libdivide_internal_s64_gen(int64_t d, int b
     const uint64_t ud = (uint64_t)d;
     const uint64_t absD = (d < 0 ? -ud : ud); // gcc optimizes this to the fast abs trick
     const uint32_t floor_log_2_d = 63 - libdivide__count_leading_zeros64(absD);
-    if ((absD & (absD - 1)) == 0) { // check if exactly one bit is set, don't care if absD is 0 since that's divide by zero
+    // check if exactly one bit is set,
+    // don't care if absD is 0 since that's divide by zero
+    if ((absD & (absD - 1)) == 0) {
         // Branchfree and non-branchfree cases are the same
         result.magic = 0;
         result.more = floor_log_2_d | (d < 0 ? LIBDIVIDE_NEGATIVE_DIVISOR : 0);
