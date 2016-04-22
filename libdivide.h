@@ -70,8 +70,8 @@ typedef unsigned __int8 uint8_t;
 
 // libdivide may use the pmuldq (vector signed 32x32->64 mult instruction)
 // which is in SSE 4.1. However, signed multiplication can be emulated
-// efficiently with unsigned multiplication, and SSE 4.1 is currently rare,
-// so it is OK to not turn this on.
+// efficiently with unsigned multiplication, and SSE 4.1 is currently rare, so
+// it is OK to not turn this on.
 #ifdef LIBDIVIDE_USE_SSE4_1
 #include <smmintrin.h>
 #endif
@@ -89,10 +89,10 @@ namespace LIBDIVIDE_OPEN_BRACKET
 namespace libdivide LIBDIVIDE_OPEN_BRACKET
 #endif
 
-// Explanation of "more" field: bit 6 is whether to use shift path.  If we are
+// Explanation of "more" field: bit 6 is whether to use shift path. If we are
 // using the shift path, bit 7 is whether the divisor is negative in the signed
-// case; in the unsigned case it is 0.   Bits 0-4 is shift value (for shift
-// path or mult path).  In 32 bit case, bit 5 is always 0.  We use bit 7 as the
+// case; in the unsigned case it is 0. Bits 0-4 is shift value (for shift
+// path or mult path).  In 32 bit case, bit 5 is always 0. We use bit 7 as the
 // "negative divisor indicator" so that we can use sign extension to
 // efficiently go to a full-width -1.
 //
@@ -363,10 +363,10 @@ static inline __m128i libdivide_get_00000000FFFFFFFF(void) {
 }
 
 static inline __m128i libdivide_s64_signbits(__m128i v) {
-    // we want to compute v >> 63, that is, _mm_srai_epi64(v, 63).  But there
-    // is no 64 bit shift right arithmetic instruction in SSE2.  So we have to
+    // we want to compute v >> 63, that is, _mm_srai_epi64(v, 63). But there
+    // is no 64 bit shift right arithmetic instruction in SSE2. So we have to
     // fake it by first duplicating the high 32 bit values, and then using a 32
-    // bit shift.  Another option would be to use _mm_srli_epi64(v, 63) and
+    // bit shift. Another option would be to use _mm_srli_epi64(v, 63) and
     // then subtract that from 0, but that approach appears to be substantially
     // slower for unknown reasons
     __m128i hiBitsDuped = _mm_shuffle_epi32(v, _MM_SHUFFLE(3, 3, 1, 1));
@@ -446,7 +446,7 @@ static inline __m128i libdivide_mullhi_s32_flat_vector(__m128i a, __m128i b) {
 #else
 
 // SSE2 does not have a signed multiplication instruction, but we can convert
-// unsigned to signed pretty efficiently.  Again, b is just a 32 bit value
+// unsigned to signed pretty efficiently. Again, b is just a 32 bit value
 // repeated four times.
 static inline __m128i libdivide_mullhi_s32_flat_vector(__m128i a, __m128i b) {
     __m128i p = libdivide__mullhi_u32_flat_vector(a, b);
@@ -547,8 +547,8 @@ static inline int32_t libdivide__count_leading_zeros64(uint64_t val) {
 }
 
 // libdivide_64_div_32_to_32: divides a 64 bit uint {u1, u0} by a 32 bit
-// uint {v}. The result must fit in 32 bits. Returns the quotient directly and
-// the remainder in *r
+// uint {v}. The result must fit in 32 bits.
+// Returns the quotient directly and the remainder in *r
 #if (LIBDIVIDE_IS_i386 || LIBDIVIDE_IS_X86_64) && LIBDIVIDE_GCC_STYLE_ASM
 static uint32_t libdivide_64_div_32_to_32(uint32_t u1, uint32_t u0, uint32_t v, uint32_t *r) {
     uint32_t result;
@@ -589,24 +589,24 @@ static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v,
 
 static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v, uint64_t *r) {    
     const uint64_t b = (1ULL << 32); // Number base (16 bits).
-    uint64_t un1, un0,        // Norm. dividend LSD's.
-    vn1, vn0,        // Norm. divisor digits.
-    q1, q0,          // Quotient digits.
-    un64, un21, un10,// Dividend digit pairs.
-    rhat;            // A remainder.
-    int s;                  // Shift amount for norm.
+    uint64_t un1, un0,  // Norm. dividend LSD's.
+    vn1, vn0,           // Norm. divisor digits.
+    q1, q0,             // Quotient digits.
+    un64, un21, un10,   // Dividend digit pairs.
+    rhat;               // A remainder.
+    int s;              // Shift amount for norm.
     
-    if (u1 >= v) {            // If overflow, set rem.
-        if (r != NULL)         // to an impossible value,
+    if (u1 >= v) {                  // If overflow, set rem.
+        if (r != NULL)              // to an impossible value,
             *r = (uint64_t)(-1);    // and return the largest
-        return (uint64_t)(-1);}    // possible quotient.
+        return (uint64_t)(-1);}     // possible quotient.
     
     // count leading zeros
     s = libdivide__count_leading_zeros64(v); // 0 <= s <= 63.
     if (s > 0) {
-        v = v << s;           // Normalize divisor.
+        v = v << s;         // Normalize divisor.
         un64 = (u1 << s) | ((u0 >> (64 - s)) & (-s >> 31));
-        un10 = u0 << s;       // Shift dividend left.
+        un10 = u0 << s;     // Shift dividend left.
     } else {
         // Avoid undefined behavior.
         un64 = u1 | u0;
@@ -637,8 +637,8 @@ again2:
         rhat = rhat + vn1;
         if (rhat < b) goto again2;}
     
-    if (r != NULL)            // If remainder is wanted,
-        *r = (un21*b + un0 - q0*v) >> s;     // return it.
+    if (r != NULL)                          // If remainder is wanted,
+        *r = (un21*b + un0 - q0*v) >> s;    // return it.
     return q1*b + q0;
 }
 #endif
@@ -796,7 +796,7 @@ static inline struct libdivide_u32_t libdivide_internal_u32_gen(uint32_t d, int 
         }
         result.magic = 1 + proposed_m;
         result.more = more;
-        // result.more's shift should in general be ceil_log_2_d.  But if we
+        // result.more's shift should in general be ceil_log_2_d. But if we
         // used the smaller power, we subtract one from the shift because we're
         // using the smaller power. If we're using the larger power, we
         // subtract one from the shift because it's taken care of by the add
@@ -989,7 +989,7 @@ static inline struct libdivide_u64_t libdivide_internal_u64_gen(uint64_t d, int 
         } else {
             // We have to use the general 65-bit algorithm.  We need to compute
             // (2**power) / d. However, we already have (2**(power-1))/d and
-            // its remainder.  By doubling both, and then correcting the
+            // its remainder. By doubling both, and then correcting the
             // remainder, we can compute the larger division.
             proposed_m += proposed_m; // don't care about overflow here - in fact, we expect it
             const uint64_t twice_rem = rem + rem;
@@ -998,7 +998,7 @@ static inline struct libdivide_u64_t libdivide_internal_u64_gen(uint64_t d, int 
                 }
         result.magic = 1 + proposed_m;
         result.more = more;
-        // result.more's shift should in general be ceil_log_2_d.  But if we
+        // result.more's shift should in general be ceil_log_2_d. But if we
         // used the smaller power, we subtract one from the shift because we're
         // using the smaller power. If we're using the larger power, we
         // subtract one from the shift because it's taken care of by the add
@@ -1182,7 +1182,7 @@ static inline struct libdivide_s32_t libdivide_internal_s32_gen(int32_t d, int b
     // If d is a power of 2, or negative a power of 2, we have to use a shift.
     // This is especially important because the magic algorithm fails for -1.
     // To check if d is a power of 2 or its inverse, it suffices to check
-    // whether its absolute value has exactly one bit set.  This works even for
+    // whether its absolute value has exactly one bit set. This works even for
     // INT_MIN, because abs(INT_MIN) == INT_MIN, and INT_MIN has one bit set
     // and is a power of 2.
     uint32_t ud = (uint32_t)d;
@@ -1302,12 +1302,7 @@ int32_t libdivide_s32_recover(const struct libdivide_s32_t *denom) {
     if (more & LIBDIVIDE_S32_SHIFT_PATH) {
         uint32_t absD = 1U << shift;
         if (more & LIBDIVIDE_NEGATIVE_DIVISOR) {
-#if LIBDIVIDE_VC
-#pragma warning( suppress : 4146 )
-            absD = -absD;
-#else
-            absD = -absD;
-#endif      
+            absD *= -1;
         }
         return (int32_t)absD;
     } else {
@@ -1315,8 +1310,8 @@ int32_t libdivide_s32_recover(const struct libdivide_s32_t *denom) {
         // We negate the magic number only in the branchfull case, and we don't
         // know which case we're in. However we have enough information to
         // determine the correct sign of the magic number. The divisor was
-        // negative if LIBDIVIDE_NEGATIVE_DIVISOR is set.  If ADD_MARKER is
-        // set, the magic number's sign is opposite that of the divisor.
+        // negative if LIBDIVIDE_NEGATIVE_DIVISOR is set. If ADD_MARKER is set,
+        // the magic number's sign is opposite that of the divisor.
         // We want to compute the positive magic number.
         int negative_divisor = (more & LIBDIVIDE_NEGATIVE_DIVISOR);
         int magic_was_negated = (more & LIBDIVIDE_ADD_MARKER) ? denom->magic > 0 : denom->magic < 0;
@@ -1597,12 +1592,7 @@ int64_t libdivide_s64_recover(const struct libdivide_s64_t *denom) {
     if (denom->magic == 0) { // shift path
         uint64_t absD = 1LLU << shift;
         if (more & LIBDIVIDE_NEGATIVE_DIVISOR) {
-#if LIBDIVIDE_VC
-#pragma warning( suppress : 4146 )
-            absD = -absD;
-#else
-            absD = -absD;
-#endif
+            absD *= -1;
         }
         return (int64_t)absD;
     } else {
@@ -1955,7 +1945,8 @@ class divider
 
     // Returns the index of algorithm, for use in the unswitch function. Does
     // not apply to branchfree variant.
-    int get_algorithm() const { return libdivide_internal::get_algorithm(&sub.denom); } // returns the algorithm for unswitching
+    // Returns the algorithm for unswitching.
+    int get_algorithm() const { return libdivide_internal::get_algorithm(&sub.denom); }
     
     // operator== 
     bool operator==(const divider<T, ALGO> & him) const { return sub.denom.magic == him.sub.denom.magic && sub.denom.more == him.sub.denom.more; }
