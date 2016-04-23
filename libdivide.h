@@ -605,9 +605,10 @@ static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v,
     
     if (u1 >= v) {                  // If overflow, set rem.
         if (r != NULL)              // to an impossible value,
-            *r = (uint64_t)(-1);    // and return the largest
-        return (uint64_t)(-1);}     // possible quotient.
-    
+            *r = (uint64_t) -1;    // and return the largest
+        return (uint64_t) -1;      // possible quotient.
+    }
+
     // count leading zeros
     s = libdivide__count_leading_zeros64(v); // 0 <= s <= 63.
     if (s > 0) {
@@ -625,25 +626,27 @@ static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v,
 
     un1 = un10 >> 32;         // Break right half of
     un0 = un10 & 0xFFFFFFFF;  // dividend into two digits.
-    
+
     q1 = un64/vn1;            // Compute the first
     rhat = un64 - q1*vn1;     // quotient digit, q1.
 again1:
     if (q1 >= b || q1*vn0 > b*rhat + un1) {
         q1 = q1 - 1;
         rhat = rhat + vn1;
-        if (rhat < b) goto again1;}
-    
+        if (rhat < b) goto again1;
+    }
+
     un21 = un64*b + un1 - q1*v;  // Multiply and subtract.
-    
+
     q0 = un21/vn1;            // Compute the second
     rhat = un21 - q0*vn1;     // quotient digit, q0.
 again2:
     if (q0 >= b || q0*vn0 > b*rhat + un0) {
         q0 = q0 - 1;
         rhat = rhat + vn1;
-        if (rhat < b) goto again2;}
-    
+        if (rhat < b) goto again2;
+    }
+
     if (r != NULL)                          // If remainder is wanted,
         *r = (un21*b + un0 - q0*v) >> s;    // return it.
     return q1*b + q0;
