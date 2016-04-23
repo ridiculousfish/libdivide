@@ -1004,7 +1004,7 @@ static inline struct libdivide_u64_t libdivide_internal_u64_gen(uint64_t d, int 
             const uint64_t twice_rem = rem + rem;
             if (twice_rem >= d || twice_rem < rem) proposed_m += 1;
                 more = floor_log_2_d | LIBDIVIDE_ADD_MARKER;
-                }
+        }
         result.magic = 1 + proposed_m;
         result.more = more;
         // result.more's shift should in general be ceil_log_2_d. But if we
@@ -1970,7 +1970,6 @@ class divider
 template<int NEW_ALGO, typename T>
 divider<T, NEW_ALGO> unswitch(const divider<T, BRANCHFULL> & d) { return divider<T, NEW_ALGO>(d.sub.denom); }
 
-
 // Overload of the / operator for scalar division. 
 template<typename int_type, int ALGO>
 int_type operator/(int_type numer, const divider<int_type, ALGO> & denom) {
@@ -1988,6 +1987,7 @@ __m128i operator/(__m128i numer, const divider<int_type, ALGO> & denom) {
 #endif //__cplusplus
     
 #endif // LIBDIVIDE_HEADER_ONLY
+
 #ifdef __cplusplus
 LIBDIVIDE_CLOSE_BRACKET // close namespace libdivide
 LIBDIVIDE_CLOSE_BRACKET // close anonymous namespace
