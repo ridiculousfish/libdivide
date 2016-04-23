@@ -864,8 +864,8 @@ uint32_t libdivide_u32_recover(const struct libdivide_u32_t *denom) {
         // overflow. So we have to compute it as 2^(32+shift)/(m+2^32), and
         // then double the quotient and remainder.
         // TODO: do something better than 64 bit math
-        uint64_t half_n = 1LLU << (32 + shift);
-        uint64_t d = (1LLU << 32) | denom->magic;
+        uint64_t half_n = 1ULL << (32 + shift);
+        uint64_t d = (1ULL << 32) | denom->magic;
         // Note that the quotient is guaranteed <= 32 bits, but the remainder
         // may need 33!
         uint32_t half_q = (uint32_t)(half_n / d);
@@ -1060,7 +1060,7 @@ uint64_t libdivide_u64_recover(const struct libdivide_u64_t *denom) {
         // We need to ceil it.
         // We know d is not a power of 2, so m is not a power of 2,
         // so we can just add 1 to the floor
-        uint64_t hi_dividend = 1LLU << shift;
+        uint64_t hi_dividend = 1ULL << shift;
         uint64_t rem_ignored;
         return 1 + libdivide_128_div_64_to_64(hi_dividend, 0, denom->magic, &rem_ignored);
     } else {
@@ -1074,13 +1074,13 @@ uint64_t libdivide_u64_recover(const struct libdivide_u64_t *denom) {
         // However we can optimize that easily
         if (denom->magic == 0) {
             // 2^(64 + shift + 1) / (2^64) == 2^(shift + 1)
-            return 1LLU << (shift + 1);
+            return 1ULL << (shift + 1);
         }
         
         // Full n is a (potentially) 129 bit value
         // half_n is a 128 bit value
         // Compute the hi half of half_n. Low half is 0.
-        uint64_t half_n_hi = 1LLU << shift, half_n_lo = 0;
+        uint64_t half_n_hi = 1ULL << shift, half_n_lo = 0;
         // d is a 65 bit value. The high bit is always set to 1.
         const uint64_t d_hi = 1, d_lo = denom->magic;
         // Note that the quotient is guaranteed <= 64 bits,
@@ -1337,7 +1337,7 @@ int32_t libdivide_s32_recover(const struct libdivide_s32_t *denom) {
         }
         
         uint32_t d = (uint32_t)(magic_was_negated ? -denom->magic : denom->magic);
-        uint64_t n = 1LLU << (32 + shift); // Note that the shift cannot exceed 30
+        uint64_t n = 1ULL << (32 + shift); // Note that the shift cannot exceed 30
         uint32_t q = (uint32_t)(n / d);
         int32_t result = (int32_t)q;
         result += 1;
@@ -1592,7 +1592,7 @@ int64_t libdivide_s64_branchfree_do(int64_t numer, const struct libdivide_s64_br
     // 2, or (2**shift) if it is not a power of 2.
     uint32_t is_power_of_2 = (magic == 0);
     uint64_t q_sign = (uint64_t)(q >> 63);
-    q += q_sign & ((1LLU << shift) - is_power_of_2);
+    q += q_sign & ((1ULL << shift) - is_power_of_2);
     
     // Arithmetic right shift
     q >>= shift;
@@ -1606,7 +1606,7 @@ int64_t libdivide_s64_recover(const struct libdivide_s64_t *denom) {
     uint8_t more = denom->more;
     uint8_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
     if (denom->magic == 0) { // shift path
-        uint64_t absD = 1LLU << shift;
+        uint64_t absD = 1ULL << shift;
         if (more & LIBDIVIDE_NEGATIVE_DIVISOR) {
             absD *= -1;
         }
@@ -1617,7 +1617,7 @@ int64_t libdivide_s64_recover(const struct libdivide_s64_t *denom) {
         int magic_was_negated = (more & LIBDIVIDE_ADD_MARKER) ? denom->magic > 0 : denom->magic < 0;
 
         uint64_t d = (uint64_t)(magic_was_negated ? -denom->magic : denom->magic);
-        uint64_t n_hi = 1LLU << shift, n_lo = 0;
+        uint64_t n_hi = 1ULL << shift, n_lo = 0;
         uint64_t rem_ignored;
         uint64_t q = libdivide_128_div_64_to_64(n_hi, n_lo, d, &rem_ignored);
         int64_t result = (int64_t)(q + 1);
