@@ -1741,7 +1741,6 @@ __m128i libdivide_s64_do_vector_alg4(__m128i numers, const struct libdivide_s64_
 }
 
 __m128i libdivide_s64_branchfree_do_vector(__m128i numers, const struct libdivide_s64_branchfree_t * denom) {
-    
     int64_t magic = denom->magic;
     uint8_t more = denom->more;
     uint8_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
