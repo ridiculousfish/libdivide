@@ -405,7 +405,6 @@ static inline __m128i libdivide__mullhi_u32_flat_vector(__m128i a, __m128i b) {
     return _mm_or_si128(hi_product_0Z2Z, hi_product_Z1Z3); // = hi_product_0123
 }
 
-    
 // Here, y is assumed to contain one 64 bit value repeated twice.
 static inline __m128i libdivide_mullhi_u64_flat_vector(__m128i x, __m128i y) {
     // full 128 bits are x0 * y0 + (x0 * y1 << 32) + (x1 * y0 << 32) + (x1 * y1 << 64)
