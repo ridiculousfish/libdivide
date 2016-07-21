@@ -66,8 +66,9 @@ static uint64_t nanoseconds(void) {
 #endif
 
 struct FunctionParams_t {
-    void *d; //a pointer to e.g. a uint32_t
-    void *denomPtr; // a pointer to e.g. libdivide_u32_t
+    const void *d; //a pointer to e.g. a uint32_t
+    const void *denomPtr; // a pointer to e.g. libdivide_u32_t
+    const void *denomBranchfreePtr; // a pointer to e.g. libdivide_u32_t from branchfree
     const void *data; // a pointer to the data to be divided
 };
 
@@ -114,6 +115,20 @@ static uint64_t mine_u32(struct FunctionParams_t *params) {
     return sum;
 }
 
+NOINLINE
+static uint64_t mine_u32_branchfree(struct FunctionParams_t *params) {
+    unsigned iter;
+    const struct libdivide_u32_branchfree_t denom = *(struct libdivide_u32_branchfree_t *)params->denomBranchfreePtr;
+    const uint32_t *data = (const uint32_t *)params->data;
+    uint32_t sum = 0;
+    for (iter = 0; iter < ITERATIONS; iter++) {
+        uint32_t numer = data[iter];
+        sum += libdivide_u32_branchfree_do(numer, &denom);
+    }
+    return sum;
+}
+
+
 #if LIBDIVIDE_USE_SSE2
 NOINLINE static uint64_t mine_u32_vector(struct FunctionParams_t *params) {
     unsigned iter;
@@ -154,6 +169,21 @@ NOINLINE static uint64_t mine_u32_vector_unswitched(struct FunctionParams_t *par
     }
     const uint32_t *comps = (const uint32_t *)&sumX4;
     return comps[0] + comps[1] + comps[2] + comps[3];
+}
+
+
+NOINLINE static uint64_t mine_u32_vector_branchfree(struct FunctionParams_t *params) {
+    unsigned iter;
+    const struct libdivide_u32_branchfree_t denom = *(struct libdivide_u32_branchfree_t *)params->denomBranchfreePtr;
+    const uint32_t *data = (const uint32_t *)params->data;
+    __m128i sumX4 = _mm_setzero_si128();
+    for (iter = 0; iter < ITERATIONS; iter+=4) {
+        __m128i numers = _mm_load_si128((const __m128i*)(data + iter));
+        sumX4 = _mm_add_epi32(sumX4, libdivide_u32_branchfree_do_vector(numers, &denom));
+    }
+    const uint32_t *comps = (const uint32_t *)&sumX4;
+    return comps[0] + comps[1] + comps[2] + comps[3];
+    
 }
 #endif
 
@@ -225,6 +255,20 @@ static uint64_t mine_s32(struct FunctionParams_t *params) {
     return sum;
 }
 
+NOINLINE
+static uint64_t mine_s32_branchfree(struct FunctionParams_t *params) {
+    unsigned iter;
+    const struct libdivide_s32_branchfree_t denom = *(struct libdivide_s32_branchfree_t *)params->denomBranchfreePtr;
+    const int32_t *data = (const int32_t *)params->data;
+    int32_t sum = 0;
+    for (iter = 0; iter < ITERATIONS; iter++) {
+        int32_t numer = data[iter];
+        sum += libdivide_s32_branchfree_do(numer, &denom);
+    }
+    return sum;
+}
+
+
 #if LIBDIVIDE_USE_SSE2
 NOINLINE
 static uint64_t mine_s32_vector(struct FunctionParams_t *params) {
@@ -282,6 +326,22 @@ static uint64_t mine_s32_vector_unswitched(struct FunctionParams_t *params) {
     int32_t sum = comps[0] + comps[1] + comps[2] + comps[3];
     return sum;
 }
+
+NOINLINE
+static uint64_t mine_s32_vector_branchfree(struct FunctionParams_t *params) {
+    unsigned iter;
+    __m128i sumX4 = _mm_setzero_si128();
+    const struct libdivide_s32_branchfree_t denom = *(struct libdivide_s32_branchfree_t *)params->denomBranchfreePtr;
+    const int32_t *data = (const int32_t *)params->data;
+    for (iter = 0; iter < ITERATIONS; iter+=4) {
+        __m128i numers = _mm_load_si128((const __m128i*)(data + iter));
+        sumX4 = _mm_add_epi32(sumX4, libdivide_s32_branchfree_do_vector(numers, &denom));
+    }
+    const int32_t *comps = (const int32_t *)&sumX4;
+    int32_t sum = comps[0] + comps[1] + comps[2] + comps[3];
+    return sum;
+}
+
 #endif
 
 NOINLINE
@@ -366,6 +426,19 @@ static uint64_t mine_u64(struct FunctionParams_t *params) {
 }
 
 NOINLINE
+static uint64_t mine_u64_branchfree(struct FunctionParams_t *params) {
+    unsigned iter;
+    const struct libdivide_u64_branchfree_t denom = *(struct libdivide_u64_branchfree_t *)params->denomBranchfreePtr;
+    const uint64_t *data = (const uint64_t *)params->data;
+    uint64_t sum = 0;
+    for (iter = 0; iter < ITERATIONS; iter++) {
+        uint64_t numer = data[iter];
+        sum += libdivide_u64_branchfree_do(numer, &denom);
+    }
+    return sum;
+}
+
+NOINLINE
 static uint64_t mine_u64_unswitched(struct FunctionParams_t *params) {
     unsigned iter;
     uint64_t sum = 0;
@@ -435,6 +508,19 @@ NOINLINE static uint64_t mine_u64_vector(struct FunctionParams_t *params) {
     const uint64_t *comps = (const uint64_t *)&sumX2;
     return comps[0] + comps[1];
 }
+
+NOINLINE static uint64_t mine_u64_vector_branchfree(struct FunctionParams_t *params) {
+    unsigned iter;
+    __m128i sumX2 = _mm_setzero_si128();
+    const struct libdivide_u64_branchfree_t denom = *(struct libdivide_u64_branchfree_t *)params->denomBranchfreePtr;
+    const uint64_t *data = (const uint64_t *)params->data;
+    for (iter = 0; iter < ITERATIONS; iter+=2) {
+        __m128i numers = _mm_load_si128((const __m128i*)(data + iter));
+        sumX2 = _mm_add_epi64(sumX2, libdivide_u64_branchfree_do_vector(numers, &denom));
+    }
+    const uint64_t *comps = (const uint64_t *)&sumX2;
+    return comps[0] + comps[1];
+}
 #endif
 
 NOINLINE
@@ -474,6 +560,20 @@ static uint64_t mine_s64(struct FunctionParams_t *params) {
     return sum;
 }
 
+NOINLINE
+static uint64_t mine_s64_branchfree(struct FunctionParams_t *params) {
+    unsigned iter;
+    const struct libdivide_s64_branchfree_t denom = *(struct libdivide_s64_branchfree_t *)params->denomBranchfreePtr;
+    const int64_t *data = (const int64_t *)params->data;
+    int64_t sum = 0;
+    for (iter = 0; iter < ITERATIONS; iter++) {
+        int64_t numer = data[iter];
+        sum += libdivide_s64_branchfree_do(numer, &denom);
+    }
+    return sum;
+}
+
+
 #if LIBDIVIDE_USE_SSE2
 NOINLINE
 static uint64_t mine_s64_vector(struct FunctionParams_t *params) {
@@ -485,6 +585,22 @@ static uint64_t mine_s64_vector(struct FunctionParams_t *params) {
     for (iter = 0; iter < ITERATIONS; iter+=2) {
         __m128i numers = _mm_load_si128((const __m128i*)(data + iter));
         sumX2 = _mm_add_epi64(sumX2, libdivide_s64_do_vector(numers, &denom));
+    }
+    const int64_t *comps = (const int64_t *)&sumX2;
+    int64_t sum = comps[0] + comps[1];
+    return sum;
+}
+
+NOINLINE
+static uint64_t mine_s64_vector_branchfree(struct FunctionParams_t *params) {
+    const struct libdivide_s64_branchfree_t denom = *(struct libdivide_s64_branchfree_t *)params->denomBranchfreePtr;
+    const int64_t *data = (const int64_t *)params->data;
+    
+    unsigned iter;
+    __m128i sumX2 = _mm_setzero_si128();
+    for (iter = 0; iter < ITERATIONS; iter+=2) {
+        __m128i numers = _mm_load_si128((const __m128i*)(data + iter));
+        sumX2 = _mm_add_epi64(sumX2, libdivide_s64_branchfree_do_vector(numers, &denom));
     }
     const int64_t *comps = (const int64_t *)&sumX2;
     int64_t sum = comps[0] + comps[1];
@@ -606,18 +722,24 @@ static uint64_t mine_s64_generate(struct FunctionParams_t *params) {
 #if ! LIBDIVIDE_USE_SSE2
 NOINLINE static uint64_t mine_u32_vector(struct FunctionParams_t *params) { return mine_u32(params); }
 NOINLINE static uint64_t mine_u32_vector_unswitched(struct FunctionParams_t *params) { return mine_u32_unswitched(params); }
+NOINLINE static uint64_t mine_u32_vector_branchfree(struct FunctionParams_t *params) { return mine_u32_branchfree(params); }
 NOINLINE static uint64_t mine_s32_vector(struct FunctionParams_t *params) { return mine_s32(params); }
 NOINLINE static uint64_t mine_s32_vector_unswitched(struct FunctionParams_t *params) { return mine_s32_unswitched(params); }
+NOINLINE static uint64_t mine_s32_vector_branchfree(struct FunctionParams_t *params) { return mine_s32_branchfree(params); }
 NOINLINE static uint64_t mine_u64_vector(struct FunctionParams_t *params) { return mine_u64(params); }
 NOINLINE static uint64_t mine_u64_vector_unswitched(struct FunctionParams_t *params) { return mine_u64_unswitched(params); }
+NOINLINE static uint64_t mine_u64_vector_branchfree(struct FunctionParams_t *params) { return mine_u64_branchfree(params); }
 NOINLINE static uint64_t mine_s64_vector(struct FunctionParams_t *params) { return mine_s64(params); }
 NOINLINE static uint64_t mine_s64_vector_unswitched(struct FunctionParams_t *params) { return mine_s64_unswitched(params); }
+NOINLINE static uint64_t mine_s64_vector_branchfree(struct FunctionParams_t *params) { return mine_s64_branchfree(params); }
 #endif
  
 struct TestResult {
     double my_base_time;
+    double my_branchfree_time;
     double my_unswitched_time;
     double my_vector_time;
+    double my_vector_branchfree_time;
     double my_vector_unswitched_time;
     double his_time;
     double gen_time;
@@ -636,35 +758,40 @@ static uint64_t find_min(const uint64_t *vals, size_t cnt) {
 typedef uint64_t (*TestFunc_t)(struct FunctionParams_t *params);
  
 NOINLINE
-struct TestResult test_one(TestFunc_t mine, TestFunc_t mine_vector, TestFunc_t mine_unswitched, TestFunc_t mine_vector_unswitched, TestFunc_t his, TestFunc_t generate, struct FunctionParams_t *params) {
-#define TEST_COUNT 3
+struct TestResult test_one(TestFunc_t mine, TestFunc_t mine_branchfree, TestFunc_t mine_vector, TestFunc_t mine_unswitched, TestFunc_t mine_vector_unswitched, TestFunc_t mine_vector_branchfree, TestFunc_t his, TestFunc_t generate, struct FunctionParams_t *params) {
+#define TEST_COUNT 30
     struct TestResult result;
     memset(&result, 0, sizeof result);
     
 #define CHECK(actual, expected) do { if (1 && actual != expected) printf("Failure on line %lu\n", (unsigned long)__LINE__); } while (0)
     
-    uint64_t my_times[TEST_COUNT], my_times_unswitched[TEST_COUNT], my_times_vector[TEST_COUNT], my_times_vector_unswitched[TEST_COUNT], his_times[TEST_COUNT], gen_times[TEST_COUNT];
+    uint64_t my_times[TEST_COUNT], my_times_branchfree[TEST_COUNT], my_times_unswitched[TEST_COUNT], my_times_vector[TEST_COUNT], my_times_vector_unswitched[TEST_COUNT], my_times_vector_branchfree[TEST_COUNT], his_times[TEST_COUNT], gen_times[TEST_COUNT];
     unsigned iter;
     struct time_result tresult;
     for (iter = 0; iter < TEST_COUNT; iter++) {
         tresult = time_function(his, params); his_times[iter] = tresult.time; const uint64_t expected = tresult.result;
         tresult = time_function(mine, params); my_times[iter] = tresult.time; CHECK(tresult.result, expected);
+        tresult = time_function(mine_branchfree, params); my_times_branchfree[iter] = tresult.time; CHECK(tresult.result, expected);
         tresult = time_function(mine_unswitched, params); my_times_unswitched[iter] = tresult.time; CHECK(tresult.result, expected);
 #if LIBDIVIDE_USE_SSE2
-        tresult = time_function(mine_vector_unswitched, params); my_times_vector_unswitched[iter] = tresult.time; CHECK(tresult.result, expected);
         tresult = time_function(mine_vector, params); my_times_vector[iter] = tresult.time; CHECK(tresult.result, expected);
+        tresult = time_function(mine_vector_branchfree, params); my_times_vector_branchfree[iter] = tresult.time; CHECK(tresult.result, expected);
+        tresult = time_function(mine_vector_unswitched, params); my_times_vector_unswitched[iter] = tresult.time; CHECK(tresult.result, expected);
 #else
 		my_times_vector[iter]=0;
 		my_times_vector_unswitched[iter] = 0;
+        my_times_vector_branchfree[iter] = 0;
 #endif
         tresult = time_function(generate, params); gen_times[iter] = tresult.time;
     }
         
     result.gen_time = find_min(gen_times, TEST_COUNT) / (double)GEN_ITERATIONS;
     result.my_base_time = find_min(my_times, TEST_COUNT) / (double)ITERATIONS;
+    result.my_branchfree_time = find_min(my_times_branchfree, TEST_COUNT) / (double)ITERATIONS;
     result.my_vector_time = find_min(my_times_vector, TEST_COUNT) / (double)ITERATIONS;
 	//printf("%f - %f\n", find_min(my_times_vector, TEST_COUNT) / (double)ITERATIONS, result.my_vector_time);
     result.my_unswitched_time = find_min(my_times_unswitched, TEST_COUNT) / (double)ITERATIONS;
+    result.my_vector_branchfree_time = find_min(my_times_vector_branchfree, TEST_COUNT) / (double)ITERATIONS;
     result.my_vector_unswitched_time = find_min(my_times_vector_unswitched, TEST_COUNT) / (double)ITERATIONS;
     result.his_time = find_min(his_times, TEST_COUNT) / (double)ITERATIONS;
     return result;
@@ -673,63 +800,99 @@ struct TestResult test_one(TestFunc_t mine, TestFunc_t mine_vector, TestFunc_t m
  
 NOINLINE
 struct TestResult test_one_u32(uint32_t d, const uint32_t *data) {
+    int no_branchfree = (d == 1);
     struct libdivide_u32_t div_struct = libdivide_u32_gen(d);
+    struct libdivide_u32_branchfree_t div_struct_bf = libdivide_u32_branchfree_gen(no_branchfree ? 2 : d);
     struct FunctionParams_t params;
     params.d = &d;
     params.denomPtr = &div_struct;
+    params.denomBranchfreePtr = &div_struct_bf;
     params.data = data;
         
-    struct TestResult result = test_one(mine_u32, mine_u32_vector, mine_u32_unswitched, mine_u32_vector_unswitched, his_u32, mine_u32_generate, &params);
+    struct TestResult result = test_one(mine_u32,
+                                        no_branchfree ? mine_u32 : mine_u32_branchfree,
+                                        mine_u32_vector,
+                                        mine_u32_unswitched,
+                                        mine_u32_vector_unswitched,
+                                        no_branchfree ? mine_u32_vector : mine_u32_vector_branchfree,
+                                        his_u32,
+                                        mine_u32_generate,
+                                        &params);
     result.algo = libdivide_u32_get_algorithm(&div_struct);
     return result;
 }
  
 NOINLINE
 struct TestResult test_one_s32(int32_t d, const int32_t *data) {
+    int no_branchfree = (d == 1 || d == -1);
     struct libdivide_s32_t div_struct = libdivide_s32_gen(d);
+    struct libdivide_s32_branchfree_t div_struct_bf = libdivide_s32_branchfree_gen(no_branchfree ? 2 : d);
     struct FunctionParams_t params;
     params.d = &d;
     params.denomPtr = &div_struct;
+    params.denomBranchfreePtr = &div_struct_bf;
     params.data = data;
     
-    struct TestResult result = test_one(mine_s32, mine_s32_vector, mine_s32_unswitched, mine_s32_vector_unswitched, his_s32, mine_s32_generate, &params);
+    struct TestResult result = test_one(mine_s32,
+                                        no_branchfree ? mine_s32 : mine_s32_branchfree,
+                                        mine_s32_vector,
+                                        mine_s32_unswitched,
+                                        mine_s32_vector_unswitched,
+                                        no_branchfree ? mine_s32_vector : mine_s32_vector_branchfree,
+                                        his_s32,
+                                        mine_s32_generate,
+                                        &params);
     result.algo = libdivide_s32_get_algorithm(&div_struct);
     return result;
 }
  
 NOINLINE
 struct TestResult test_one_u64(uint64_t d, const uint64_t *data) {
+    int no_branchfree = (d == 1);
     struct libdivide_u64_t div_struct = libdivide_u64_gen(d);
+    struct libdivide_u64_branchfree_t div_struct_bf = libdivide_u64_branchfree_gen(no_branchfree ? 2 : d);
     struct FunctionParams_t params;
     params.d = &d;
     params.denomPtr = &div_struct;
+    params.denomBranchfreePtr = &div_struct_bf;
     params.data = data;
     
-    struct TestResult result = test_one(mine_u64, mine_u64_vector, mine_u64_unswitched, mine_u64_vector_unswitched, his_u64, mine_u64_generate, &params);
+    struct TestResult result = test_one(mine_u64,
+                                        no_branchfree ? mine_u64 : mine_u64_branchfree,
+                                        mine_u64_vector,
+                                        mine_u64_unswitched,
+                                        mine_u64_vector_unswitched,
+                                        no_branchfree ? mine_u64_vector : mine_u64_vector_branchfree,
+                                        his_u64,
+                                        mine_u64_generate,
+                                        &params);
     result.algo = libdivide_u64_get_algorithm(&div_struct);
     return result;
 }
  
 NOINLINE
 struct TestResult test_one_s64(int64_t d, const int64_t *data) {
+    int no_branchfree = (d == 1 || d == -1);
     struct libdivide_s64_t div_struct = libdivide_s64_gen(d);
+    struct libdivide_s64_branchfree_t div_struct_bf = libdivide_s64_branchfree_gen(no_branchfree ? 2 : d);
     struct FunctionParams_t params;
     params.d = &d;
     params.denomPtr = &div_struct;
+    params.denomBranchfreePtr = no_branchfree ? (void *)&div_struct : (void *)&div_struct_bf;
     params.data = data;
     
-    struct TestResult result = test_one(mine_s64, mine_s64_vector, mine_s64_unswitched, mine_s64_vector_unswitched, his_s64, mine_s64_generate, &params);
+    struct TestResult result = test_one(mine_s64, no_branchfree ? mine_s64 : mine_s64_branchfree, mine_s64_vector, mine_s64_unswitched, mine_s64_vector_unswitched, mine_s64_vector_branchfree, his_s64, mine_s64_generate, &params);
     result.algo = libdivide_s64_get_algorithm(&div_struct);
     return result;
 }
  
  
 static void report_header(void) {
-    printf("%6s%8s%8s%8s%8s%8s%8s%6s\n", "#", "system", "scalar", "scl_us", "vector", "vec_us", "gener", "algo");
+    printf("%6s%8s%8s%8s%8s%8s%8s%8s%8s%6s\n", "#", "system", "scalar", "scl_bf", "scl_us", "vector", "vec_bf", "vec_us", "gener", "algo");
 }
  
 static void report_result(const char *input, struct TestResult result) {
-    printf("%6s%8.3f%8.3f%8.3f%8.3f%8.3f%8.3f%6d\n", input, result.his_time, result.my_base_time, result.my_unswitched_time, result.my_vector_time, result.my_vector_unswitched_time, result.gen_time, result.algo);
+    printf("%6s%8.3f%8.3f%8.3f%8.3f%8.3f%8.3f%8.3f%8.3f%6d\n", input, result.his_time, result.my_base_time, result.my_branchfree_time, result.my_unswitched_time, result.my_vector_time, result.my_vector_branchfree_time, result.my_vector_unswitched_time, result.gen_time, result.algo);
 }
  
 static void test_many_u32(const uint32_t *data) {

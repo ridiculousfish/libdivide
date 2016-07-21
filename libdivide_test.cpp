@@ -8,6 +8,7 @@
 #include <typeinfo>
 #include <limits>
 #include <string.h>
+#include <string>
 
 #ifdef LIBDIVIDE_USE_SSE2
 #include <emmintrin.h>
@@ -50,6 +51,8 @@ class DivideTest : private DivideTest_PRNG {
 
 private:
     
+    std::string name;
+    
     typedef std::numeric_limits<T> limits;
     
     uint32_t base_random(void) {
@@ -73,14 +76,20 @@ private:
         return result;
     }
     
-    template<int ALGO>
-    void test_one(T numer, T denom, const divider<T, ALGO> & the_divider) {
-        // Don't crash with INT_MIN / -1
-        if (limits::is_signed && numer == limits::min() && denom == T(-1)) {
-            return;
+    std::string testcase_name(int algo) const {
+        std::string result = this->name;
+        if (algo == BRANCHFREE) {
+            result += " (branchfree)";
         }
+        return result;
+    }
+    
+    void test_unswitching(T, T, const divider<T, BRANCHFREE> &) {
+        // No unswitching in branchfree
+    }
+
+    void test_unswitching(T numer, T denom, const divider<T, BRANCHFULL> & the_divider) {
         T expect = numer / denom;
-        T actual1 = numer / the_divider;
         T actual2 = -1;
         switch (the_divider.get_algorithm()) {
             case 0: actual2 = numer / unswitch<0>(the_divider); break;
@@ -88,30 +97,29 @@ private:
             case 2: actual2 = numer / unswitch<2>(the_divider); break;
             case 3: actual2 = numer / unswitch<3>(the_divider); break;
             case 4: actual2 = numer / unswitch<4>(the_divider); break;
-            default: 
+            default:
                 cout << "Unexpected algorithm" << the_divider.get_algorithm() << endl;
                 while (1) ;
                 break;
         }
-        
-        if (actual1 != expect) {
-            cout << "Failure for " << (typeid(T).name()) << ": " <<  numer << " / " << denom << " expected " << expect << " actual " << actual1 << endl;
-			while (1) ;
-		}
-        else {
-//            cout << "Success for " << numer << " / " << denom << " = " << actual1 << endl;
-        }
-        
-        
         if (actual2 != expect) {
-            cout << "Unswitched failure for " << (typeid(T).name()) << ": " <<  numer << " / " << denom << " expected " << expect << " actual " << actual1 << endl;
-            while (1) ;
+            cout << "Unswitched failure for " << testcase_name(BRANCHFULL) << ": " <<  numer << " / " << denom << " expected " << expect << " actual " << actual2 <<  " algo " << the_divider.get_algorithm() << endl;
         }
-        else {
-//            cout << "Unswitched Success for " << numer << " / " << denom << " = " << actual2 << endl;
+    }
+    
+    template<int ALGO>
+    void test_one(T numer, T denom, const divider<T, ALGO> & the_divider) {
+        // Don't crash with INT_MIN / -1
+        if (limits::is_signed && numer == limits::min() && denom == T(-1)) {
+            return;
         }
         
-        
+        T expect = numer / denom;
+        T actual1 = numer / the_divider;
+        if (actual1 != expect) {
+            cout << "Failure for " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " expected " << expect << " actual " << actual1 << endl;
+		}
+        test_unswitching(numer, denom, the_divider);
     }
     
     template<int ALGO>
@@ -130,8 +138,7 @@ private:
 			T actual = results[i];
 			T expect = numer / denom;
 			if (actual != expect) {
-				cout << "Vector failure for " << (typeid(T).name()) << ": " << numer << " / " << denom << " expected " << expect << " actual " << actual << endl;
-				while (1);
+                cout << "Vector failure for " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " expected " << expect << " actual " << actual << endl;
 			}
 			else {
 				//cout << "Vector success for " << numer << " / " << denom << " = " << actual << " (" << i << ")" << endl;
@@ -141,10 +148,15 @@ private:
     
     template<int ALGO>
     void test_many(T denom) {
+        // Don't try dividing by +/- 1 with branchfree
+        if (ALGO == BRANCHFREE && (denom == 1 || (limits::is_signed && denom == T(-1)))) {
+            return;
+        }
+
         const divider<T, ALGO> the_divider = divider<T, ALGO>(denom);
         T recovered = the_divider.recover_divisor(); 
         if (recovered != denom) {
-            cout << "Failed to recover divisor for " << denom << " - got " << recovered << endl;
+            cout << "Failed to recover divisor for " << testcase_name(ALGO) << ": "<< denom << ", but got " << recovered << endl;
         }
         
         size_t j;
@@ -170,9 +182,37 @@ private:
     }
     
 public:
+    
+    DivideTest(const std::string &n) : name(n) { }
+    
     void run(void) {
-        unsigned i;
-        for (i=0; i < 10000; i++) {
+        // Test small values
+        for (T denom = 1; denom < 257; denom++) {
+            // powers of 2 get tested later
+            if ((denom & (denom - 1)) == 0) continue;
+            test_many<BRANCHFULL>(denom);
+            test_many<BRANCHFREE>(denom);
+            if (limits::is_signed) {
+                test_many<BRANCHFULL>(-denom);
+                test_many<BRANCHFREE>(-denom);
+            }
+        }
+        
+        
+        /* Test key values */
+        const T keyValues[] = {T((1<<15)+1), T((1<<31)+1), T((1LL<<63)+1)};
+        for (size_t i=0; i < sizeof keyValues / sizeof *keyValues; i++) {
+            T denom = keyValues[i];
+            test_many<BRANCHFULL>(denom);
+            test_many<BRANCHFREE>(denom);
+            if (limits::is_signed) {
+                test_many<BRANCHFULL>(-denom);
+                test_many<BRANCHFREE>(-denom);
+            }
+        }
+        
+        // Test randomish values
+        for (unsigned i=0; i < 10000; i++) {
             T denom = random_denominator();
             test_many<BRANCHFULL>(denom);
             test_many<BRANCHFREE>(denom);
@@ -204,7 +244,7 @@ static void *perform_test(void *ptr) {
         {
             if (! sRunS32) break;
             puts("Starting int32_t");
-            DivideTest<int32_t> dt;
+            DivideTest<int32_t> dt("s32");
             dt.run();
         }
             break;
@@ -213,7 +253,7 @@ static void *perform_test(void *ptr) {
         {
             if (! sRunU32) break;
             puts("Starting uint32_t");
-            DivideTest<uint32_t> dt;
+            DivideTest<uint32_t> dt("u32");
             dt.run();
         }
             break;
@@ -222,7 +262,7 @@ static void *perform_test(void *ptr) {
         {
             if (! sRunS64) break;
             puts("Starting sint64_t");
-            DivideTest<int64_t> dt;
+            DivideTest<int64_t> dt("s64");
             dt.run();
         }
             break;
@@ -231,7 +271,7 @@ static void *perform_test(void *ptr) {
         {
             if (! sRunU64) break;
             puts("Starting uint64_t");
-            DivideTest<uint64_t> dt;
+            DivideTest<uint64_t> dt("u64");
             dt.run();
         }
             break;
