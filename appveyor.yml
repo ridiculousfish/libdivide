@@ -14,6 +14,9 @@ platform:
 configuration:
   - Debug
 
+before_build:
+  "\"C:\\Program Files\\Microsoft SDKs\\Windows\\v7.1\\Bin\\SetEnv.cmd\" /%platform%"
+
 build_script:
   - cl /nologo /W4 /O2 /EHsc libdivide_test.cpp
 
