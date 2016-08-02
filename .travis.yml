@@ -1,0 +1,13 @@
+# Test configuration for Travis CI. See <https://travis-ci.org/>.
+language: cpp
+
+compiler:
+  - gcc
+  - clang
+
+branches:
+  only:
+    - master
+
+script:
+  - make test
