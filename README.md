@@ -1,7 +1,7 @@
 libdivide
 =========
-[![Build Status](https://travis-ci.org/ridiculousfish/libdivide.svg)](https://travis-ci.org/ridiculousfish/libdivide)
-[![Build Status](https://ci.appveyor.com/api/projects/status/github/ridiculousfish/libdivide?branch=master&svg=true)](https://ci.appveyor.com/project/ridiculousfish/libdivide)
+[![Build Status](https://travis-ci.org/kimwalisch/libdivide.svg)](https://travis-ci.org/kimwalisch/libdivide)
+[![Build Status](https://ci.appveyor.com/api/projects/status/github/kimwalisch/libdivide?branch=master&svg=true)](https://ci.appveyor.com/project/kimwalisch/libdivide)
 
 libdivide is a "library" for optimizing integer division.  See http://libdivide.com for more information on libdivide.
 
