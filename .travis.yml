@@ -10,4 +10,4 @@ branches:
     - master
 
 script:
-  - make test
+  - make test DEBUG_FLAGS="-W -Wall -Wextra -Werror -Wno-long-long -pedantic -fstrict-aliasing -g -O1 -DLIBDIVIDE_ASSERTIONS_ON=1 -msse2 -DLIBDIVIDE_USE_SSE2=1"
