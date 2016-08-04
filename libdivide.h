@@ -7,6 +7,9 @@
 
 #if defined(_MSC_VER)
 #define LIBDIVIDE_VC 1
+// disable warning C4146: unary minus operator applied to
+// unsigned type, result still unsigned
+#pragma warning(disable: 4146)
 #endif
 
 #ifdef __cplusplus
@@ -1319,7 +1322,7 @@ int32_t libdivide_s32_recover(const struct libdivide_s32_t *denom) {
     if (more & LIBDIVIDE_S32_SHIFT_PATH) {
         uint32_t absD = 1U << shift;
         if (more & LIBDIVIDE_NEGATIVE_DIVISOR) {
-            absD *= -1; // multiplying by -1 instead of negating prevents warning C4146 in VC
+            absD = -absD;
         }
         return (int32_t)absD;
     } else {
@@ -1611,7 +1614,7 @@ int64_t libdivide_s64_recover(const struct libdivide_s64_t *denom) {
     if (denom->magic == 0) { // shift path
         uint64_t absD = 1ULL << shift;
         if (more & LIBDIVIDE_NEGATIVE_DIVISOR) {
-            absD *= -1; // multiplying by -1 instead of negating prevents warning C4146 in VC++
+            absD = -absD;
         }
         return (int64_t)absD;
     } else {
