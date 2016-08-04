@@ -50,7 +50,7 @@ typedef unsigned __int8 uint8_t;
 #define HAS_INT128_T 1
 #endif
 
-#if defined(__x86_64__) || defined(_WIN64) || defined(_M_64)
+#if defined(__x86_64__) || defined(_WIN64) || defined(_M_X64)
 #define LIBDIVIDE_IS_X86_64 1
 #endif
 
@@ -296,7 +296,9 @@ static inline uint32_t libdivide__mullhi_u32(uint32_t x, uint32_t y) {
 }
  
 static uint64_t libdivide__mullhi_u64(uint64_t x, uint64_t y) {
-#if HAS_INT128_T
+#if LIBDIVIDE_VC && LIBDIVIDE_IS_X86_64
+    return __umulh(x, y);
+#elif HAS_INT128_T
     __uint128_t xl = x, yl = y;
     __uint128_t rl = xl * yl;
     return (uint64_t)(rl >> 64);
@@ -317,6 +319,8 @@ static uint64_t libdivide__mullhi_u64(uint64_t x, uint64_t y) {
 }
  
 static inline int64_t libdivide__mullhi_s64(int64_t x, int64_t y) {
+#if LIBDIVIDE_VC && LIBDIVIDE_IS_X86_64
+    return __mulh(x, y);
 #if HAS_INT128_T
     __int128_t xl = x, yl = y;
     __int128_t rl = xl * yl;
