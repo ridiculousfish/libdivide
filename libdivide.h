@@ -526,14 +526,14 @@ static inline int32_t libdivide__count_leading_zeros32(uint32_t val) {
     }
     return 0;
 #else
-    // Dorky way to count leading zeros.
-    // Note that this hangs for val = 0!
-    int32_t result = 0;
-    while (! (val & (1U << 31))) {
-        val <<= 1;
-        result++;
-    }
-    return result;    
+  int32_t result = 0;
+  uint32_t hi = 1U << 31;
+
+  while (~val & hi) {
+      hi >>= 1;
+      result++;
+  }
+  return result;
 #endif
 }
     
@@ -548,14 +548,10 @@ static inline int32_t libdivide__count_leading_zeros64(uint64_t val) {
     }
     return 0;
 #else
-    // Dorky way to count leading zeros.
-    // Note that this hangs for val = 0!
-    int32_t result = 0;
-    while (! (val & (1ULL << 63))) {
-        val <<= 1;
-        result++;
-    }
-    return result;
+    uint32_t hi = val >> 32;
+    uint32_t lo = val & 0xFFFFFFFF;
+    if (hi != 0) return libdivide__count_leading_zeros32(hi);
+    return 32 + libdivide__count_leading_zeros32(lo);
 #endif
 }
 
