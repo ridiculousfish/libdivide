@@ -7,6 +7,9 @@
 
 #if defined(_MSC_VER)
 #define LIBDIVIDE_VC 1
+// disable warning C4146: unary minus operator applied to
+// unsigned type, result still unsigned
+#pragma warning(disable: 4146)
 #endif
 
 #ifdef __cplusplus
@@ -50,7 +53,7 @@ typedef unsigned __int8 uint8_t;
 #define HAS_INT128_T 1
 #endif
 
-#if defined(__x86_64__) || defined(_WIN64) || defined(_M_64)
+#if defined(__x86_64__) || defined(_WIN64) || defined(_M_X64)
 #define LIBDIVIDE_IS_X86_64 1
 #endif
 
@@ -296,7 +299,9 @@ static inline uint32_t libdivide__mullhi_u32(uint32_t x, uint32_t y) {
 }
  
 static uint64_t libdivide__mullhi_u64(uint64_t x, uint64_t y) {
-#if HAS_INT128_T
+#if LIBDIVIDE_VC && LIBDIVIDE_IS_X86_64
+    return __umulh(x, y);
+#elif HAS_INT128_T
     __uint128_t xl = x, yl = y;
     __uint128_t rl = xl * yl;
     return (uint64_t)(rl >> 64);
@@ -317,7 +322,9 @@ static uint64_t libdivide__mullhi_u64(uint64_t x, uint64_t y) {
 }
  
 static inline int64_t libdivide__mullhi_s64(int64_t x, int64_t y) {
-#if HAS_INT128_T
+#if LIBDIVIDE_VC && LIBDIVIDE_IS_X86_64
+    return __mulh(x, y);
+#elif HAS_INT128_T
     __int128_t xl = x, yl = y;
     __int128_t rl = xl * yl;
     return (int64_t)(rl >> 64);    
@@ -1315,7 +1322,7 @@ int32_t libdivide_s32_recover(const struct libdivide_s32_t *denom) {
     if (more & LIBDIVIDE_S32_SHIFT_PATH) {
         uint32_t absD = 1U << shift;
         if (more & LIBDIVIDE_NEGATIVE_DIVISOR) {
-            absD *= -1; // multiplying by -1 instead of negating prevents warning C4146 in VC
+            absD = -absD;
         }
         return (int32_t)absD;
     } else {
@@ -1607,7 +1614,7 @@ int64_t libdivide_s64_recover(const struct libdivide_s64_t *denom) {
     if (denom->magic == 0) { // shift path
         uint64_t absD = 1ULL << shift;
         if (more & LIBDIVIDE_NEGATIVE_DIVISOR) {
-            absD *= -1; // multiplying by -1 instead of negating prevents warning C4146 in VC++
+            absD = -absD;
         }
         return (int64_t)absD;
     } else {
