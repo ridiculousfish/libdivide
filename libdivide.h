@@ -472,7 +472,7 @@ static inline __m128i libdivide_mullhi_s32_flat_vector(__m128i a, __m128i b) {
 #endif
  
 static inline int32_t libdivide__count_leading_zeros32(uint32_t val) {
-#if __GNUC__ || __has_builtin(__builtin_clzll)
+#if __GNUC__ || __has_builtin(__builtin_clz)
     // Fast way to count leading zeros
     return __builtin_clz(val);    
 #elif LIBDIVIDE_VC
@@ -543,7 +543,6 @@ static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v,
             : [v] "r"(v), "a"(u0), "d"(u1)
             );
     return result;
-
 }
 #else
 
