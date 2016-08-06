@@ -471,50 +471,6 @@ static inline __m128i libdivide_mullhi_s32_flat_vector(__m128i a, __m128i b) {
 #endif
 #endif
  
-static inline int32_t libdivide__count_trailing_zeros32(uint32_t val) {
-#if __GNUC__ || __has_builtin(__builtin_ctz)
-    // Fast way to count trailing zeros
-    return __builtin_ctz(val);
-#elif LIBDIVIDE_VC
-    unsigned long result;
-    if (_BitScanForward(&result, val)) {
-        return result;
-    }
-    return 0;
-#else
-    // Dorky way to count trailing zeros. Note that this hangs for val = 0!
-    int32_t result = 0;
-    // Set v's trailing 0s to 1s and zero rest
-    val = (val ^ (val - 1)) >> 1;
-    while (val) {
-        val >>= 1;
-        result++;
-    }
-    return result;
-#endif
-}
- 
-static inline int32_t libdivide__count_trailing_zeros64(uint64_t val) {
-#if __LP64__ && (__GNUC__ || __has_builtin(__builtin_ctzll))
-    // Fast way to count trailing zeros.
-    // Note that we disable this in 32 bit because gcc does something horrible,
-    // it calls through to a dynamically bound function.
-    return __builtin_ctzll(val);
-#elif LIBDIVIDE_VC && _WIN64
-    unsigned long result;
-    if (_BitScanForward64(&result, val)) {
-            return result;
-    }
-    return 0;
-#else
-    // Pretty good way to count trailing zeros.
-    // Note that this hangs for val = 0!
-    uint32_t lo = val & 0xFFFFFFFF;
-    if (lo != 0) return libdivide__count_trailing_zeros32(lo);
-    return 32 + libdivide__count_trailing_zeros32(val >> 32);
-#endif
-}
- 
 static inline int32_t libdivide__count_leading_zeros32(uint32_t val) {
 #if __GNUC__ || __has_builtin(__builtin_clzll)
     // Fast way to count leading zeros
@@ -526,14 +482,14 @@ static inline int32_t libdivide__count_leading_zeros32(uint32_t val) {
     }
     return 0;
 #else
-    // Dorky way to count leading zeros.
-    // Note that this hangs for val = 0!
-    int32_t result = 0;
-    while (! (val & (1U << 31))) {
-        val <<= 1;
-        result++;
-    }
-    return result;    
+  int32_t result = 0;
+  uint32_t hi = 1U << 31;
+
+  while (~val & hi) {
+      hi >>= 1;
+      result++;
+  }
+  return result;
 #endif
 }
     
@@ -548,14 +504,10 @@ static inline int32_t libdivide__count_leading_zeros64(uint64_t val) {
     }
     return 0;
 #else
-    // Dorky way to count leading zeros.
-    // Note that this hangs for val = 0!
-    int32_t result = 0;
-    while (! (val & (1ULL << 63))) {
-        val <<= 1;
-        result++;
-    }
-    return result;
+    uint32_t hi = val >> 32;
+    uint32_t lo = val & 0xFFFFFFFF;
+    if (hi != 0) return libdivide__count_leading_zeros32(hi);
+    return 32 + libdivide__count_leading_zeros32(lo);
 #endif
 }
 
