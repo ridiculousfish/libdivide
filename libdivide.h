@@ -85,17 +85,13 @@ typedef unsigned __int8 uint8_t;
 #include <smmintrin.h>
 #endif
 
-// Silly defines to prevent Xcode indenting
-#define LIBDIVIDE_OPEN_BRACKET {
-#define LIBDIVIDE_CLOSE_BRACKET }
-
 #ifdef __cplusplus
 // We place libdivide within the libdivide namespace, and that goes in an
 // anonymous namespace so that the functions are only visible to files that
 // #include this header and don't get external linkage. At least that's the
 // theory.
-namespace LIBDIVIDE_OPEN_BRACKET
-namespace libdivide LIBDIVIDE_OPEN_BRACKET
+namespace {
+namespace libdivide {
 #endif
 
 // Explanation of "more" field: bit 6 is whether to use shift path. If we are
@@ -1524,9 +1520,7 @@ int64_t libdivide_s64_branchfree_do(int64_t numer, const struct libdivide_s64_br
     uint32_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
     // must be arithmetic shift and then sign extend
     int64_t sign = (int8_t)more >> 7;
-    
     int64_t magic = denom->magic;
-    
     int64_t q = libdivide__mullhi_s64(magic, numer);
     q += numer;
     
@@ -1929,11 +1923,11 @@ __m128i operator/(__m128i numer, const divider<int_type, ALGO> & denom) {
 }
 #endif
 
-#endif //__cplusplus
+#endif // __cplusplus
     
 #endif // LIBDIVIDE_HEADER_ONLY
 
 #ifdef __cplusplus
-LIBDIVIDE_CLOSE_BRACKET // close namespace libdivide
-LIBDIVIDE_CLOSE_BRACKET // close anonymous namespace
+} // close namespace libdivide
+} // close anonymous namespace
 #endif
