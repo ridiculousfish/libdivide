@@ -18,7 +18,7 @@ before_build:
   "\"C:\\Program Files\\Microsoft SDKs\\Windows\\v7.1\\Bin\\SetEnv.cmd\" /%platform%"
 
 build_script:
-  - cl /nologo /W2 /O2 /EHsc /DLIBDIVIDE_USE_SSE2=1 libdivide_test.cpp
+  - cl /nologo /W3 /WX /O2 /EHsc /DLIBDIVIDE_USE_SSE2=1 libdivide_test.cpp
 
 test_script:
   - libdivide_test.exe
