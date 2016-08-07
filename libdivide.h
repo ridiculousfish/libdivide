@@ -278,20 +278,6 @@ LIBDIVIDE_API __m128i libdivide_s64_branchfree_do_vector(__m128i numers, const s
 
 //////// Internal Utility Functions
 
-enum libdivide_internal_strategy_t {
-    libdivide_strat_default,
-    libdivide_strat_branchfree,
-    libdivide_strat_specialized
-};
-
-enum libdivide_internal_salgo_t {
-    libdivide_salgo_shift_positive,
-    libdivide_salgo_shift_negative,
-    libdivide_salgo_add_positive,
-    libdivide_salgo_add_negative,
-    libdivide_salgo_noadd
-};
- 
 static inline uint32_t libdivide__mullhi_u32(uint32_t x, uint32_t y) {
     uint64_t xl = x, yl = y;
     uint64_t rl = xl * yl;
