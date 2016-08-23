@@ -5,16 +5,16 @@ libdivide
 
 libdivide is a "library" for optimizing integer division.  See http://libdivide.com for more information on libdivide.
 
-This is summary of how to use libdivide's testing tools to develop on libdivide itself.  
+This is a summary of how to use libdivide's testing tools to develop on libdivide itself.  
 
-libdivide proper consists of a single header file ```libdivide.h``` which compiles as both C and C++.
+libdivide consists of a single header file ```libdivide.h``` which compiles as both C and C++.
 
 libdivide has two test tools: a verification utility "tester", and a benchmarking utility "benchmark".  The verification utility is used to help ensure that the division algorithm is correct, and the benchmarking utility is used to measure the speed increase.  On Mac OS X, Linux, and other Unix-like systems, you can build both with the Makefile.  On Windows, there is a Visual C++ 2010 project that can build both, in windows/libdivide_Win32.
 
 To build the tester via the Makefile, build one of the following targets:
 
-   debug:   builds the tester without optimization
-   release: builds the tester with optimization  
+* **debug:** builds the tester without optimization
+* **release:** builds the tester with optimization  
    
 Both build an executable "tester".  You can pass it one or more of the following arguments: u32, s32, u64, s64, to test the four cases (signed, unsigned, 32 bit, or 64 bit), or run it with no arguments to test all four.   The tester is multithreaded so it can test multiple cases simultaneously.  The tester will verify the correctness of libdivide via a set of randomly chosen denominators, by comparing the result of libdivide's division to hardware division.  It may take a long time to run, but it will output as soon as it finds a discrepancy.
   
