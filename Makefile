@@ -9,7 +9,7 @@ CC = cc
 LINKFLAGS = -lpthread
 endif
 
-CPP = c++
+CXX = c++
 
 DEBUG_FLAGS = -fstrict-aliasing -g -O0 -DLIBDIVIDE_ASSERTIONS_ON=1 -msse2 -DLIBDIVIDE_USE_SSE2=1 -W -Wall
 RELEASE_FLAGS = -fstrict-aliasing -W -Wall -g -O3 -msse2 -DLIBDIVIDE_USE_SSE2=1
@@ -20,22 +20,22 @@ test: release
 tester: debug
 
 debug: libdivide_test.cpp libdivide.h
-	$(CPP) $(DEBUG_FLAGS) -g -o tester libdivide_test.cpp $(LINKFLAGS)
+	$(CXX) $(DEBUG_FLAGS) -g -o tester libdivide_test.cpp $(LINKFLAGS)
 
 i386: libdivide_test.cpp libdivide.h
-	$(CPP) $(DEBUG_FLAGS) -o tester libdivide_test.cpp $(LINKFLAGS)
+	$(CXX) $(DEBUG_FLAGS) -o tester libdivide_test.cpp $(LINKFLAGS)
 
 x86_64: libdivide_test.cpp libdivide.h
-	$(CPP) $(DEBUG_FLAGS) $(ARCH_x64) -o tester libdivide_test.cpp $(LINKFLAGS)
+	$(CXX) $(DEBUG_FLAGS) $(ARCH_x64) -o tester libdivide_test.cpp $(LINKFLAGS)
 
 release: libdivide_test.cpp libdivide.h
-	$(CPP) $(RELEASE_FLAGS) -o tester libdivide_test.cpp $(LINKFLAGS)
+	$(CXX) $(RELEASE_FLAGS) -o tester libdivide_test.cpp $(LINKFLAGS)
 
 benchmark: libdivide_benchmark.c libdivide.h
 	$(CC) $(RELEASE_FLAGS) $(ARCH_x64) -o benchmark libdivide_benchmark.c $(LINKFLAGS)
 
 primes: primes_benchmark.cpp libdivide.h
-	$(CPP) -O3 -std=c++14 primes_benchmark.cpp -o $@
+	$(CXX) -O3 -std=c++14 primes_benchmark.cpp -o $@
 
 clean:
 	rm -Rf primes tester tester.dSYM benchmark benchmark.dSYM
