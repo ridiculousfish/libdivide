@@ -542,8 +542,8 @@ static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v,
     rhat;               // A remainder.
     int s;              // Shift amount for norm.
     
-    if (u1 >= v) {                  // If overflow, set rem.
-        if (r != NULL)              // to an impossible value,
+    if (u1 >= v) {                 // If overflow, set rem.
+        if (r != NULL)             // to an impossible value,
             *r = (uint64_t) -1;    // and return the largest
         return (uint64_t) -1;      // possible quotient.
     }
