@@ -43,6 +43,7 @@ scalar:  libdivide time, using scalar functions
 scl_us:  libdivide time, using scalar unswitching functions
 vector:  libdivide time, using vector functions
 vec_us:  libdivide time, using vector unswitching
+ gener:  Time taken to generate the divider struct
   algo:  The algorithm used.  See libdivide_*_get_algorithm
 ```
 
