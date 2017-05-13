@@ -1,5 +1,9 @@
 // libdivide.h
 // Copyright 2010 - 2016 ridiculous_fish
+//
+// libdivide is dual-licensed under the Boost or zlib
+// licenses. You may use libdivide under the terms of
+// either of these. See LICENSE.txt for more details.
 
 #if defined(_WIN32) || defined(WIN32)
 #define LIBDIVIDE_WINDOWS 1
