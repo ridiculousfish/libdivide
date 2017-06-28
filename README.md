@@ -1,7 +1,6 @@
 libdivide
 =========
-[![Build Status](https://travis-ci.org/ridiculousfish/libdivide.svg)](https://travis-ci.org/ridiculousfish/libdivide)
-[![Build Status](https://ci.appveyor.com/api/projects/status/github/ridiculousfish/libdivide?branch=master&svg=true)](https://ci.appveyor.com/project/ridiculousfish/libdivide)
+[![Build Status](https://ci.appveyor.com/api/projects/status/github/ridiculousfish/libdivide?branch=master&svg=true)](https://ci.appveyor.com/project/kimwalisch/libdivide)
 
 libdivide is a "library" for optimizing integer division.  See http://libdivide.com for more information on libdivide.
 
@@ -49,4 +48,6 @@ vec_us:  libdivide time, using vector unswitching
 
 The benchmarking utility will also verify that each function returns the same value, so "benchmark" is valuable for its verification as well.
 
-Before sending in patches to libdivide, please run the tester to completion with all four types, and the benchmark utility for a reasonable period, to ensure that you have not introduced a regression.  Happy hacking!
+Before sending in patches to libdivide, please run the tester to completion with all four types, and the benchmark utility for a reasonable period, to ensure that you have not introduced a regression.
+
+Happy hacking!
