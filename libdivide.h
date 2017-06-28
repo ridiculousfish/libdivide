@@ -137,6 +137,12 @@ enum {
     LIBDIVIDE_NEGATIVE_DIVISOR = 0x80    
 };
 
+// pack divider structs to prevent compilers from padding.
+// This reduces memory usage by up to 43% when using a large
+// array of libdivide dividers and improves performance
+// by up to 10% because of reduced memory bandwidth.
+#pragma pack(push, 1)
+
 struct libdivide_u32_t {
     uint32_t magic;
     uint8_t more;
@@ -176,6 +182,8 @@ struct libdivide_s64_branchfree_t {
     int64_t magic;
     uint8_t more;
 };
+
+#pragma pack(pop)
 
 #ifndef LIBDIVIDE_API
     #ifdef __cplusplus
