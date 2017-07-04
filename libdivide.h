@@ -156,7 +156,7 @@ struct libdivide_s32_t {
 struct libdivide_u64_t {
     uint64_t magic;
     uint8_t more;
-};    
+};
 
 struct libdivide_s64_t {
     int64_t magic;
