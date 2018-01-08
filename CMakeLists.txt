@@ -45,6 +45,15 @@ if(BUILD_BENCHMARK)
     target_compile_definitions(benchmark PRIVATE _CRT_SECURE_NO_WARNINGS)
 endif(BUILD_BENCHMARK)
 
+# primes
+option(BUILD_PRIMES "build primes executable" ON)
+if(BUILD_PRIMES)
+    add_executable(primes primes_benchmark.cpp)
+    target_link_libraries(primes ${PROJECT_NAME})
+    set_target_properties(primes PROPERTIES CXX_STANDARD_REQUIRED 11
+                                            CXX_STANDARD 14)
+endif(BUILD_PRIMES)
+
 # CTest
 option(ENABLE_TESTING "enable testing with CTest" ON)
 if(ENABLE_TESTING)
