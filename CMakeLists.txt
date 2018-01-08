@@ -37,6 +37,14 @@ if(BUILD_TESTER)
     target_link_libraries(tester ${PROJECT_NAME} ${CMAKE_THREAD_LIBS_INIT})
 endif(BUILD_TESTER)
 
+# benchmark
+option(BUILD_BENCHMARK "build benchmark executable" ON)
+if(BUILD_BENCHMARK)
+    add_executable(benchmark libdivide_benchmark.c)
+    target_link_libraries(benchmark ${PROJECT_NAME})
+    target_compile_definitions(benchmark PRIVATE _CRT_SECURE_NO_WARNINGS)
+endif(BUILD_BENCHMARK)
+
 # CTest
 option(ENABLE_TESTING "enable testing with CTest" ON)
 if(ENABLE_TESTING)
