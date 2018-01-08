@@ -7,3 +7,12 @@ target_compile_definitions(${PROJECT_NAME} INTERFACE $<$<CONFIG:Debug>:LIBDIVIDE
 target_compile_options(${PROJECT_NAME} INTERFACE
     $<$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>:-fstrict-aliasing -Wall -Wextra>
     )
+
+
+# tester
+option(BUILD_TESTER "build tester executable" ON)
+if(BUILD_TESTER)
+    find_package(Threads)
+    add_executable(tester libdivide_test.cpp)
+    target_link_libraries(tester ${PROJECT_NAME} ${CMAKE_THREAD_LIBS_INIT})
+endif(BUILD_TESTER)
