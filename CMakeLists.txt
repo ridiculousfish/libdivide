@@ -16,3 +16,16 @@ if(BUILD_TESTER)
     add_executable(tester libdivide_test.cpp)
     target_link_libraries(tester ${PROJECT_NAME} ${CMAKE_THREAD_LIBS_INIT})
 endif(BUILD_TESTER)
+
+# CTest
+option(ENABLE_TESTING "enable testing with CTest" ON)
+if(ENABLE_TESTING)
+    enable_testing()
+
+    if(BUILD_TESTER)
+        add_test(tester-u32 tester "u32")
+        add_test(tester-u64 tester "u64")
+        add_test(tester-s32 tester "s32")
+        add_test(tester-s64 tester "s64")
+    endif(BUILD_TESTER)
+endif(ENABLE_TESTING)
