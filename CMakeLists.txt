@@ -28,6 +28,34 @@ else(USE_SSE2)
     message(STATUS "SSE2 is not used")
 endif(USE_SSE2)
 
+# install and export variables
+set(config_install_dir "lib/cmake/${PROJECT_NAME}")
+set(include_install_dir "include")
+set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
+set(project_config "${generated_dir}/${PROJECT_NAME}-config.cmake")
+set(version_config "${generated_dir}/${PROJECT_NAME}-config-version.cmake")
+set(targets_export_name "${PROJECT_NAME}-targets")
+set(namespace "${PROJECT_NAME}::")
+
+# ALIAS same as in configure file
+# the ALIAS can be used to create examples which use the same syntax as a client
+# application, which uses `find_package(libdivide CONFIG)`
+# create the alias libdivide::libdivide
+add_library(${namespace}${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+
+# installation of target libdivide
+install(
+    TARGETS ${PROJECT_NAME}
+    EXPORT ${targets_export_name}
+    COMPONENT library
+    INCLUDES DESTINATION include # set include path for installed library target
+)
+# installation of header file
+install(
+    FILES libdivide.h
+    DESTINATION include
+)
+
 
 # tester
 option(BUILD_TESTER "build tester executable" ON)
@@ -66,3 +94,45 @@ if(ENABLE_TESTING)
         add_test(tester-s64 tester "s64")
     endif(BUILD_TESTER)
 endif(ENABLE_TESTING)
+
+
+# Include module for fuctions
+# - 'write_basic_package_version_file'
+# - 'configure_package_config_file'
+include(CMakePackageConfigHelpers)
+
+# enable this block to generate and install a version file
+# Configure '<PROJECT-NAME>-config-version.cmake'
+# Note: PROJECT_VERSION_STRING needs to be defined
+#write_basic_package_version_file(
+#    "${version_config}"
+#    VERSION ${PROJECT_VERSION_STRING}
+#    COMPATIBILITY SameMajorVersion
+#)
+# install version file
+#   * <prefix>/lib/cmake/libdivide/libdivide-config-version.cmake
+#install(
+#    FILES "${version_config}"
+#    DESTINATION "${config_install_dir}"
+#)
+
+# Configure '<PROJECT-NAME>-config.cmake'
+configure_package_config_file(
+    "cmake/config.cmake.in"
+    "${project_config}"
+    INSTALL_DESTINATION "${config_install_dir}"
+)
+# install config file
+#   * <prefix>/lib/cmake/libdivide/libdivide-config.cmake
+install(
+    FILES "${project_config}"
+    DESTINATION "${config_install_dir}"
+)
+
+# install targets file
+#   * <prefix>/lib/cmake/libdivide/libdivide-targets.cmake
+install(
+    EXPORT "${targets_export_name}"
+    NAMESPACE "${namespace}"
+    DESTINATION "${config_install_dir}"
+)
