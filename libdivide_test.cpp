@@ -279,11 +279,7 @@ static void *perform_test(void *ptr) {
     return 0;
 }
 
-#if LIBDIVIDE_WINDOWS
-int wmain(int argc, char* argv[]) {
-#else
 int main(int argc, char* argv[]) {
-#endif
     if (argc == 1) {
         /* Test all */
         sRunU32 = sRunU64 = sRunS32 = sRunS64 = 1;
