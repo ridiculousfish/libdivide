@@ -13,8 +13,9 @@ libdivide has 2 test tools:
 
 ## Build instructions
 
-The test and benchmark programs can be compiled using cmake. Optionally ```libdivide.h```
-can also be installed to ```/usr/local/include```.
+The test and benchmark programs can be built using cmake and a recent C++ compiler
+that supports C++11 or later. Optionally ```libdivide.h``` can also be installed to
+```/usr/local/include```.
 
 ```bash
 cmake .
