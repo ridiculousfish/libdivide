@@ -47,12 +47,12 @@ add_executable(tester libdivide_test.cpp)
 add_executable(benchmark libdivide_benchmark.c)
 add_executable(primes_benchmark.cpp primes_benchmark.cpp)
 
-target_link_libraries(libdivide_test Threads::Threads)
+target_link_libraries(tester Threads::Threads)
 
 # Enable testing ###############################################
 
 enable_testing()
-add_test(NAME libdivide_test COMMAND libdivide_test)
+add_test(NAME tester COMMAND tester)
 
 # By default install to /usr/local/install #####################
 
