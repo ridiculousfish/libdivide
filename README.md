@@ -1,25 +1,43 @@
-libdivide
-=========
+# libdivide
 [![Build Status](https://ci.appveyor.com/api/projects/status/github/ridiculousfish/libdivide?branch=master&svg=true)](https://ci.appveyor.com/project/kimwalisch/libdivide)
 
-libdivide is a "library" for optimizing integer division.  See http://libdivide.com for more information on libdivide.
+```libdivide.h```  is a header-only C/C++ library for optimizing integer division, it has both
+a C API and a C++ API. This is a summary of how to use libdivide's testing tools to develop on libdivide itself.
 
-This is a summary of how to use libdivide's testing tools to develop on libdivide itself.  
+See http://libdivide.com for more information on libdivide.
 
-libdivide consists of a single header file ```libdivide.h``` which compiles as both C and C++.
+libdivide has 2 test tools:
 
-libdivide has two test tools: a verification utility "tester", and a benchmarking utility "benchmark".  The verification utility is used to help ensure that the division algorithm is correct, and the benchmarking utility is used to measure the speed increase.  On Mac OS X, Linux, and other Unix-like systems, you can build both with the Makefile.  On Windows, there is a Visual C++ 2010 project that can build both, in windows/libdivide_Win32.
+* A verification utility **tester** used to help ensure that the division algorithm is correct.
+* A benchmarking utility **benchmark** used to measure the speed increase.
 
-To build the tester via the Makefile, build one of the following targets:
+## Build instructions
 
-* **debug:** builds the tester without optimization
-* **release:** builds the tester with optimization  
-   
-Both build an executable "tester".  You can pass it one or more of the following arguments: u32, s32, u64, s64, to test the four cases (signed, unsigned, 32 bit, or 64 bit), or run it with no arguments to test all four.   The tester is multithreaded so it can test multiple cases simultaneously.  The tester will verify the correctness of libdivide via a set of randomly chosen denominators, by comparing the result of libdivide's division to hardware division.  It may take a long time to run, but it will output as soon as it finds a discrepancy.
-  
-The benchmarking utility is built with target "benchmark."  You may pass it one of the same arguments (u32, s32, u64, s64) to compare libdivide's speed against hardware division.
+The test and benchmark programs can be compiled using cmake. Optionally ```libdivide.h```
+can also be installed to ```/usr/local/include```.
 
-"benchmark" tests a simple function that inputs an array of random numerators and a single divisor, and returns the sum of their quotients.  It tests this using both hardware division, and the various division approaches supported by libdivide, including vector division.
+```bash
+cmake .
+make -j
+sudo make install
+```
+
+## Tester binary
+
+You may pass the **tester** binary one or more of the following arguments: ```u32```,
+```s32```, ```u64```, ```s64``` to test the four cases (signed, unsigned, 32 bit, or 64 bit), or
+run it with no arguments to test all four. The tester is multithreaded so it can test multiple
+cases simultaneously. The tester will verify the correctness of libdivide via a set of randomly
+chosen denominators, by comparing the result of libdivide's division to hardware division. It
+may take a long time to run, but it will output as soon as it finds a discrepancy.
+
+## Benchmark binary
+
+You can pass the **benchmark** binary one or more of the following arguments: ```u32```,
+```s32```, ```u64```, ```s64``` to compare libdivide's speed against hardware division.
+**benchmark** tests a simple function that inputs an array of random numerators and a single
+divisor, and returns the sum of their quotients.  It tests this using both hardware division, and
+the various division approaches supported by libdivide, including vector division.
 
 It will output data like this:
 
@@ -33,7 +51,9 @@ It will output data like this:
 ...
 ```
 
-It will keep going as long as you let it, so it's best to stop it when you are happy with the denominators tested.  These columns have the following significance.  All times are in nanoseconds, and lower is better.
+It will keep going as long as you let it, so it's best to stop it when you are happy with the
+denominators tested.  These columns have the following significance.  All times are in
+nanoseconds, and lower is better.
 
 ```bash
      #:  The divisor that is tested
@@ -46,8 +66,13 @@ vec_us:  libdivide time, using vector unswitching
   algo:  The algorithm used.  See libdivide_*_get_algorithm
 ```
 
-The benchmarking utility will also verify that each function returns the same value, so "benchmark" is valuable for its verification as well.
+The benchmarking utility will also verify that each function returns the same value,
+so "benchmark" is valuable for its verification as well.
 
-Before sending in patches to libdivide, please run the tester to completion with all four types, and the benchmark utility for a reasonable period, to ensure that you have not introduced a regression.
+## Contributing
+
+Before sending in patches to libdivide, please run the tester to completion with all four types,
+and the benchmark utility for a reasonable period, to ensure that you have not introduced a
+regression.
 
 Happy hacking!
