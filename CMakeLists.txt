@@ -5,6 +5,7 @@ include(CheckCXXCompilerFlag)
 include(CMakePushCheckState)
 
 cmake_push_check_state()
+set(CMAKE_REQUIRED_FLAGS -Werror)
 check_cxx_compiler_flag(-msse2 MSSE2_FLAG_AVAILABLE)
 cmake_pop_check_state()
 
