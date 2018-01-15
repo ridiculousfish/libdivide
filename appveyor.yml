@@ -23,5 +23,5 @@ build_script:
 
 test_script:
   - cd Release
-  - libdivide_test.exe
+  - tester.exe
   - primes_benchmark.exe
