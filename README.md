@@ -13,7 +13,7 @@ libdivide has 2 test tools:
 
 ## Build instructions
 
-The test and benchmark programs can be built using cmake and a recent C++ compiler
+The tester and benchmark programs can be built using cmake and a recent C++ compiler
 that supports C++11 or later. Optionally ```libdivide.h``` can also be installed to
 ```/usr/local/include```.
 
@@ -25,7 +25,7 @@ sudo make install
 
 ## Tester binary
 
-You may pass the **tester** binary one or more of the following arguments: ```u32```,
+You can pass the **tester** binary one or more of the following arguments: ```u32```,
 ```s32```, ```u64```, ```s64``` to test the four cases (signed, unsigned, 32 bit, or 64 bit), or
 run it with no arguments to test all four. The tester is multithreaded so it can test multiple
 cases simultaneously. The tester will verify the correctness of libdivide via a set of randomly
