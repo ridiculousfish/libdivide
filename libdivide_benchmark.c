@@ -1,3 +1,6 @@
+// Silence MSVC sprintf unsafe warnings
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "libdivide.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,9 +35,6 @@ using namespace libdivide;
 #include <sys/time.h> // for gettimeofday()
 #endif
 
-// Silence MSVC sprintf unsafe warnings
-#define _CRT_SECURE_NO_WARNINGS
-
 struct random_state {
     uint32_t hi;
     uint32_t lo;
@@ -42,7 +42,6 @@ struct random_state {
  
 #define SEED {2147483563, 2147483563 ^ 0x49616E42}
 #define ITERATIONS (1 << 19)
- 
 #define GEN_ITERATIONS (1 << 16)
  
 uint64_t sGlobalUInt64;
@@ -268,7 +267,6 @@ static uint64_t mine_s32_branchfree(struct FunctionParams_t *params) {
     }
     return sum;
 }
-
 
 #if LIBDIVIDE_USE_SSE2
 NOINLINE
@@ -573,7 +571,6 @@ static uint64_t mine_s64_branchfree(struct FunctionParams_t *params) {
     }
     return sum;
 }
-
 
 #if LIBDIVIDE_USE_SSE2
 NOINLINE
@@ -962,7 +959,6 @@ static const uint32_t *random_data(unsigned multiple) {
     }
     return data;
 }
-
 
 int main(int argc, char* argv[]) {
 #if LIBDIVIDE_WINDOWS
