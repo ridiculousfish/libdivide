@@ -14,7 +14,6 @@
 #define NANOSEC_PER_USEC 1000ULL
 #define NANOSEC_PER_MILLISEC 1000000ULL
 
-
 #ifdef __cplusplus
 using namespace libdivide;
 #endif
@@ -30,9 +29,11 @@ using namespace libdivide;
 #endif
 
 #if ! LIBDIVIDE_WINDOWS
-#include <sys/time.h> //for gettimeofday()
+#include <sys/time.h> // for gettimeofday()
 #endif
 
+// Silence MSVC sprintf unsafe warnings
+#define _CRT_SECURE_NO_WARNINGS
 
 struct random_state {
     uint32_t hi;
