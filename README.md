@@ -50,4 +50,24 @@ The benchmarking utility will also verify that each function returns the same va
 
 Before sending in patches to libdivide, please run the tester to completion with all four types, and the benchmark utility for a reasonable period, to ensure that you have not introduced a regression.
 
+Building with CMake
+-------------------
+
+libdivide can be built with CMake from 3.1 upwards. To use CMake to build libdivide use the following commands in the project root directory:
+* `cmake -H. -Bbuilddir -DCMAKE_BUILD_TYPE=[Debug|Release]`
+* `cmake --build builddir`
+
+This builds all projects in the folder `builddir`. Whether SSE2 is used is automatically determined. To override the automatic detection set the option `USE_SSE2` either via CMake GUI or add `-DUSE_SSE2=ON` to the configuration command line.
+
+To run the `tester` executable for all integer types supported use CTest:
+* `cmake --build builddir --target test`
+
+The following options can be used to configure the CMake build:
+
+* `USE_SSE2`: Enables the use of SSE2 instructions throughout the project.
+* `BUILD_TESTER`: Build the `tester` executable. (Default: `ON`)
+* `BUILD_BENCHMARK`: Build the `benchmark` executable. (Default: `ON`)
+* `BUILD_PRIMES`: Build the `primes` executable. (Default: `ON`)
+* `ENABLE_TESTING`: Enable running tester with CTest. (Default: `ON`)
+
 Happy hacking!
