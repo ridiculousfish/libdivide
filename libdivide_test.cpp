@@ -237,7 +237,10 @@ public:
     }
 };
 
-static int sRunU32, sRunU64, sRunS32, sRunS64;
+int sRunS32 = 0;
+int sRunU32 = 0;
+int sRunS64 = 0;
+int sRunU64 = 0;
 
 static void *perform_test(void *ptr) {
     intptr_t idx = (intptr_t)ptr;
