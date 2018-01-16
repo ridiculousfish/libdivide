@@ -5,8 +5,8 @@ include(CMakePushCheckState)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DLIBDIVIDE_ASSERTIONS_ON=1")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DLIBDIVIDE_ASSERTIONS_ON=1")
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DLIBDIVIDE_ASSERTIONS_ON")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DLIBDIVIDE_ASSERTIONS_ON")
 
 # By default enable release mode ###############################
 
@@ -36,7 +36,7 @@ cmake_pop_check_state()
 if(msse2)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse2")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2")
-    add_definitions(-DLIBDIVIDE_USE_SSE2=1)
+    add_definitions(-DLIBDIVIDE_USE_SSE2)
 endif()
 
 # Build binaries ###############################################
