@@ -14,15 +14,17 @@ platform:
 configuration:
   - Debug
 
+environment:
+  CXXFLAGS: /DLIBDIVIDE_USE_SSE2=1
+
 os: Visual Studio 2017
 
 build_script:
   - if "%platform%" == "x86" cmake . -G "Visual Studio 15 2017"
   - if "%platform%" == "x64" cmake . -G "Visual Studio 15 2017 Win64"
   - cmake --build . --config Release
-  - cl /nologo /W3 /WX /O2 /EHsc /DLIBDIVIDE_USE_SSE2=1 libdivide_test.cpp
 
 test_script:
   - cd Release
-  - libdivide_test.exe
+  - tester.exe
   - primes_benchmark.exe
