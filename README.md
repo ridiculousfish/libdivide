@@ -43,12 +43,14 @@ the various division approaches supported by libdivide, including vector divisio
 It will output data like this:
 
 ```bash
- #  system  scalar  scl_us  vector  vec_us   gener  algo
- 1   5.733   0.849   0.580   0.431   0.431   1.663     0
- 2   6.716   0.847   0.580   0.431   0.431   1.663     0
- 3   6.687   1.425   1.427   1.862   1.444  22.156     1
- 4   6.668   0.851   0.580   0.431   0.431   1.663     0
- 5   6.697   1.425   1.425   1.837   1.425  22.156     1
+#  system  scalar  scl_bf  scl_us  vector  vec_bf  vec_us   gener  algo
+1   5.453   0.654   0.570   0.223   0.565   0.603   0.235   1.282     0
+2   5.453   1.045   0.570   0.496   0.568   0.603   0.511  11.215     1
+3   5.453   1.534   0.570   0.570   0.587   0.603   0.570  11.887     2
+4   5.409   0.654   0.570   0.223   0.565   0.603   0.235   1.282     0
+5   5.409   1.045   0.570   0.496   0.568   0.603   0.509  11.215     1
+6   5.409   1.534   0.570   0.570   0.587   0.603   0.570  11.887     2
+
 ...
 ```
 
@@ -60,11 +62,13 @@ nanoseconds, and lower is better.
      #:  The divisor that is tested
 system:  Hardware divide time
 scalar:  libdivide time, using scalar functions
+scl_bf:  libdivide time, using branchfree scalar functions
 scl_us:  libdivide time, using scalar unswitching functions
 vector:  libdivide time, using vector functions
+vec_bf:  libdivide time, using branchfree vector functions
 vec_us:  libdivide time, using vector unswitching
  gener:  Time taken to generate the divider struct
-  algo:  The algorithm used.  See libdivide_*_get_algorithm
+  algo:  The algorithm used. See libdivide_*_get_algorithm
 ```
 
 The benchmarking utility will also verify that each function returns the same value,
