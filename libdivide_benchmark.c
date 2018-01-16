@@ -7,7 +7,7 @@
 #include <string.h>
 #include <inttypes.h>
 
-#if __GNUC__
+#if defined(__GNUC__)
 #define NOINLINE __attribute__((__noinline__))
 #else
 #define NOINLINE
@@ -17,21 +17,21 @@
 #define NANOSEC_PER_USEC 1000ULL
 #define NANOSEC_PER_MILLISEC 1000000ULL
 
-#ifdef __cplusplus
+#if defined(__cplusplus)
 using namespace libdivide;
 #endif
 
 #if defined(_WIN32) || defined(WIN32)
 #define NOMINMAX
-#define WIN32_LEAN_AND_MEAN 1
-#define VC_EXTRALEAN 1
+#define WIN32_LEAN_AND_MEAN
+#define VC_EXTRALEAN
 #include <windows.h>
 #include <mmsystem.h>
-#define LIBDIVIDE_WINDOWS 1
+#define LIBDIVIDE_WINDOWS
 #pragma comment(lib, "winmm")
 #endif
 
-#if ! LIBDIVIDE_WINDOWS
+#if !defined(LIBDIVIDE_WINDOWS)
 #include <sys/time.h> // for gettimeofday()
 #endif
 
@@ -53,11 +53,11 @@ static uint32_t my_random(struct random_state *state) {
     return state->hi;
 }
  
-#if LIBDIVIDE_WINDOWS
+#if defined(LIBDIVIDE_WINDOWS)
 static LARGE_INTEGER gPerfCounterFreq;
 #endif
 
-#if ! LIBDIVIDE_WINDOWS
+#if !defined(LIBDIVIDE_WINDOWS)
 static uint64_t nanoseconds(void) {
     struct timeval now;
     gettimeofday(&now, NULL);
@@ -79,7 +79,7 @@ struct time_result {
 
 static struct time_result time_function(uint64_t (*func)(struct FunctionParams_t*), struct FunctionParams_t *params) {
     struct time_result tresult;
-#if LIBDIVIDE_WINDOWS
+#if defined(LIBDIVIDE_WINDOWS)
 	LARGE_INTEGER start, end;
 	QueryPerformanceCounter(&start);
 	uint64_t result = func(params);
@@ -129,7 +129,7 @@ static uint64_t mine_u32_branchfree(struct FunctionParams_t *params) {
 }
 
 
-#if LIBDIVIDE_USE_SSE2
+#if defined(LIBDIVIDE_USE_SSE2)
 NOINLINE static uint64_t mine_u32_vector(struct FunctionParams_t *params) {
     unsigned iter;
     const struct libdivide_u32_t denom = *(struct libdivide_u32_t *)params->denomPtr;
@@ -268,7 +268,7 @@ static uint64_t mine_s32_branchfree(struct FunctionParams_t *params) {
     return sum;
 }
 
-#if LIBDIVIDE_USE_SSE2
+#if defined(LIBDIVIDE_USE_SSE2)
 NOINLINE
 static uint64_t mine_s32_vector(struct FunctionParams_t *params) {
     unsigned iter;
@@ -466,7 +466,7 @@ static uint64_t mine_u64_unswitched(struct FunctionParams_t *params) {
     return sum;
 }
 
-#if LIBDIVIDE_USE_SSE2
+#if defined(LIBDIVIDE_USE_SSE2)
 NOINLINE static uint64_t mine_u64_vector_unswitched(struct FunctionParams_t *params) {
     unsigned iter;
     __m128i sumX2 = _mm_setzero_si128();
@@ -572,7 +572,7 @@ static uint64_t mine_s64_branchfree(struct FunctionParams_t *params) {
     return sum;
 }
 
-#if LIBDIVIDE_USE_SSE2
+#if defined(LIBDIVIDE_USE_SSE2)
 NOINLINE
 static uint64_t mine_s64_vector(struct FunctionParams_t *params) {
     const struct libdivide_s64_t denom = *(struct libdivide_s64_t *)params->denomPtr;
@@ -717,7 +717,7 @@ static uint64_t mine_s64_generate(struct FunctionParams_t *params) {
 }
 
 /* Stub functions for when we have no SSE2 */
-#if ! LIBDIVIDE_USE_SSE2
+#if !defined(LIBDIVIDE_USE_SSE2)
 NOINLINE static uint64_t mine_u32_vector(struct FunctionParams_t *params) { return mine_u32(params); }
 NOINLINE static uint64_t mine_u32_vector_unswitched(struct FunctionParams_t *params) { return mine_u32_unswitched(params); }
 NOINLINE static uint64_t mine_u32_vector_branchfree(struct FunctionParams_t *params) { return mine_u32_branchfree(params); }
@@ -771,7 +771,7 @@ struct TestResult test_one(TestFunc_t mine, TestFunc_t mine_branchfree, TestFunc
         tresult = time_function(mine, params); my_times[iter] = tresult.time; CHECK(tresult.result, expected);
         tresult = time_function(mine_branchfree, params); my_times_branchfree[iter] = tresult.time; CHECK(tresult.result, expected);
         tresult = time_function(mine_unswitched, params); my_times_unswitched[iter] = tresult.time; CHECK(tresult.result, expected);
-#if LIBDIVIDE_USE_SSE2
+#if defined(LIBDIVIDE_USE_SSE2)
         tresult = time_function(mine_vector, params); my_times_vector[iter] = tresult.time; CHECK(tresult.result, expected);
         tresult = time_function(mine_vector_branchfree, params); my_times_vector_branchfree[iter] = tresult.time; CHECK(tresult.result, expected);
         tresult = time_function(mine_vector_unswitched, params); my_times_vector_unswitched[iter] = tresult.time; CHECK(tresult.result, expected);
@@ -944,12 +944,16 @@ static void test_many_s64(const int64_t *data) {
 }
  
 static const uint32_t *random_data(unsigned multiple) {
-#if LIBDIVIDE_WINDOWS
+#if defined(LIBDIVIDE_WINDOWS)
     uint32_t *data = (uint32_t *)malloc(multiple * ITERATIONS * sizeof *data);
 #else
     /* Linux doesn't always give us data sufficiently aligned for SSE, so we can't use malloc(). */
     void *ptr = NULL;
-    posix_memalign(&ptr, 16, multiple * ITERATIONS * sizeof(uint32_t));
+    int failed = posix_memalign(&ptr, 16, multiple * ITERATIONS * sizeof(uint32_t));
+    if (failed) {
+        printf("Failed to align memory!\n");
+        exit(1);
+    }
     uint32_t *data = ptr;
 #endif
     uint32_t i;
@@ -961,7 +965,7 @@ static const uint32_t *random_data(unsigned multiple) {
 }
 
 int main(int argc, char* argv[]) {
-#if LIBDIVIDE_WINDOWS
+#if defined(LIBDIVIDE_WINDOWS)
 	QueryPerformanceFrequency(&gPerfCounterFreq);
 #endif
     int i, u32 = 0, u64 = 0, s32 = 0, s64 = 0;
