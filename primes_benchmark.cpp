@@ -7,7 +7,7 @@
 #include <cstring>
 #include "libdivide.h"
 
-#if __GNUC__
+#if defined(__GNUC__)
 #define NOINLINE __attribute__((__noinline__))
 #else
 #define NOINLINE
@@ -147,7 +147,7 @@ int main(int argc, const char *argv[]) {
     tasks_t tasks = 0;
     
     // parse argv
-    for (size_t i=1; argv[i]; i++) {
+    for (int i = 1; i < argc; i++) {
         const char * arg = argv[i];
         if (! strcmp(arg, "u32")) {
             tasks |= TEST_U32;
