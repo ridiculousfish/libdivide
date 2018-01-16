@@ -10,19 +10,17 @@
 #include <string.h>
 #include <string>
 
-#ifdef LIBDIVIDE_USE_SSE2
+#if defined(LIBDIVIDE_USE_SSE2)
 #include <emmintrin.h>
 #endif
-
 
 #if defined(_WIN32) || defined(WIN32)
 /* Windows makes you do a lot to stop it from "helping" */
 #define NOMINMAX
-#define WIN32_LEAN_AND_MEAN 1
-#define VC_EXTRALEAN 1
+#define WIN32_LEAN_AND_MEAN
+#define VC_EXTRALEAN
 #include <windows.h>
-#define LIBDIVIDE_WINDOWS 1
-
+#define LIBDIVIDE_WINDOWS
 #else
 /* Linux or Mac OS X or other Unix */
 #include <pthread.h>
@@ -122,11 +120,11 @@ private:
         test_unswitching(numer, denom, the_divider);
     }
 
-#ifdef LIBDIVIDE_USE_SSE2
+#if defined(LIBDIVIDE_USE_SSE2)
     template<int ALGO>
     void test_four(const T *numers, T denom, const divider<T, ALGO> & the_divider) {
 		const size_t count = 16 / sizeof(T);
-#if LIBDIVIDE_VC
+#if defined(LIBDIVIDE_VC)
 		_declspec(align(16)) T results[count];
 #else
 		T __attribute__((aligned)) results[count];
@@ -168,7 +166,7 @@ private:
             test_one(numers[1], denom, the_divider);
             test_one(numers[2], denom, the_divider);
             test_one(numers[3], denom, the_divider);
-#ifdef LIBDIVIDE_USE_SSE2
+#if defined(LIBDIVIDE_USE_SSE2)
             test_four(numers, denom, the_divider);
 #endif
         }
@@ -300,11 +298,11 @@ int main(int argc, char* argv[]) {
     }
 
 /* We could use dispatch, but we prefer to use pthreads because dispatch won't run all four tests at once on a two core machine */
-#ifdef DISPATCH_API_VERSION
+#if defined(DISPATCH_API_VERSION)
     dispatch_apply(4, dispatch_get_global_queue(0, 0), ^(size_t x){
         perform_test((void *)(intptr_t)x);
     });
-#elif LIBDIVIDE_WINDOWS
+#elif defined(LIBDIVIDE_WINDOWS)
 	HANDLE threadArray[4];
 	intptr_t i;
 	for (i=0; i < 4; i++) {
