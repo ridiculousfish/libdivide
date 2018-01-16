@@ -5,6 +5,7 @@
 #include <deque>
 #include <vector>
 #include <cstring>
+
 #include "libdivide.h"
 
 #if defined(__GNUC__)
@@ -111,7 +112,9 @@ void measure_times(tasks_t tasks, T max, size_t iters) {
     bool test_branchfull = !! (tasks & TEST_BRANCHFULL);
     bool test_branchfree = !! (tasks & TEST_BRANCHFREE);
     
-    prime_calculation_result_t sys, branchfull, branchfree;
+    prime_calculation_result_t sys = {0, 0};
+    prime_calculation_result_t branchfull = {0, 0};
+    prime_calculation_result_t branchfree = {0, 0};
     
     if (test_system) {
         sys = measure_1_prime_calculation<T, count_primes_system<T>>(max, iters);
