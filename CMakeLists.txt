@@ -52,8 +52,8 @@ target_link_libraries(tester Threads::Threads)
 # Enable testing ###############################################
 
 enable_testing()
-add_test(NAME tester COMMAND tester)
-add_test(NAME primes_benchmark COMMAND primes_benchmark)
+add_test(tester tester)
+add_test(primes_benchmark primes_benchmark)
 
 # By default install to /usr/local/install #####################
 
