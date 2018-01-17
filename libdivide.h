@@ -303,16 +303,18 @@ static uint64_t libdivide__mullhi_u64(uint64_t x, uint64_t y) {
     return (uint64_t)(rl >> 64);
 #else
     // full 128 bits are x0 * y0 + (x0 * y1 << 32) + (x1 * y0 << 32) + (x1 * y1 << 64)
-    const uint32_t mask = 0xFFFFFFFF;
-    const uint32_t x0 = (uint32_t)(x & mask), x1 = (uint32_t)(x >> 32);
-    const uint32_t y0 = (uint32_t)(y & mask), y1 = (uint32_t)(y >> 32);
-    const uint32_t x0y0_hi = libdivide__mullhi_u32(x0, y0);
-    const uint64_t x0y1 = x0 * (uint64_t)y1;
-    const uint64_t x1y0 = x1 * (uint64_t)y0;
-    const uint64_t x1y1 = x1 * (uint64_t)y1;
-    
+    uint32_t mask = 0xFFFFFFFF;
+    uint32_t x0 = (uint32_t)(x & mask);
+    uint32_t x1 = (uint32_t)(x >> 32);
+    uint32_t y0 = (uint32_t)(y & mask);
+    uint32_t y1 = (uint32_t)(y >> 32);
+    uint32_t x0y0_hi = libdivide__mullhi_u32(x0, y0);
+    uint64_t x0y1 = x0 * (uint64_t)y1;
+    uint64_t x1y0 = x1 * (uint64_t)y0;
+    uint64_t x1y1 = x1 * (uint64_t)y1;
     uint64_t temp = x1y0 + x0y0_hi;
     uint64_t temp_lo = temp & mask, temp_hi = temp >> 32;
+
     return x1y1 + temp_hi + ((temp_lo + x0y1) >> 32);
 #endif
 }
@@ -326,12 +328,15 @@ static inline int64_t libdivide__mullhi_s64(int64_t x, int64_t y) {
     return (int64_t)(rl >> 64);    
 #else
     // full 128 bits are x0 * y0 + (x0 * y1 << 32) + (x1 * y0 << 32) + (x1 * y1 << 64)
-    const uint32_t mask = 0xFFFFFFFF;
-    const uint32_t x0 = (uint32_t)(x & mask), y0 = (uint32_t)(y & mask);
-    const int32_t x1 = (int32_t)(x >> 32), y1 = (int32_t)(y >> 32);
-    const uint32_t x0y0_hi = libdivide__mullhi_u32(x0, y0);
-    const int64_t t = x1*(int64_t)y0 + x0y0_hi;
-    const int64_t w1 = x0*(int64_t)y1 + (t & mask);
+    uint32_t mask = 0xFFFFFFFF;
+    uint32_t x0 = (uint32_t)(x & mask);
+    uint32_t y0 = (uint32_t)(y & mask);
+    int32_t x1 = (int32_t)(x >> 32);
+    int32_t y1 = (int32_t)(y >> 32);
+    uint32_t x0y0_hi = libdivide__mullhi_u32(x0, y0);
+    int64_t t = x1*(int64_t)y0 + x0y0_hi;
+    int64_t w1 = x0*(int64_t)y1 + (t & mask);
+
     return x1*(int64_t)y1 + (t >> 32) + (w1 >> 32);
 #endif
 }
@@ -396,8 +401,8 @@ static inline __m128i libdivide_s64_shift_right_vector(__m128i v, int amt) {
     return result;
 }
 
-// Here, b is assumed to contain one 32 bit value repeated four times. If it
-// did not, the function would not work.
+// Here, b is assumed to contain one 32 bit value repeated four times.
+// If it did not, the function would not work.
 static inline __m128i libdivide__mullhi_u32_flat_vector(__m128i a, __m128i b) {
     __m128i hi_product_0Z2Z = _mm_srli_epi64(_mm_mul_epu32(a, b), 32);
     __m128i a1X3X = _mm_srli_epi64(a, 32);
@@ -408,20 +413,22 @@ static inline __m128i libdivide__mullhi_u32_flat_vector(__m128i a, __m128i b) {
 // Here, y is assumed to contain one 64 bit value repeated twice.
 static inline __m128i libdivide_mullhi_u64_flat_vector(__m128i x, __m128i y) {
     // full 128 bits are x0 * y0 + (x0 * y1 << 32) + (x1 * y0 << 32) + (x1 * y1 << 64)
-    const __m128i mask = libdivide_get_00000000FFFFFFFF();
+    __m128i mask = libdivide_get_00000000FFFFFFFF();
     // x0 is low half of 2 64 bit values, x1 is high half in low slots
-    const __m128i x0 = _mm_and_si128(x, mask), x1 = _mm_srli_epi64(x, 32);
-    const __m128i y0 = _mm_and_si128(y, mask), y1 = _mm_srli_epi64(y, 32);
+    __m128i x0 = _mm_and_si128(x, mask);
+    __m128i x1 = _mm_srli_epi64(x, 32);
+    __m128i y0 = _mm_and_si128(y, mask);
+    __m128i y1 = _mm_srli_epi64(y, 32);
     // x0 happens to have the low half of the two 64 bit values in 32 bit slots
     // 0 and 2, so _mm_mul_epu32 computes their full product, and then we shift
     // right by 32 to get just the high values
-    const __m128i x0y0_hi = _mm_srli_epi64(_mm_mul_epu32(x0, y0), 32);
-    const __m128i x0y1 = _mm_mul_epu32(x0, y1);
-    const __m128i x1y0 = _mm_mul_epu32(x1, y0);
-    const __m128i x1y1 = _mm_mul_epu32(x1, y1);
-    
-    const __m128i temp = _mm_add_epi64(x1y0, x0y0_hi);
-    __m128i temp_lo = _mm_and_si128(temp, mask), temp_hi = _mm_srli_epi64(temp, 32);
+    __m128i x0y0_hi = _mm_srli_epi64(_mm_mul_epu32(x0, y0), 32);
+    __m128i x0y1 = _mm_mul_epu32(x0, y1);
+    __m128i x1y0 = _mm_mul_epu32(x1, y0);
+    __m128i x1y1 = _mm_mul_epu32(x1, y1);
+    __m128i temp = _mm_add_epi64(x1y0, x0y0_hi);
+    __m128i temp_lo = _mm_and_si128(temp, mask);
+    __m128i temp_hi = _mm_srli_epi64(temp, 32);
     temp_lo = _mm_srli_epi64(_mm_add_epi64(temp_lo, x0y1), 32);
     temp_hi = _mm_add_epi64(x1y1, temp_hi);
     
@@ -791,7 +798,8 @@ uint32_t libdivide_u32_do(uint32_t numer, const struct libdivide_u32_t *denom) {
             return t >> (more & LIBDIVIDE_32_SHIFT_MASK);
         }
         else {
-            return q >> more; // all upper bits are 0 - don't need to mask them off
+            // all upper bits are 0 - don't need to mask them off
+            return q >> more;
         }
     }
 }
@@ -843,7 +851,7 @@ uint32_t libdivide_u32_branchfree_recover(const struct libdivide_u32_branchfree_
 int libdivide_u32_get_algorithm(const struct libdivide_u32_t *denom) {
     uint8_t more = denom->more;
     if (more & LIBDIVIDE_U32_SHIFT_PATH) return 0;
-    else if (! (more & LIBDIVIDE_ADD_MARKER)) return 1;
+    else if (!(more & LIBDIVIDE_ADD_MARKER)) return 1;
     else return 2;
 }
  
