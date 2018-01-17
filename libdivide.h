@@ -1954,6 +1954,12 @@ public:
     }
 };
 
+#if __cplusplus >= 201103L
+// libdivdie::branchfree_divider<T>
+template <typename T>
+using branchfree_divider = divider<T, BRANCHFREE>;
+#endif
+
 // Returns a divider specialized for the given algorithm.
 template<int NEW_ALGO, typename T>
 divider<T, NEW_ALGO> unswitch(const divider<T, BRANCHFULL> & d) {
