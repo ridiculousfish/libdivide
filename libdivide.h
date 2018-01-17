@@ -628,10 +628,11 @@ static uint64_t libdivide_128_div_128_to_64(uint64_t u_hi, uint64_t u_lo, uint64
     ufull = (ufull << 64) | u_lo;
     __uint128_t vfull = v_hi;
     vfull = (vfull << 64) | v_lo;
-    __uint128_t remainder = ufull % vfull;
+    uint64_t res = (uint64_t)(ufull / vfull);
+    __uint128_t remainder = ufull - (vfull * res);
     *r_lo = (uint64_t)remainder;
     *r_hi = (uint64_t)(remainder >> 64);
-    return (uint64_t)(ufull / vfull);
+    return res;
 #else
     // Adapted from "Unsigned Doubleword Division" in Hacker's Delight
     // We want to compute u / v
