@@ -15,7 +15,7 @@ configuration:
   - Debug
 
 environment:
-  CXXFLAGS: /DLIBDIVIDE_USE_SSE2
+  CXXFLAGS: /DLIBDIVIDE_USE_SSE2 /DLIBDIVIDE_ASSERTIONS_ON
 
 os: Visual Studio 2017
 
