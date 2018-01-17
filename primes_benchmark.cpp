@@ -5,6 +5,7 @@
 #include <deque>
 #include <vector>
 #include <cstring>
+#include <cstdlib>
 
 #include "libdivide.h"
 
@@ -133,9 +134,11 @@ void measure_times(tasks_t tasks, T max, size_t iters) {
 
     if (test_system && test_branchfull && branchfull.result != sys.result) {
         std::cerr << "Disagreement in branchfull path for type " << typeid(T).name() << ": libdivide says " << branchfull.result << " but system says " << sys.result << std::endl;
+        std::exit(1);
     }
     if (test_system && test_branchfree && branchfree.result != sys.result) {
         std::cerr << "Disagreement in branchfree path for type " << typeid(T).name() << ": libdivide says " << branchfree.result << " but system says " << sys.result << std::endl;
+        std::exit(1);
     }
     if (test_system) std::cout << "\t    system: " << sys.duration << " seconds" << std::endl;
     if (test_branchfull) std::cout << "\tbranchfull: " << branchfull.duration << " seconds" << std::endl;

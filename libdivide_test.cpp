@@ -101,7 +101,8 @@ private:
                 break;
         }
         if (actual2 != expect) {
-            cout << "Unswitched failure for " << testcase_name(BRANCHFULL) << ": " <<  numer << " / " << denom << " expected " << expect << " actual " << actual2 <<  " algo " << the_divider.get_algorithm() << endl;
+            cerr << "Unswitched failure for " << testcase_name(BRANCHFULL) << ": " <<  numer << " / " << denom << " expected " << expect << " actual " << actual2 <<  " algo " << the_divider.get_algorithm() << endl;
+            exit(1);
         }
     }
     
@@ -115,34 +116,36 @@ private:
         T expect = numer / denom;
         T actual1 = numer / the_divider;
         if (actual1 != expect) {
-            cout << "Failure for " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " expected " << expect << " actual " << actual1 << endl;
-		}
+            cerr << "Failure for " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " expected " << expect << " actual " << actual1 << endl;
+            exit(1);
+        }
         test_unswitching(numer, denom, the_divider);
     }
 
 #if defined(LIBDIVIDE_USE_SSE2)
     template<int ALGO>
     void test_four(const T *numers, T denom, const divider<T, ALGO> & the_divider) {
-		const size_t count = 16 / sizeof(T);
+        const size_t count = 16 / sizeof(T);
 #if defined(LIBDIVIDE_VC)
-		_declspec(align(16)) T results[count];
+        _declspec(align(16)) T results[count];
 #else
-		T __attribute__((aligned)) results[count];
+        T __attribute__((aligned)) results[count];
 #endif
-		__m128i resultVector = _mm_loadu_si128((const __m128i *)numers) / the_divider;
-		*(__m128i *)results = resultVector;
-		size_t i;
-		for (i = 0; i < count; i++) {
-			T numer = numers[i];
-			T actual = results[i];
-			T expect = numer / denom;
-			if (actual != expect) {
-                cout << "Vector failure for " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " expected " << expect << " actual " << actual << endl;
-			}
-			else {
-				//cout << "Vector success for " << numer << " / " << denom << " = " << actual << " (" << i << ")" << endl;
-			}
-		}
+        __m128i resultVector = _mm_loadu_si128((const __m128i *)numers) / the_divider;
+        *(__m128i *)results = resultVector;
+        size_t i;
+        for (i = 0; i < count; i++) {
+            T numer = numers[i];
+            T actual = results[i];
+            T expect = numer / denom;
+            if (actual != expect) {
+                cerr << "Vector failure for " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " expected " << expect << " actual " << actual << endl;
+                exit(1);
+            }
+            else {
+                //cout << "Vector success for " << numer << " / " << denom << " = " << actual << " (" << i << ")" << endl;
+            }
+        }
     }
 #endif
     
@@ -156,7 +159,8 @@ private:
         const divider<T, ALGO> the_divider = divider<T, ALGO>(denom);
         T recovered = the_divider.recover_divisor(); 
         if (recovered != denom) {
-            cout << "Failed to recover divisor for " << testcase_name(ALGO) << ": "<< denom << ", but got " << recovered << endl;
+            cerr << "Failed to recover divisor for " << testcase_name(ALGO) << ": "<< denom << ", but got " << recovered << endl;
+            exit(1);
         }
         
         size_t j;
