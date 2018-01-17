@@ -5,9 +5,8 @@
 // licenses. You may use libdivide under the terms of
 // either of these. See LICENSE.txt for more details.
 
-#if defined(_WIN32) || defined(WIN32)
-#define LIBDIVIDE_WINDOWS
-#endif
+#ifndef LIBDIVIDE_H
+#define LIBDIVIDE_H
 
 #if defined(_MSC_VER)
 // disable warning C4146: unary minus operator applied to
@@ -1998,3 +1997,5 @@ __m128i operator/(__m128i numer, const divider<int_type, ALGO> & denom) {
 } // namespace libdivide
 } // anonymous namespace
 #endif
+
+#endif // LIBDIVIDE_H
