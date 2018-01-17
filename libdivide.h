@@ -558,61 +558,73 @@ static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v,
 // http://www.hackersdelight.org/permissions.htm
 
 static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v, uint64_t *r) {
-    const uint64_t b = (1ULL << 32); // Number base (16 bits).
-    uint64_t un1, un0,  // Norm. dividend LSD's.
-    vn1, vn0,           // Norm. divisor digits.
-    q1, q0,             // Quotient digits.
-    un64, un21, un10,   // Dividend digit pairs.
-    rhat;               // A remainder.
-    int s;              // Shift amount for norm.
+    const uint64_t b = (1ULL << 32); // Number base (16 bits)
+    uint64_t un1, un0; // Norm. dividend LSD's
+    uint64_t vn1, vn0; // Norm. divisor digits
+    uint64_t q1, q0; // Quotient digits
+    uint64_t un64, un21, un10; // Dividend digit pairs
+    uint64_t rhat; // A remainder
+    int s; // Shift amount for norm
 
-    if (u1 >= v) {                 // If overflow, set rem.
-        if (r != NULL)             // to an impossible value,
-            *r = (uint64_t) -1;    // and return the largest
-        return (uint64_t) -1;      // possible quotient.
+    // If overflow, set rem. to an impossible value,
+    // and return the largest possible quotient
+    if (u1 >= v) {
+        if (r != NULL)
+            *r = (uint64_t) -1;
+        return (uint64_t) -1;
     }
 
     // count leading zeros
-    s = libdivide__count_leading_zeros64(v); // 0 <= s <= 63.
+    s = libdivide__count_leading_zeros64(v);
     if (s > 0) {
-        v = v << s;         // Normalize divisor.
+        // Normalize divisor
+        v = v << s;
         un64 = (u1 << s) | ((u0 >> (64 - s)) & (-s >> 31));
-        un10 = u0 << s;     // Shift dividend left.
+        un10 = u0 << s; // Shift dividend left
     } else {
-        // Avoid undefined behavior.
+        // Avoid undefined behavior
         un64 = u1 | u0;
         un10 = u0;
     }
 
-    vn1 = v >> 32;            // Break divisor up into
-    vn0 = v & 0xFFFFFFFF;     // two 32-bit digits.
+    // Break divisor up into two 32-bit digits
+    vn1 = v >> 32;
+    vn0 = v & 0xFFFFFFFF;
 
-    un1 = un10 >> 32;         // Break right half of
-    un0 = un10 & 0xFFFFFFFF;  // dividend into two digits.
+    // Break right half of dividend into two digits
+    un1 = un10 >> 32;
+    un0 = un10 & 0xFFFFFFFF;
 
-    q1 = un64/vn1;            // Compute the first
-    rhat = un64 - q1*vn1;     // quotient digit, q1.
-again1:
-    if (q1 >= b || q1*vn0 > b*rhat + un1) {
+    // Compute the first quotient digit, q1
+    q1 = un64 / vn1;
+    rhat = un64 - q1 * vn1;
+
+    while (q1 >= b || q1 * vn0 > b * rhat + un1) {
         q1 = q1 - 1;
         rhat = rhat + vn1;
-        if (rhat < b) goto again1;
+        if (rhat >= b)
+            break;
     }
 
-    un21 = un64*b + un1 - q1*v;  // Multiply and subtract.
+     // Multiply and subtract
+    un21 = un64 * b + un1 - q1 * v;
 
-    q0 = un21/vn1;            // Compute the second
-    rhat = un21 - q0*vn1;     // quotient digit, q0.
-again2:
-    if (q0 >= b || q0*vn0 > b*rhat + un0) {
+    // Compute the second quotient digit
+    q0 = un21 / vn1;
+    rhat = un21 - q0 * vn1;
+
+    while (q0 >= b || q0 * vn0 > b * rhat + un0) {
         q0 = q0 - 1;
         rhat = rhat + vn1;
-        if (rhat < b) goto again2;
+        if (rhat >= b)
+            break;
     }
 
-    if (r != NULL)                          // If remainder is wanted,
-        *r = (un21*b + un0 - q0*v) >> s;    // return it.
-    return q1*b + q0;
+    // If remainder is wanted, return it
+    if (r != NULL)
+        *r = (un21 * b + un0 - q0 * v) >> s;
+
+    return q1 * b + q0;
 }
 #endif
 
