@@ -334,10 +334,6 @@ static inline __m128i libdivide__u64_to_m128(uint64_t x) {
     // load intrinsics, and 32 bit Visual C++ crashes
     _declspec(align(16)) uint64_t temp[2] = {x, x};
     return _mm_load_si128((const __m128i*)temp);
-#elif defined(__ICC)
-    uint64_t __attribute__((aligned(16))) temp[2] = {x,x};
-    return _mm_load_si128((const __m128i*)temp);
-#else
     // everyone else gets it right
     return _mm_set1_epi64x(x);
 #endif
@@ -502,11 +498,12 @@ static inline int32_t libdivide__count_leading_zeros64(uint64_t val) {
 #endif
 }
 
+#if (defined(LIBDIVIDE_IS_i386) || defined(LIBDIVIDE_IS_X86_64)) && \
+     defined(LIBDIVIDE_GCC_STYLE_ASM)
+
 // libdivide_64_div_32_to_32: divides a 64 bit uint {u1, u0} by a 32 bit
 // uint {v}. The result must fit in 32 bits.
 // Returns the quotient directly and the remainder in *r
-#if (defined(LIBDIVIDE_IS_i386) || defined(LIBDIVIDE_IS_X86_64)) && \
-     defined(LIBDIVIDE_GCC_STYLE_ASM)
 static uint32_t libdivide_64_div_32_to_32(uint32_t u1, uint32_t u0, uint32_t v, uint32_t *r) {
     uint32_t result;
     __asm__("divl %[v]"
@@ -515,17 +512,21 @@ static uint32_t libdivide_64_div_32_to_32(uint32_t u1, uint32_t u0, uint32_t v, 
             );
     return result;
 }
+
 #else
+
 static uint32_t libdivide_64_div_32_to_32(uint32_t u1, uint32_t u0, uint32_t v, uint32_t *r) {
     uint64_t n = (((uint64_t)u1) << 32) | u0;
     uint32_t result = (uint32_t)(n / v);
     *r = (uint32_t)(n - result * (uint64_t)v);
     return result;
 }
+
 #endif
 
 #if defined(LIBDIVIDE_IS_X86_64) && \
     defined(LIBDIVIDE_GCC_STYLE_ASM)
+
 static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v, uint64_t *r) {
     // u0 -> rax
     // u1 -> rdx
@@ -537,6 +538,7 @@ static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v,
             );
     return result;
 }
+
 #else
 
 // Code taken from Hacker's Delight:
@@ -613,6 +615,7 @@ static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v,
 
     return q1 * b + q0;
 }
+
 #endif
 
 // Bitshift a u128 in place, left (signed_shift > 0) or right (signed_shift < 0)
@@ -1444,6 +1447,7 @@ __m128i libdivide_s32_branchfree_do_vector(__m128i numers, const struct libdivid
     q = _mm_sub_epi32(_mm_xor_si128(q, sign), sign); // q = (q ^ sign) - sign
     return q;
 }
+
 #endif
 
 ///////////// SINT64
