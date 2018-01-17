@@ -25,22 +25,7 @@
 #include <assert.h>
 #endif
 
-// Only Visual C++ 2010 and later include stdint.h
-#if !defined(LIBDIVIDE_HAS_STDINT_TYPES) && \
-   (!defined(LIBDIVIDE_VC) || \
-    _MSC_VER >= 1600)
 #include <stdint.h>
-#define LIBDIVIDE_HAS_STDINT_TYPES
-#endif
-
-#if !defined(LIBDIVIDE_HAS_STDINT_TYPES)
-typedef __int32 int32_t;
-typedef unsigned __int32 uint32_t;
-typedef __int64 int64_t;
-typedef unsigned __int64 uint64_t;
-typedef __int8 int8_t;
-typedef unsigned __int8 uint8_t;
-#endif
 
 #if defined(LIBDIVIDE_USE_SSE2)
 #include <emmintrin.h>
@@ -842,7 +827,6 @@ uint32_t libdivide_u32_recover(const struct libdivide_u32_t *denom) {
         // Also note that shift may be as high as 31, so shift + 1 will
         // overflow. So we have to compute it as 2^(32+shift)/(m+2^32), and
         // then double the quotient and remainder.
-        // TODO: do something better than 64 bit math
         uint64_t half_n = 1ULL << (32 + shift);
         uint64_t d = (1ULL << 32) | denom->magic;
         // Note that the quotient is guaranteed <= 32 bits, but the remainder
@@ -891,8 +875,8 @@ uint32_t libdivide_u32_do_alg2(uint32_t numer, const struct libdivide_u32_t *den
     return t >> (denom->more & LIBDIVIDE_32_SHIFT_MASK);
 }
 
+// same as algo 2
 uint32_t libdivide_u32_branchfree_do(uint32_t numer, const struct libdivide_u32_branchfree_t *denom) {
-    // same as alg 2
     uint32_t q = libdivide__mullhi_u32(denom->magic, numer);
     uint32_t t = ((numer - q) >> 1) + q;
     return t >> denom->more;
@@ -1024,7 +1008,8 @@ uint64_t libdivide_u64_do(uint64_t numer, const struct libdivide_u64_t *denom) {
             return t >> (more & LIBDIVIDE_64_SHIFT_MASK);
         }
         else {
-            return q >> more; // all upper bits are 0 - don't need to mask them off
+             // all upper bits are 0 - don't need to mask them off
+            return q >> more;
         }
     }
 }
