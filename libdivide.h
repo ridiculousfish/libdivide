@@ -334,6 +334,7 @@ static inline __m128i libdivide__u64_to_m128(uint64_t x) {
     // load intrinsics, and 32 bit Visual C++ crashes
     _declspec(align(16)) uint64_t temp[2] = {x, x};
     return _mm_load_si128((const __m128i*)temp);
+#else
     // everyone else gets it right
     return _mm_set1_epi64x(x);
 #endif
