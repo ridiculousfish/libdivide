@@ -55,11 +55,25 @@
 #define LIBDIVIDE_GCC_STYLE_ASM
 #endif
 
+#if defined(__cplusplus) || defined(LIBDIVIDE_VC)
+#define LIBDIVIDE_FUNCTION __FUNCTION__
+#else
+#define LIBDIVIDE_FUNCTION __func__
+#endif
+
+#define LIBDIVIDE_ERROR(msg) \
+    do { \
+        fprintf(stderr, "%s:%d: %s(): Error: %s\n", \
+            __FILE__, __LINE__, LIBDIVIDE_FUNCTION, msg); \
+        exit(-1); \
+    } while (0)
+
 #if defined(LIBDIVIDE_ASSERTIONS_ON)
 #define LIBDIVIDE_ASSERT(x) \
     do { \
-        if (! (x)) { \
-            fprintf(stderr, "Assertion failure on line %ld: %s\n", (long)__LINE__, #x); \
+        if (!(x)) { \
+            fprintf(stderr, "%s:%d: %s(): Assertion failed: %s\n", \
+                __FILE__, __LINE__, LIBDIVIDE_FUNCTION, x); \
             exit(-1); \
         } \
     } while (0)
@@ -733,11 +747,12 @@ static uint64_t libdivide_128_div_128_to_64(uint64_t u_hi, uint64_t u_lo, uint64
 ////////// UINT32
 
 static inline struct libdivide_u32_t libdivide_internal_u32_gen(uint32_t d, int branchfree) {
-    // 1 is not supported with branchfree algorithm
-    LIBDIVIDE_ASSERT(!branchfree || d != 1);
+    if (d == 0) {
+        LIBDIVIDE_ERROR("divider must be != 0");
+    }
 
     struct libdivide_u32_t result;
-    const uint32_t floor_log_2_d = 31 - libdivide__count_leading_zeros32(d);
+    uint32_t floor_log_2_d = 31 - libdivide__count_leading_zeros32(d);
     if ((d & (d - 1)) == 0) {
         // Power of 2
         if (! branchfree) {
@@ -789,6 +804,9 @@ struct libdivide_u32_t libdivide_u32_gen(uint32_t d) {
 }
 
 struct libdivide_u32_branchfree_t libdivide_u32_branchfree_gen(uint32_t d) {
+    if (d == 1) {
+        LIBDIVIDE_ERROR("branchfree divider must be != 1");
+    }
     struct libdivide_u32_t tmp = libdivide_internal_u32_gen(d, 1);
     struct libdivide_u32_branchfree_t ret = {tmp.magic, (uint8_t)(tmp.more & LIBDIVIDE_32_SHIFT_MASK)};
     return ret;
@@ -937,11 +955,12 @@ LIBDIVIDE_API __m128i libdivide_u32_branchfree_do_vector(__m128i numers, const s
 /////////// UINT64
 
 static inline struct libdivide_u64_t libdivide_internal_u64_gen(uint64_t d, int branchfree) {
-    // 1 is not supported with branchfree algorithm
-    LIBDIVIDE_ASSERT(!branchfree || d != 1);
+    if (d == 0) {
+        LIBDIVIDE_ERROR("divider must be != 0");
+    }
 
     struct libdivide_u64_t result;
-    const uint32_t floor_log_2_d = 63 - libdivide__count_leading_zeros64(d);
+    uint32_t floor_log_2_d = 63 - libdivide__count_leading_zeros64(d);
     if ((d & (d - 1)) == 0) {
         // Power of 2
         if (! branchfree) {
@@ -995,6 +1014,9 @@ struct libdivide_u64_t libdivide_u64_gen(uint64_t d) {
 }
 
 struct libdivide_u64_branchfree_t libdivide_u64_branchfree_gen(uint64_t d) {
+    if (d == 1) {
+        LIBDIVIDE_ERROR("branchfree divider must be != 1");
+    }
     struct libdivide_u64_t tmp = libdivide_internal_u64_gen(d, 1);
     struct libdivide_u64_branchfree_t ret = {tmp.magic, (uint8_t)(tmp.more & LIBDIVIDE_64_SHIFT_MASK)};
     return ret;
@@ -1157,8 +1179,9 @@ static inline int32_t libdivide__mullhi_s32(int32_t x, int32_t y) {
 }
 
 static inline struct libdivide_s32_t libdivide_internal_s32_gen(int32_t d, int branchfree) {
-    // branchfree cannot support or -1
-    LIBDIVIDE_ASSERT(!branchfree || (d != 1 && d != -1));
+    if (d == 0) {
+        LIBDIVIDE_ERROR("divider must be != 0");
+    }
 
     struct libdivide_s32_t result;
 
@@ -1170,7 +1193,7 @@ static inline struct libdivide_s32_t libdivide_internal_s32_gen(int32_t d, int b
     // and is a power of 2.
     uint32_t ud = (uint32_t)d;
     uint32_t absD = (d < 0) ? -ud : ud;
-    const uint32_t floor_log_2_d = 31 - libdivide__count_leading_zeros32(absD);
+    uint32_t floor_log_2_d = 31 - libdivide__count_leading_zeros32(absD);
     // check if exactly one bit is set,
     // don't care if absD is 0 since that's divide by zero
     if ((absD & (absD - 1)) == 0) {
@@ -1209,7 +1232,7 @@ static inline struct libdivide_s32_t libdivide_internal_s32_gen(int32_t d, int b
         // branchfull case.
         if (d < 0) {
             more |= LIBDIVIDE_NEGATIVE_DIVISOR;
-            if (! branchfree) {
+            if (!branchfree) {
                 magic = -magic;
             }
         }
@@ -1225,6 +1248,12 @@ LIBDIVIDE_API struct libdivide_s32_t libdivide_s32_gen(int32_t d) {
 }
 
 LIBDIVIDE_API struct libdivide_s32_branchfree_t libdivide_s32_branchfree_gen(int32_t d) {
+    if (d == 1) {
+        LIBDIVIDE_ERROR("branchfree divider must be != 1");
+    }
+    if (d == -1) {
+        LIBDIVIDE_ERROR("branchfree divider must be != -1");
+    }
     struct libdivide_s32_t tmp = libdivide_internal_s32_gen(d, 1);
     struct libdivide_s32_branchfree_t result = {tmp.magic, tmp.more};
     return result;
@@ -1454,7 +1483,10 @@ __m128i libdivide_s32_branchfree_do_vector(__m128i numers, const struct libdivid
 ///////////// SINT64
 
 static inline struct libdivide_s64_t libdivide_internal_s64_gen(int64_t d, int branchfree) {
-    LIBDIVIDE_ASSERT(!branchfree || (d != 1 && d != -1));
+    if (d == 0) {
+        LIBDIVIDE_ERROR("divider must be != 0");
+    }
+
     struct libdivide_s64_t result;
 
     // If d is a power of 2, or negative a power of 2, we have to use a shift.
@@ -1463,9 +1495,9 @@ static inline struct libdivide_s64_t libdivide_internal_s64_gen(int64_t d, int b
     // whether its absolute value has exactly one bit set.  This works even for
     // INT_MIN, because abs(INT_MIN) == INT_MIN, and INT_MIN has one bit set
     // and is a power of 2.
-    const uint64_t ud = (uint64_t)d;
-    const uint64_t absD = (d < 0) ? -ud : ud;
-    const uint32_t floor_log_2_d = 63 - libdivide__count_leading_zeros64(absD);
+    uint64_t ud = (uint64_t)d;
+    uint64_t absD = (d < 0) ? -ud : ud;
+    uint32_t floor_log_2_d = 63 - libdivide__count_leading_zeros64(absD);
     // check if exactly one bit is set,
     // don't care if absD is 0 since that's divide by zero
     if ((absD & (absD - 1)) == 0) {
@@ -1504,7 +1536,7 @@ static inline struct libdivide_s64_t libdivide_internal_s64_gen(int64_t d, int b
         // Mark if we are negative
         if (d < 0) {
             more |= LIBDIVIDE_NEGATIVE_DIVISOR;
-            if (! branchfree) {
+            if (!branchfree) {
                 magic = -magic;
             }
         }
@@ -1520,6 +1552,12 @@ struct libdivide_s64_t libdivide_s64_gen(int64_t d) {
 }
 
 struct libdivide_s64_branchfree_t libdivide_s64_branchfree_gen(int64_t d) {
+    if (d == 1) {
+        LIBDIVIDE_ERROR("branchfree divider must be != 1");
+    }
+    if (d == -1) {
+        LIBDIVIDE_ERROR("branchfree divider must be != -1");
+    }
     struct libdivide_s64_t tmp = libdivide_internal_s64_gen(d, 1);
     struct libdivide_s64_branchfree_t ret = {tmp.magic, tmp.more};
     return ret;
@@ -1866,12 +1904,12 @@ namespace libdivide_internal {
 
     // Some bogus unswitch functions for unsigned types so the same (presumably
     // templated) code can work for both signed and unsigned.
-    uint32_t crash_u32(uint32_t, const libdivide_u32_t *) { exit(1); }
-    uint64_t crash_u64(uint64_t, const libdivide_u64_t *) { exit(1); }
+    uint32_t crash_u32(uint32_t, const libdivide_u32_t *) { exit(-1); }
+    uint64_t crash_u64(uint64_t, const libdivide_u64_t *) { exit(-1); }
 
 #if defined(LIBDIVIDE_USE_SSE2)
-    __m128i crash_u32_vector(__m128i, const libdivide_u32_t *) { exit(1); }
-    __m128i crash_u64_vector(__m128i, const libdivide_u64_t *) { exit(1); }
+    __m128i crash_u32_vector(__m128i, const libdivide_u32_t *) { exit(-1); }
+    __m128i crash_u64_vector(__m128i, const libdivide_u64_t *) { exit(-1); }
 #endif
 
     // Bogus versions to allow templated code to operate on int and uint uniformly
