@@ -55,10 +55,16 @@
 #define LIBDIVIDE_GCC_STYLE_ASM
 #endif
 
+#if defined(__cplusplus) || defined(LIBDIVIDE_VC)
+#define LIBDIVIDE_FUNCTION __FUNCTION__
+#else
+#define LIBDIVIDE_FUNCTION __func__
+#endif
+
 #define LIBDIVIDE_ERROR(msg) \
     do { \
         fprintf(stderr, "%s:%d: %s(): Error: %s\n", \
-            __FILE__, __LINE__, __FUNCTION__, msg); \
+            __FILE__, __LINE__, LIBDIVIDE_FUNCTION, msg); \
         exit(-1); \
     } while (0)
 
@@ -67,7 +73,7 @@
     do { \
         if (!(x)) { \
             fprintf(stderr, "%s:%d: %s(): Assertion failed: %s\n", \
-                __FILE__, __LINE__, __FUNCTION__, x); \
+                __FILE__, __LINE__, LIBDIVIDE_FUNCTION, x); \
             exit(-1); \
         } \
     } while (0)
