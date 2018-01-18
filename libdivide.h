@@ -18,11 +18,9 @@
 #ifdef __cplusplus
 #include <cstdlib>
 #include <cstdio>
-#include <cassert>
 #else
 #include <stdlib.h>
 #include <stdio.h>
-#include <assert.h>
 #endif
 
 #include <stdint.h>
