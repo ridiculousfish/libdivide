@@ -73,7 +73,7 @@
     do { \
         if (!(x)) { \
             fprintf(stderr, "%s:%d: %s(): Assertion failed: %s\n", \
-                __FILE__, __LINE__, LIBDIVIDE_FUNCTION, x); \
+                __FILE__, __LINE__, LIBDIVIDE_FUNCTION, #x); \
             exit(-1); \
         } \
     } while (0)
