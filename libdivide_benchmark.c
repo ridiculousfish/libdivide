@@ -779,6 +779,9 @@ struct TestResult test_one(TestFunc_t mine, TestFunc_t mine_branchfree, TestFunc
 		my_times_vector[iter]=0;
 		my_times_vector_unswitched[iter] = 0;
         my_times_vector_branchfree[iter] = 0;
+        (void) mine_vector;
+        (void) mine_vector_unswitched;
+        (void) mine_vector_branchfree;
 #endif
         tresult = time_function(generate, params); gen_times[iter] = tresult.time;
     }
