@@ -737,7 +737,7 @@ static inline struct libdivide_u32_t libdivide_internal_u32_gen(uint32_t d, int 
     LIBDIVIDE_ASSERT(!branchfree || d != 1);
 
     struct libdivide_u32_t result;
-    const uint32_t floor_log_2_d = 31 - libdivide__count_leading_zeros32(d);
+    uint32_t floor_log_2_d = 31 - libdivide__count_leading_zeros32(d);
     if ((d & (d - 1)) == 0) {
         // Power of 2
         if (! branchfree) {
@@ -941,7 +941,7 @@ static inline struct libdivide_u64_t libdivide_internal_u64_gen(uint64_t d, int 
     LIBDIVIDE_ASSERT(!branchfree || d != 1);
 
     struct libdivide_u64_t result;
-    const uint32_t floor_log_2_d = 63 - libdivide__count_leading_zeros64(d);
+    uint32_t floor_log_2_d = 63 - libdivide__count_leading_zeros64(d);
     if ((d & (d - 1)) == 0) {
         // Power of 2
         if (! branchfree) {
@@ -1170,7 +1170,7 @@ static inline struct libdivide_s32_t libdivide_internal_s32_gen(int32_t d, int b
     // and is a power of 2.
     uint32_t ud = (uint32_t)d;
     uint32_t absD = (d < 0) ? -ud : ud;
-    const uint32_t floor_log_2_d = 31 - libdivide__count_leading_zeros32(absD);
+    uint32_t floor_log_2_d = 31 - libdivide__count_leading_zeros32(absD);
     // check if exactly one bit is set,
     // don't care if absD is 0 since that's divide by zero
     if ((absD & (absD - 1)) == 0) {
@@ -1463,9 +1463,9 @@ static inline struct libdivide_s64_t libdivide_internal_s64_gen(int64_t d, int b
     // whether its absolute value has exactly one bit set.  This works even for
     // INT_MIN, because abs(INT_MIN) == INT_MIN, and INT_MIN has one bit set
     // and is a power of 2.
-    const uint64_t ud = (uint64_t)d;
-    const uint64_t absD = (d < 0) ? -ud : ud;
-    const uint32_t floor_log_2_d = 63 - libdivide__count_leading_zeros64(absD);
+    uint64_t ud = (uint64_t)d;
+    uint64_t absD = (d < 0) ? -ud : ud;
+    uint32_t floor_log_2_d = 63 - libdivide__count_leading_zeros64(absD);
     // check if exactly one bit is set,
     // don't care if absD is 0 since that's divide by zero
     if ((absD & (absD - 1)) == 0) {
