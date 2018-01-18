@@ -61,8 +61,8 @@
 
 #define LIBDIVIDE_ERROR(msg) \
     do { \
-        fprintf(stderr, "%s:%d: %s(): Error: %s\n", \
-            __FILE__, __LINE__, LIBDIVIDE_FUNCTION, msg); \
+        fprintf(stderr, "libdivide.h:%d: %s(): Error: %s\n", \
+            __LINE__, LIBDIVIDE_FUNCTION, msg); \
         exit(-1); \
     } while (0)
 
@@ -70,8 +70,8 @@
 #define LIBDIVIDE_ASSERT(x) \
     do { \
         if (!(x)) { \
-            fprintf(stderr, "%s:%d: %s(): Assertion failed: %s\n", \
-                __FILE__, __LINE__, LIBDIVIDE_FUNCTION, #x); \
+            fprintf(stderr, "libdivide.h:%d: %s(): Assertion failed: %s\n", \
+                __LINE__, LIBDIVIDE_FUNCTION, #x); \
             exit(-1); \
         } \
     } while (0)
@@ -1802,7 +1802,7 @@ namespace libdivide_internal {
 #define MAYBE_VECTOR_PARAM(X) __m128i vector_func(__m128i, const X *)
 #else
 #define MAYBE_VECTOR(X) 0
-#define MAYBE_VECTOR_PARAM(X) int vector_func
+#define MAYBE_VECTOR_PARAM(X) int unused
 #endif
 
 #define LIBDIVIDE_CONCAT(A, B, C) A##B##C
@@ -2042,6 +2042,7 @@ __m128i operator/(__m128i numer, const divider<int_type, ALGO>& denom) {
 
 } // namespace libdivide
 } // anonymous namespace
+
 #endif // __cplusplus
 
 #endif // LIBDIVIDE_H
