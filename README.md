@@ -85,7 +85,7 @@ void divide(std::vector<int64_t>& vect, int64_t divisor)
 {
     // Slow, uses integer division
     for (auto& n : vect)
-        n = n / divisor;
+        n /= divisor;
 }
 ```
 
@@ -99,7 +99,7 @@ void divide(std::vector<int64_t>& vect, int64_t divisor)
 
     // Fast, computes division using libdivide
     for (auto& n : vect)
-        n = n / fast_d;
+        n /= fast_d;
 }
 ```
 
