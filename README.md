@@ -1,9 +1,10 @@
 # libdivide
 [![Build Status](https://ci.appveyor.com/api/projects/status/github/ridiculousfish/libdivide?branch=master&svg=true)](https://ci.appveyor.com/project/kimwalisch/libdivide)
 
-```libdivide.h```  is a header-only C/C++ library for optimizing integer division, it has both
-a C API and a C++ API. This is a summary of how to use libdivide's testing tools to develop
-on libdivide itself.
+```libdivide.h```  is a header-only C/C++ library for optimizing integer division,
+it has both a [C API](http://libdivide.com/documentation.html#c_api) and a
+[C++ API](http://libdivide.com/documentation.html#cpp_api). This is a summary of
+how to use libdivide's testing tools to develop on libdivide itself.
 
 See http://libdivide.com for more information on libdivide.
 
