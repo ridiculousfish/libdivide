@@ -1888,48 +1888,40 @@ namespace libdivide_internal {
     __m128i libdivide_u64_crash_vector(__m128i, const libdivide_u64_t *) { exit(-1); }
 #endif
 
-    template<int ALGO> struct algo_s32 { };
-    template<> struct algo_s32<BRANCHFULL> { GET_BRANCHFULL_DIVIDER(int32_t, s32) divider; };
-    template<> struct algo_s32<BRANCHFREE> { GET_BRANCHFREE_DIVIDER(int32_t, s32) divider; };
-    template<> struct algo_s32<ALGORITHM0> { GET_ALGORITHM_DIVIDER(int32_t, s32, alg0) divider; };
-    template<> struct algo_s32<ALGORITHM1> { GET_ALGORITHM_DIVIDER(int32_t, s32, alg1) divider; };
-    template<> struct algo_s32<ALGORITHM2> { GET_ALGORITHM_DIVIDER(int32_t, s32, alg2) divider; };
-    template<> struct algo_s32<ALGORITHM3> { GET_ALGORITHM_DIVIDER(int32_t, s32, alg3) divider; };
-    template<> struct algo_s32<ALGORITHM4> { GET_ALGORITHM_DIVIDER(int32_t, s32, alg4) divider; };
-
-    template<int ALGO> struct algo_u32 { };
-    template<> struct algo_u32<BRANCHFULL> { GET_BRANCHFULL_DIVIDER(uint32_t, u32) divider; };
-    template<> struct algo_u32<BRANCHFREE> { GET_BRANCHFREE_DIVIDER(uint32_t, u32) divider; };
-    template<> struct algo_u32<ALGORITHM0> { GET_ALGORITHM_DIVIDER(uint32_t, u32, alg0) divider; };
-    template<> struct algo_u32<ALGORITHM1> { GET_ALGORITHM_DIVIDER(uint32_t, u32, alg1) divider; };
-    template<> struct algo_u32<ALGORITHM2> { GET_ALGORITHM_DIVIDER(uint32_t, u32, alg2) divider; };
-    template<> struct algo_u32<ALGORITHM3> { GET_CRASH_DIVIDER(uint32_t, u32) divider; };
-    template<> struct algo_u32<ALGORITHM4> { GET_CRASH_DIVIDER(uint32_t, u32) divider; };
-
-    template<int ALGO> struct algo_s64 { };
-    template<> struct algo_s64<BRANCHFULL> { GET_BRANCHFULL_DIVIDER(int64_t, s64) divider; };
-    template<> struct algo_s64<BRANCHFREE> { GET_BRANCHFREE_DIVIDER(int64_t, s64) divider; };
-    template<> struct algo_s64<ALGORITHM0> { GET_ALGORITHM_DIVIDER (int64_t, s64, alg0) divider; };
-    template<> struct algo_s64<ALGORITHM1> { GET_ALGORITHM_DIVIDER (int64_t, s64, alg1) divider; };
-    template<> struct algo_s64<ALGORITHM2> { GET_ALGORITHM_DIVIDER (int64_t, s64, alg2) divider; };
-    template<> struct algo_s64<ALGORITHM3> { GET_ALGORITHM_DIVIDER (int64_t, s64, alg3) divider; };
-    template<> struct algo_s64<ALGORITHM4> { GET_ALGORITHM_DIVIDER (int64_t, s64, alg4) divider; };
-
-    template<int ALGO> struct algo_u64 { };
-    template<> struct algo_u64<BRANCHFULL> { GET_BRANCHFULL_DIVIDER(uint64_t, u64) divider; };
-    template<> struct algo_u64<BRANCHFREE> { GET_BRANCHFREE_DIVIDER(uint64_t, u64) divider; };
-    template<> struct algo_u64<ALGORITHM0> { GET_ALGORITHM_DIVIDER(uint64_t, u64, alg0) divider; };
-    template<> struct algo_u64<ALGORITHM1> { GET_ALGORITHM_DIVIDER(uint64_t, u64, alg1) divider; };
-    template<> struct algo_u64<ALGORITHM2> { GET_ALGORITHM_DIVIDER(uint64_t, u64, alg2) divider; };
-    template<> struct algo_u64<ALGORITHM3> { GET_CRASH_DIVIDER(uint64_t, u64) divider; };
-    template<> struct algo_u64<ALGORITHM4> { GET_CRASH_DIVIDER(uint64_t, u64) divider; };
+    template<typename T, int ALGO> struct dispatcher { };
 
     // Templated dispatch using partial specialization
-    template<typename T, int ALGO> struct dispatcher{};
-    template<int ALGO> struct dispatcher<int32_t, ALGO>  { typedef struct algo_s32<ALGO> algo; };
-    template<int ALGO> struct dispatcher<uint32_t, ALGO> { typedef struct algo_u32<ALGO> algo; };
-    template<int ALGO> struct dispatcher<int64_t, ALGO>  { typedef struct algo_s64<ALGO> algo; };
-    template<int ALGO> struct dispatcher<uint64_t, ALGO> { typedef struct algo_u64<ALGO> algo; };
+    template<> struct dispatcher<int32_t, BRANCHFULL> { GET_BRANCHFULL_DIVIDER(int32_t, s32) divider; };
+    template<> struct dispatcher<int32_t, BRANCHFREE> { GET_BRANCHFREE_DIVIDER(int32_t, s32) divider; };
+    template<> struct dispatcher<int32_t, ALGORITHM0> { GET_ALGORITHM_DIVIDER(int32_t, s32, alg0) divider; };
+    template<> struct dispatcher<int32_t, ALGORITHM1> { GET_ALGORITHM_DIVIDER(int32_t, s32, alg1) divider; };
+    template<> struct dispatcher<int32_t, ALGORITHM2> { GET_ALGORITHM_DIVIDER(int32_t, s32, alg2) divider; };
+    template<> struct dispatcher<int32_t, ALGORITHM3> { GET_ALGORITHM_DIVIDER(int32_t, s32, alg3) divider; };
+    template<> struct dispatcher<int32_t, ALGORITHM4> { GET_ALGORITHM_DIVIDER(int32_t, s32, alg4) divider; };
+
+    template<> struct dispatcher<uint32_t, BRANCHFULL> { GET_BRANCHFULL_DIVIDER(uint32_t, u32) divider; };
+    template<> struct dispatcher<uint32_t, BRANCHFREE> { GET_BRANCHFREE_DIVIDER(uint32_t, u32) divider; };
+    template<> struct dispatcher<uint32_t, ALGORITHM0> { GET_ALGORITHM_DIVIDER(uint32_t, u32, alg0) divider; };
+    template<> struct dispatcher<uint32_t, ALGORITHM1> { GET_ALGORITHM_DIVIDER(uint32_t, u32, alg1) divider; };
+    template<> struct dispatcher<uint32_t, ALGORITHM2> { GET_ALGORITHM_DIVIDER(uint32_t, u32, alg2) divider; };
+    template<> struct dispatcher<uint32_t, ALGORITHM3> { GET_CRASH_DIVIDER(uint32_t, u32) divider; };
+    template<> struct dispatcher<uint32_t, ALGORITHM4> { GET_CRASH_DIVIDER(uint32_t, u32) divider; };
+
+    template<> struct dispatcher<int64_t, BRANCHFULL> { GET_BRANCHFULL_DIVIDER(int64_t, s64) divider; };
+    template<> struct dispatcher<int64_t, BRANCHFREE> { GET_BRANCHFREE_DIVIDER(int64_t, s64) divider; };
+    template<> struct dispatcher<int64_t, ALGORITHM0> { GET_ALGORITHM_DIVIDER (int64_t, s64, alg0) divider; };
+    template<> struct dispatcher<int64_t, ALGORITHM1> { GET_ALGORITHM_DIVIDER (int64_t, s64, alg1) divider; };
+    template<> struct dispatcher<int64_t, ALGORITHM2> { GET_ALGORITHM_DIVIDER (int64_t, s64, alg2) divider; };
+    template<> struct dispatcher<int64_t, ALGORITHM3> { GET_ALGORITHM_DIVIDER (int64_t, s64, alg3) divider; };
+    template<> struct dispatcher<int64_t, ALGORITHM4> { GET_ALGORITHM_DIVIDER (int64_t, s64, alg4) divider; };
+
+    template<> struct dispatcher<uint64_t, BRANCHFULL> { GET_BRANCHFULL_DIVIDER(uint64_t, u64) divider; };
+    template<> struct dispatcher<uint64_t, BRANCHFREE> { GET_BRANCHFREE_DIVIDER(uint64_t, u64) divider; };
+    template<> struct dispatcher<uint64_t, ALGORITHM0> { GET_ALGORITHM_DIVIDER(uint64_t, u64, alg0) divider; };
+    template<> struct dispatcher<uint64_t, ALGORITHM1> { GET_ALGORITHM_DIVIDER(uint64_t, u64, alg1) divider; };
+    template<> struct dispatcher<uint64_t, ALGORITHM2> { GET_ALGORITHM_DIVIDER(uint64_t, u64, alg2) divider; };
+    template<> struct dispatcher<uint64_t, ALGORITHM3> { GET_CRASH_DIVIDER(uint64_t, u64) divider; };
+    template<> struct dispatcher<uint64_t, ALGORITHM4> { GET_CRASH_DIVIDER(uint64_t, u64) divider; };
 
     // Overloads that don't depend on the algorithm
     inline int32_t  recover(const libdivide_s32_t *s) { return libdivide_s32_recover(s); }
@@ -1959,7 +1951,7 @@ class divider
 {
 private:
     // Here's the actual divider
-    typedef typename libdivide_internal::dispatcher<T, ALGO>::algo::divider div_t;
+    typedef typename libdivide_internal::dispatcher<T, ALGO>::divider div_t;
     div_t div;
 
     // unswitch() friend declaration
