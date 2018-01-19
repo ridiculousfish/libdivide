@@ -2024,12 +2024,28 @@ int_type operator/(int_type numer, const divider<int_type, ALGO>& denom) {
     return denom.perform_divide(numer);
 }
 
+// Overload of the /= operator for scalar division
+template<typename int_type, int ALGO>
+int_type operator/=(int_type& numer, const divider<int_type, ALGO>& denom) {
+    numer = denom.perform_divide(numer);
+    return numer;
+}
+
 #if defined(LIBDIVIDE_USE_SSE2)
+
 // Overload of the / operator for vector division
 template<typename int_type, int ALGO>
 __m128i operator/(__m128i numer, const divider<int_type, ALGO>& denom) {
     return denom.perform_divide_vector(numer);
 }
+
+// Overload of the /= operator for vector division
+template<typename int_type, int ALGO>
+__m128i operator/=(__m128i& numer, const divider<int_type, ALGO>& denom) {
+    numer = denom.perform_divide_vector(numer);
+    return numer;
+}
+
 #endif
 
 } // namespace libdivide
