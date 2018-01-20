@@ -18,9 +18,9 @@ endif()
 
 # Enable GCC/Clang warnings ####################################
 
-set(WALL_FLAGS "-Wall -pedantic -fstrict-aliasing")
-
+set(WALL_FLAGS "-Wall -Wno-unknown-pragmas -fstrict-aliasing")
 check_cxx_compiler_flag("${WALL_FLAGS}" wall)
+
 if(wall)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WALL_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WALL_FLAGS}")
