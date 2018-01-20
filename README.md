@@ -197,4 +197,4 @@ Before sending in patches to libdivide, please run the tester to completion with
 and the benchmark utility for a reasonable period, to ensure that you have not introduced a
 regression.
 
-Happy hacking!
+**Happy hacking!**
