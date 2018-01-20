@@ -75,7 +75,7 @@ vec_us:  libdivide time, using vector unswitching
 The benchmarking utility will also verify that each function returns the same value,
 so **benchmark** is valuable for its verification as well.
 
-# C++ Usage example
+# C++ example
 
 The first code snippet divides all integers in a vector using integer division. This is slow as
 integer division is at least one order of magnitude slower than any other integer arithmetic
@@ -108,6 +108,26 @@ Generally libdivide will give at significant speedup if:
 
 * The divisor is only known at runtime
 * The divisor is reused multiple times e.g. in a loop
+
+# C example
+
+When using libdivide's C API you first need to generate a libdivide divider using
+one of the ```libdivide_*_gen``` functions (*:&nbsp;s32,&nbsp;u32,&nbsp;s64,&nbsp;u64)
+which can then be used to compute the actual integer division using the
+corresponding ```libdivide_*_do``` or ```libdivide_*_branchfree_do```functions.
+
+```C
+void divide(int64_t *array, size_t count, int64_t divisor)
+{
+    struct libdivide_s64_t fast_d = libdivide_s64_gen(divisor);
+
+    // Fast, computes division using libdivide
+    for (size_t i = 0; i < count; i++)
+        array[i] = libdivide_s64_do(array[i], &fast_d);
+}
+```
+
+For more information please visit the [C API documentation](http://libdivide.com/documentation.html#c_api) on libdivide's website.
 
 # Branchfull vs Branchfree
 
