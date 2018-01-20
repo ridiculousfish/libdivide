@@ -180,11 +180,11 @@ void divide(std::vector<int64_t>& vect, int64_t divisor)
 
     switch (fast_d.get_algorithm())
     {
-        case 0: for (auto&n : vect) n /= unswitch<0>(fast_d); break;
-        case 1: for (auto&n : vect) n /= unswitch<1>(fast_d); break;
-        case 2: for (auto&n : vect) n /= unswitch<2>(fast_d); break;
-        case 3: for (auto&n : vect) n /= unswitch<3>(fast_d); break;
-        case 4: for (auto&n : vect) n /= unswitch<4>(fast_d); break;
+        case 0: for (auto& n : vect) n /= unswitch<0>(fast_d); break;
+        case 1: for (auto& n : vect) n /= unswitch<1>(fast_d); break;
+        case 2: for (auto& n : vect) n /= unswitch<2>(fast_d); break;
+        case 3: for (auto& n : vect) n /= unswitch<3>(fast_d); break;
+        case 4: for (auto& n : vect) n /= unswitch<4>(fast_d); break;
     }
 }
 ```
