@@ -16,7 +16,9 @@
 
 #if defined(_WIN32) || defined(WIN32)
 /* Windows makes you do a lot to stop it from "helping" */
+#if !defined(NOMINMAX)
 #define NOMINMAX
+#endif
 #define WIN32_LEAN_AND_MEAN
 #define VC_EXTRALEAN
 #include <windows.h>
