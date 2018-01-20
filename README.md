@@ -165,7 +165,7 @@ Caveats of branchfree divider:
 
 # Unswitching
 
-We mentioned in the "Branchfull vs Branchfree" section that the default branchfull
+We mentioned in the "Branchfull vs branchfree" section that the default branchfull
 libdivide divider uses branches. It is possible to get rid of the branches and the
 preliminary checks when using the default branchfull divider using a technique
 called unswitching. **Unswitching** moves out of the body of the loop the
