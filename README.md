@@ -131,7 +131,7 @@ For more information please visit the [C API documentation](http://libdivide.com
 
 # Branchfull vs branchfree
 
-The default libdivide divider type makes use of
+The default libdivide divider makes use of
 [branches](https://en.wikipedia.org/wiki/Branch_(computer_science)) to compute the integer
 division. When the same divider is used inside a hot loop as in the C++ example section the
 CPU will accurately predict the branches and there will be no performance slowdown. Often
