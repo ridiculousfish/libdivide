@@ -129,7 +129,7 @@ void divide(int64_t *array, size_t count, int64_t divisor)
 
 For more information please visit the [C API documentation](http://libdivide.com/documentation.html#c_api) on libdivide's website.
 
-# Branchfull vs Branchfree
+# Branchfull vs branchfree
 
 The default libdivide divider type makes use of
 [branches](https://en.wikipedia.org/wiki/Branch_(computer_science)) to compute the integer
@@ -162,6 +162,34 @@ Caveats of branchfree divider:
 
 * Branchfree divider cannot be ```-1```, ```0```, ```1```
 * Faster for unsigned types than for signed types
+
+# Unswitching
+
+We mentioned in the "Branchfull vs Branchfree" section that the default branchfull
+libdivide divider uses branches. It is possible to get rid of the branches and the
+preliminary checks when using the default branchfull divider using a technique
+called unswitching. **Unswitching** moves out of the body of the loop the
+preliminary algorithm check so that the computation inside the loop is branchfree.
+
+```C++
+using namespace libdivide;
+
+void divide(std::vector<int64_t>& vect, int64_t divisor)
+{
+    divider<int64_t> fast_d(divisor);
+
+    switch (fast_d.get_algorithm())
+    {
+        case 0: for (auto&n : vect) n /= unswitch<0>(fast_d); break;
+        case 1: for (auto&n : vect) n /= unswitch<1>(fast_d); break;
+        case 2: for (auto&n : vect) n /= unswitch<2>(fast_d); break;
+        case 3: for (auto&n : vect) n /= unswitch<3>(fast_d); break;
+        case 4: for (auto&n : vect) n /= unswitch<4>(fast_d); break;
+    }
+}
+```
+
+For more information please visit the [API documentation](http://libdivide.com/documentation.html) on libdivide's website.
 
 # Contributing
 
