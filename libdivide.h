@@ -1805,40 +1805,37 @@ namespace libdivide_internal {
 #define MAYBE_VECTOR_PARAM(X) int unused
 #endif
 
-#define LIBDIVIDE_CONCAT(A, B, C) A##B##C
-#define LIBDIVIDE_CONCAT_4(A, B, C, D) A##B##C##D
-
 // The following convenience macros are used to build a type of the base
 // divider class and give it as template arguments the C functions
 // related to the macro name and the macro type paramaters.
 
 #define BRANCHFULL_DIVIDER(INT, TYPE) \
     typedef base<INT, \
-                 LIBDIVIDE_CONCAT(libdivide_, TYPE, _t), \
-                 LIBDIVIDE_CONCAT(libdivide_, TYPE, _gen), \
-                 LIBDIVIDE_CONCAT(libdivide_, TYPE, _do), \
-                 MAYBE_VECTOR(LIBDIVIDE_CONCAT(libdivide_, TYPE, _do_vector))>
+                 libdivide_##TYPE##_t, \
+                 libdivide_##TYPE##_gen, \
+                 libdivide_##TYPE##_do, \
+                 MAYBE_VECTOR(libdivide_##TYPE##_do_vector)>
 
 #define BRANCHFREE_DIVIDER(INT, TYPE) \
     typedef base<INT, \
-                 LIBDIVIDE_CONCAT(libdivide_, TYPE, _branchfree_t), \
-                 LIBDIVIDE_CONCAT(libdivide_, TYPE, _branchfree_gen), \
-                 LIBDIVIDE_CONCAT(libdivide_, TYPE, _branchfree_do), \
-                 MAYBE_VECTOR(LIBDIVIDE_CONCAT(libdivide_, TYPE, _branchfree_do_vector))>
+                 libdivide_##TYPE##_branchfree_t, \
+                 libdivide_##TYPE##_branchfree_gen, \
+                 libdivide_##TYPE##_branchfree_do, \
+                 MAYBE_VECTOR(libdivide_##TYPE##_branchfree_do_vector)>
 
 #define ALGORITHM_DIVIDER(INT, TYPE, ALGO) \
     typedef base<INT, \
-                 LIBDIVIDE_CONCAT(libdivide_, TYPE, _t), \
-                 LIBDIVIDE_CONCAT(libdivide_, TYPE, _gen), \
-                 LIBDIVIDE_CONCAT_4(libdivide_, TYPE, _do_, ALGO), \
-                 MAYBE_VECTOR(LIBDIVIDE_CONCAT_4(libdivide_, TYPE, _do_vector_, ALGO))>
+                 libdivide_##TYPE##_t, \
+                 libdivide_##TYPE##_gen, \
+                 libdivide_##TYPE##_do_##ALGO, \
+                 MAYBE_VECTOR(libdivide_##TYPE##_do_vector_##ALGO)>
 
 #define CRASH_DIVIDER(INT, TYPE) \
     typedef base<INT, \
-                 LIBDIVIDE_CONCAT(libdivide_, TYPE, _t), \
-                 LIBDIVIDE_CONCAT(libdivide_, TYPE, _gen), \
-                 LIBDIVIDE_CONCAT(libdivide_, TYPE, _crash), \
-                 MAYBE_VECTOR(LIBDIVIDE_CONCAT(libdivide_, TYPE, _crash_vector))>
+                 libdivide_##TYPE##_t, \
+                 libdivide_##TYPE##_gen, \
+                 libdivide_##TYPE##_crash, \
+                 MAYBE_VECTOR(libdivide_##TYPE##_crash_vector)>
 
     // Base divider, provides storage for the actual divider.
     // @IntType: e.g. uint32_t
