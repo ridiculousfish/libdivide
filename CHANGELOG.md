@@ -12,6 +12,7 @@ This is a list of notable changes to libdivide.
   * Speedup 64-bit divisor recovery by up to 30%
   * Simplify C++ templates
   * Add include guards to ```libdivide.h```!
+  * Get rid of ```goto``` in ```libdivide_128_div_64_to_64()```
   * Use ```#if defined(MACRO)``` instead of ```#if MACRO```
   * Silence compiler warnings from crash functions
 * TESTING
