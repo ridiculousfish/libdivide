@@ -1,5 +1,6 @@
 # libdivide
 [![Build Status](https://ci.appveyor.com/api/projects/status/github/ridiculousfish/libdivide?branch=master&svg=true)](https://ci.appveyor.com/project/kimwalisch/libdivide)
+[![Github Releases](https://img.shields.io/github/release/ridiculousfish/libdivide.svg)](https://github.com/ridiculousfish/libdivide/releases)
 
 ```libdivide.h```  is a header-only C/C++ library for optimizing integer division,
 it has both a [C API](http://libdivide.com/documentation.html#c_api) and a
