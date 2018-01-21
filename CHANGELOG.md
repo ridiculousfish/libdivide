@@ -7,7 +7,7 @@ This is a list of notable changes to libdivide.
   * Branchfull divider must not be ```0``` ([#38](https://github.com/ridiculousfish/libdivide/pull/38))
   * Branchfree divider must not be ```-1```, ```0```, ```1``` ([#38](https://github.com/ridiculousfish/libdivide/pull/38))
 * ENHANCEMENT
-  * Add proper error handling (previously only assertions)
+  * Add proper error handling ([#38](https://github.com/ridiculousfish/libdivide/pull/38))
   * Add C++ support for ```/=``` operator
   * Speedup 64-bit divisor recovery by up to 30%
   * Simplify C++ templates
