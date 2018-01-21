@@ -2,7 +2,7 @@
 
 This is a list of notable changes to libdivide.
 
-## [X.X](https://github.com/go-gitea/gitea/releases/tag/vX.X) - 2018-01-20
+## [1.0](https://github.com/ridiculousfish/libdivide/releases/tag/v1.0) - 2018-01-21
 * BREAKING
   * Branchfull divider must not be ```0``` ([#38](https://github.com/ridiculousfish/libdivide/pull/38))
   * Branchfree divider must not be ```-1```, ```0```, ```1``` ([#38](https://github.com/ridiculousfish/libdivide/pull/38))
