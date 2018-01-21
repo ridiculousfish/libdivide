@@ -2006,10 +2006,13 @@ public:
     }
 };
 
-#if __cplusplus >= 201103L
+#if __cplusplus >= 201103L || \
+    (defined(_MSC_VER) && _MSC_VER >= 1800)
+
 // libdivdie::branchfree_divider<T>
 template <typename T>
 using branchfree_divider = divider<T, BRANCHFREE>;
+
 #endif
 
 // Returns a divider specialized for the given algorithm
