@@ -14,7 +14,7 @@
 #pragma warning(disable: 4146)
 #define LIBDIVIDE_VC
 #if _M_IX86_FP == 2
-#define __SSE2__ 1
+#define LIBDIVIDE_USE_SSE2 1
 #endif
 #endif
 
