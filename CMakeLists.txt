@@ -30,14 +30,7 @@ endif()
 
 cmake_push_check_state()
 set(CMAKE_REQUIRED_FLAGS -Werror)
-check_cxx_compiler_flag(-msse2 msse2)
 cmake_pop_check_state()
-
-if(msse2)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse2")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2")
-    add_definitions(-DLIBDIVIDE_USE_SSE2)
-endif()
 
 # Build binaries ###############################################
 
