@@ -567,7 +567,7 @@ static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v,
     uint64_t q1, q0; // Quotient digits
     uint64_t un64, un21, un10; // Dividend digit pairs
     uint64_t rhat; // A remainder
-    int s; // Shift amount for norm
+    int32_t s; // Shift amount for norm
 
     // If overflow, set rem. to an impossible value,
     // and return the largest possible quotient
