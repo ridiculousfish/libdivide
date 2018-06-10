@@ -13,7 +13,14 @@
 // unsigned type, result still unsigned
 #pragma warning(disable: 4146)
 #define LIBDIVIDE_VC
+#if _M_IX86_FP == 2
+#define LIBDIVIDE_USE_SSE2 1
 #endif
+#endif
+
+#if __SSE2__ == 1
+#define LIBDIVIDE_USE_SSE2 1
+#endif 
 
 #ifdef __cplusplus
 #include <cstdlib>
@@ -24,6 +31,8 @@
 #endif
 
 #include <stdint.h>
+
+
 
 #if defined(LIBDIVIDE_USE_SSE2)
 #include <emmintrin.h>
