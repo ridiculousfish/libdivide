@@ -582,7 +582,7 @@ static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v,
     if (s > 0) {
         // Normalize divisor
         v = v << s;
-        un64 = (u1 << s) | ((u0 >> (64 - s)) & (-s >> 31));
+        un64 = (u1 << s) | ((u0 >> (64 - s)) & (-((int32_t)s) >> 31));
         un10 = u0 << s; // Shift dividend left
     } else {
         // Avoid undefined behavior
