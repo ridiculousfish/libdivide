@@ -1260,8 +1260,8 @@ LIBDIVIDE_API struct libdivide_s32_branchfree_t libdivide_s32_branchfree_gen(int
 
 int32_t libdivide_s32_do(int32_t numer, const struct libdivide_s32_t *denom) {
     uint8_t more = denom->more;
-    uint32_t sign = (int8_t)more >> 7;
     if (more & LIBDIVIDE_S32_SHIFT_PATH) {
+        uint32_t sign = (int8_t)more >> 7;
         uint8_t shifter = more & LIBDIVIDE_32_SHIFT_MASK;
         uint32_t uq = (uint32_t)(numer + ((numer >> 31) & ((1U << shifter) - 1)));
         int32_t q = (int32_t)uq;
