@@ -3,11 +3,11 @@
 [![Github Releases](https://img.shields.io/github/release/ridiculousfish/libdivide.svg)](https://github.com/ridiculousfish/libdivide/releases)
 
 ```libdivide.h```  is a header-only C/C++ library for optimizing integer division,
-it has both a [C API](http://libdivide.com/documentation.html#c_api) and a
-[C++ API](http://libdivide.com/documentation.html#cpp_api). This is a summary of
+it has both a [C API](https://libdivide.com/documentation.html#c_api) and a
+[C++ API](https://libdivide.com/documentation.html#cpp_api). This is a summary of
 how to use libdivide's testing tools to develop on libdivide itself.
 
-See http://libdivide.com for more information on libdivide.
+See https://libdivide.com for more information on libdivide.
 
 libdivide has 2 test tools:
 
@@ -128,7 +128,7 @@ void divide(int64_t *array, size_t count, int64_t divisor)
 }
 ```
 
-For more information please visit the [C API documentation](http://libdivide.com/documentation.html#c_api) on libdivide's website.
+For more information please visit the [C API documentation](https://libdivide.com/documentation.html#c_api) on libdivide's website.
 
 # Branchfull vs branchfree
 
@@ -190,7 +190,7 @@ void divide(std::vector<int64_t>& vect, int64_t divisor)
 }
 ```
 
-For more information please visit the [API documentation](http://libdivide.com/documentation.html) on libdivide's website.
+For more information please visit the [API documentation](https://libdivide.com/documentation.html) on libdivide's website.
 
 # Contributing
 
