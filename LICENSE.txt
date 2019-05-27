@@ -1,5 +1,5 @@
   libdivide
-  Copyright (C) 2010 ridiculous_fish
+  Copyright (C) 2010 - 2019 ridiculous_fish
   
   libdivide is made available under two licenses. You may choose either
   of the following licenses when using libdivide.

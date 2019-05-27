@@ -1,5 +1,5 @@
 // libdivide.h
-// Copyright 2010 - 2018 ridiculous_fish
+// Copyright 2010 - 2019 ridiculous_fish
 //
 // libdivide is dual-licensed under the Boost or zlib licenses.
 // You may use libdivide under the terms of either of these.
@@ -763,13 +763,13 @@ static inline struct libdivide_u32_t libdivide_internal_u32_gen(uint32_t d, int 
         // Power of 2
         if (! branchfree) {
             result.magic = 0;
-            result.more = floor_log_2_d | LIBDIVIDE_U32_SHIFT_PATH;
+            result.more = (uint8_t)(floor_log_2_d | LIBDIVIDE_U32_SHIFT_PATH);
         } else {
             // We want a magic number of 2**32 and a shift of floor_log_2_d
             // but one of the shifts is taken up by LIBDIVIDE_ADD_MARKER,
             // so we subtract 1 from the shift
             result.magic = 0;
-            result.more = (floor_log_2_d-1) | LIBDIVIDE_ADD_MARKER;
+            result.more = (uint8_t)((floor_log_2_d-1) | LIBDIVIDE_ADD_MARKER);
         }
     } else {
         uint8_t more;
