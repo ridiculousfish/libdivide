@@ -586,7 +586,7 @@ static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v,
         un10 = u0 << s; // Shift dividend left
     } else {
         // Avoid undefined behavior
-        un64 = u1 | u0;
+        un64 = u1;
         un10 = u0;
     }
 
