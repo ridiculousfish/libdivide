@@ -183,27 +183,26 @@ int main(int argc, const char *argv[]) {
         tasks |= TEST_ALL_ALGOS;
     }
     
-    
-    size_t iters = 64;// * 100000;
+    size_t iters = 10;
     
     if (tasks & TEST_U32) {
         std::cout << "----- u32 -----" << std::endl;
-        measure_times<uint32_t>(tasks, 40000, iters);
+        measure_times<uint32_t>(tasks, 100000, iters);
     }
     
     if (tasks & TEST_U64) {
         std::cout << "----- u64 -----" << std::endl;
-        measure_times<uint64_t>(tasks, 40000, iters);
+        measure_times<uint64_t>(tasks, 100000, iters);
     }
     
     if (tasks & TEST_S32) {
         std::cout << "----- s32 -----" << std::endl;
-        measure_times<int32_t>(tasks, 40000, iters);
+        measure_times<int32_t>(tasks, 100000, iters);
     }
     
     if (tasks & TEST_S64) {
         std::cout << "----- s64 -----" << std::endl;
-        measure_times<int64_t>(tasks, 40000, iters);
+        measure_times<int64_t>(tasks, 100000, iters);
     }
     return 0;
 }
