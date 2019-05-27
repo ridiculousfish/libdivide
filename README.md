@@ -96,6 +96,8 @@ The second code snippet runs much faster, it uses libdivide to compute the integ
 using multiplication and bit shifts hence avoiding the slow integer divison operation.
 
 ```C++
+#include "libdivide.h"
+
 void divide(std::vector<int64_t>& vect, int64_t divisor)
 {
     libdivide::divider<int64_t> fast_d(divisor);
@@ -114,11 +116,13 @@ Generally libdivide will give at significant speedup if:
 # C example
 
 When using libdivide's C API you first need to generate a libdivide divider using
-one of the ```libdivide_*_gen``` functions (*:&nbsp;s32,&nbsp;u32,&nbsp;s64,&nbsp;u64)
+one of the ```libdivide_*_gen``` functions (```*```:&nbsp;```s32```,&nbsp;```u32```,&nbsp;```s64```,&nbsp;```u64```)
 which can then be used to compute the actual integer division using the
 corresponding ```libdivide_*_do``` or ```libdivide_*_branchfree_do```functions.
 
 ```C
+#include "libdivide.h"
+
 void divide(int64_t *array, size_t count, int64_t divisor)
 {
     struct libdivide_s64_t fast_d = libdivide_s64_gen(divisor);
@@ -146,7 +150,9 @@ type will often run significantly faster, it computes the integer division witho
 branches.
 
 ```C++
-// Use branchfree divider
+#include "libdivide.h"
+
+// 64-bit branchfree divider type
 using branchfree_t = libdivide::branchfree_divider<uint64_t>;
 
 uint64_t divide(uint64_t x, std::vector<branchfree_t>& vect)
@@ -174,6 +180,8 @@ called unswitching. **Unswitching** moves out of the body of the loop the
 preliminary algorithm check so that the computation inside the loop is branchfree.
 
 ```C++
+#include "libdivide.h"
+
 using namespace libdivide;
 
 void divide(std::vector<int64_t>& vect, int64_t divisor)
