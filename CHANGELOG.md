@@ -2,7 +2,7 @@
 
 This is a list of notable changes to libdivide.
 
-## [1.1](https://github.com/ridiculousfish/libdivide) - 2019-05-27
+## [1.1](https://github.com/ridiculousfish/libdivide/releases/tag/v1.1) - 2019-05-27
 * BUG FIXES
   * Fix bug in ```libdivide_128_div_64_to_64()``` ([#45](https://github.com/ridiculousfish/libdivide/issues/45))
   * Fix ```-Wshift-count-overflow``` warning on avr CPU architecture ([#41](https://github.com/ridiculousfish/libdivide/pull/41))
@@ -10,6 +10,9 @@ This is a list of notable changes to libdivide.
   * Fix ```-Wignored-attributes``` warnings when compiling SSE2 code using GCC 9
 * ENHANCEMENT
   * Add ```LIBDIVIDE_VERSION``` macro to ```libdivide.h```
+* BUILD
+  * Remove windows directory with legacy Visual Studio project files
+  * Move test programs to test directory
 
 ## [1.0](https://github.com/ridiculousfish/libdivide/releases/tag/v1.0) - 2018-01-21
 * BREAKING
