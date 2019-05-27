@@ -8,6 +8,10 @@
 #ifndef LIBDIVIDE_H
 #define LIBDIVIDE_H
 
+#define LIBDIVIDE_VERSION "1.1"
+#define LIBDIVIDE_VERSION_MAJOR 1
+#define LIBDIVIDE_VERSION_MINOR 1
+
 #if defined(_MSC_VER)
 // disable warning C4146: unary minus operator applied to
 // unsigned type, result still unsigned
