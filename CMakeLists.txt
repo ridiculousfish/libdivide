@@ -39,13 +39,17 @@ if(msse2)
     add_definitions(-DLIBDIVIDE_USE_SSE2)
 endif()
 
-# Build binaries ###############################################
+# Build test programs ##########################################
 
 find_package(Threads REQUIRED)
 
-add_executable(tester tester.cpp)
-add_executable(benchmark benchmark.c)
-add_executable(primes_benchmark primes_benchmark.cpp)
+add_executable(tester test/tester.cpp)
+add_executable(benchmark test/benchmark.c)
+add_executable(primes_benchmark test/primes_benchmark.cpp)
+
+target_include_directories(tester PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(benchmark PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(primes_benchmark PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 
 target_link_libraries(tester Threads::Threads)
 
