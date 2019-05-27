@@ -1804,12 +1804,22 @@ enum {
 
 namespace libdivide_internal {
 
+#if defined(LIBDIVIDE_USE_SSE2) && \
+    defined(__GNUC__) && \
+    __GNUC__ >= 6
+    // Using vector functions as template arguments causes many
+    // -Wignored-attributes compiler warnings with GCC 9.
+    // These warnings can safely be turned off.
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wignored-attributes"
+#endif
+
 #if defined(LIBDIVIDE_USE_SSE2)
-#define MAYBE_VECTOR(X) X
-#define MAYBE_VECTOR_PARAM(X) __m128i vector_func(__m128i, const X *)
+    #define MAYBE_VECTOR(X) X
+    #define MAYBE_VECTOR_PARAM(X) __m128i vector_func(__m128i, const X *)
 #else
-#define MAYBE_VECTOR(X) 0
-#define MAYBE_VECTOR_PARAM(X) int unused
+    #define MAYBE_VECTOR(X) 0
+    #define MAYBE_VECTOR_PARAM(X) int unused
 #endif
 
 // The following convenience macros are used to build a type of the base
@@ -1926,6 +1936,12 @@ namespace libdivide_internal {
     template<> struct dispatcher<uint64_t, ALGORITHM2> { ALGORITHM_DIVIDER(uint64_t, u64, alg2) divider; };
     template<> struct dispatcher<uint64_t, ALGORITHM3> { CRASH_DIVIDER(uint64_t, u64) divider; };
     template<> struct dispatcher<uint64_t, ALGORITHM4> { CRASH_DIVIDER(uint64_t, u64) divider; };
+
+#if defined(LIBDIVIDE_USE_SSE2) && \
+    defined(__GNUC__) && \
+    __GNUC__ >= 6
+    #pragma GCC diagnostic pop
+#endif
 
     // Overloads that don't depend on the algorithm
     inline int32_t  recover(const libdivide_s32_t *s) { return libdivide_s32_recover(s); }
