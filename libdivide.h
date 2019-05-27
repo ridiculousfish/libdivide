@@ -561,7 +561,7 @@ static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v,
 // http://www.hackersdelight.org/permissions.htm
 
 static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v, uint64_t *r) {
-    const uint64_t b = (1ULL << 32); // Number base (16 bits)
+    const uint64_t b = (1ULL << 32); // Number base (32 bits)
     uint64_t un1, un0; // Norm. dividend LSD's
     uint64_t vn1, vn0; // Norm. divisor digits
     uint64_t q1, q0; // Quotient digits
@@ -582,10 +582,13 @@ static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v,
     if (s > 0) {
         // Normalize divisor
         v = v << s;
-        un64 = (u1 << s) | ((u0 >> (64 - s)) & (-s >> 31));
+        un64 = (u1 << s) | (u0 >> (64 - s));
         un10 = u0 << s; // Shift dividend left
     } else {
-        // Avoid undefined behavior
+        // Avoid undefined behavior of (u0 >> 64).
+        // The behavior is undefined if the right operand is
+        // negative, or greater than or equal to the length
+        // in bits of the promoted left operand.
         un64 = u1;
         un10 = u0;
     }
