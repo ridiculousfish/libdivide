@@ -9,10 +9,11 @@ how to use libdivide's testing tools to develop on libdivide itself.
 
 See https://libdivide.com for more information on libdivide.
 
-libdivide has 2 test tools:
+libdivide has 3 test programs:
 
-* A verification utility **tester** used to help ensure that the division algorithm is correct.
-* A benchmarking utility **benchmark** used to measure the speed increase.
+* The **tester** program ensures that the division algorithms are correct.
+* The **benchmark** program is used to measure the speed of the different division algorithms.
+* The **primes_benchmark** benchmarks using an array of libdivide divisors.
 
 # Build instructions
 
@@ -29,7 +30,7 @@ sudo make install
 # Tester binary
 
 You can pass the **tester** binary one or more of the following arguments: ```u32```,
-```s32```, ```u64```, ```s64``` to test the four cases (signed, unsigned, 32 bit, or 64 bit), or
+```s32```, ```u64```, ```s64``` to test the four cases (signed, unsigned, 32-bit, or 64-bit), or
 run it with no arguments to test all four. The tester is multithreaded so it can test multiple
 cases simultaneously. The tester will verify the correctness of libdivide via a set of randomly
 chosen denominators, by comparing the result of libdivide's division to hardware division. It
@@ -58,7 +59,7 @@ It will output data like this:
 
 It will keep going as long as you let it, so it's best to stop it when you are happy with the
 denominators tested.  These columns have the following significance.  All times are in
-nanoseconds, and lower is better.
+nanoseconds, lower is better.
 
 ```bash
      #:  The divisor that is tested
@@ -198,4 +199,4 @@ Before sending in patches to libdivide, please run the tester to completion with
 and the benchmark utility for a reasonable period, to ensure that you have not introduced a
 regression.
 
-**Happy hacking!**
+### Happy hacking!
