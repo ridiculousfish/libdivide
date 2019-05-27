@@ -43,8 +43,8 @@ endif()
 
 find_package(Threads REQUIRED)
 
-add_executable(tester libdivide_test.cpp)
-add_executable(benchmark libdivide_benchmark.c)
+add_executable(tester tester.cpp)
+add_executable(benchmark benchmark.c)
 add_executable(primes_benchmark primes_benchmark.cpp)
 
 target_link_libraries(tester Threads::Threads)

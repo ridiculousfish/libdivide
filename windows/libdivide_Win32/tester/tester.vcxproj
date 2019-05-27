@@ -22,7 +22,7 @@
     <ClInclude Include="..\..\..\libdivide.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\libdivide_test.cpp" />
+    <ClCompile Include="..\..\..\tester.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ClassDiagram.cd" />

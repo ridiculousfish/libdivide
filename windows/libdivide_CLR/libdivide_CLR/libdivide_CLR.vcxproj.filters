@@ -28,7 +28,7 @@
     <ClCompile Include="AssemblyInfo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\libdivide_benchmark.c">
+    <ClCompile Include="..\..\..\benchmark.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
