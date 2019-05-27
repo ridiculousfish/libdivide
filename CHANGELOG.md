@@ -2,6 +2,14 @@
 
 This is a list of notable changes to libdivide.
 
+## [1.1](https://github.com/ridiculousfish/libdivide) - 2019-05-27
+* BUG FIXES
+  * Fix bug in ```libdivide_128_div_64_to_64()``` ([#45](https://github.com/ridiculousfish/libdivide/issues/45))
+  * Fix ```-Wshift-count-overflow``` warning on avr CPU architecture ([#41](https://github.com/ridiculousfish/libdivide/pull/41))
+  * Fix ```-Wshadow``` warning in ```libdivide_s32_do()```
+* ENHANCEMENT
+  * Add ```LIBDIVIDE_VERSION``` macro to ```libdivide.h```
+
 ## [1.0](https://github.com/ridiculousfish/libdivide/releases/tag/v1.0) - 2018-01-21
 * BREAKING
   * Branchfull divider must not be ```0``` ([#38](https://github.com/ridiculousfish/libdivide/pull/38))
