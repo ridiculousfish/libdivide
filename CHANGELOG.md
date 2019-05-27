@@ -7,6 +7,7 @@ This is a list of notable changes to libdivide.
   * Fix bug in ```libdivide_128_div_64_to_64()``` ([#45](https://github.com/ridiculousfish/libdivide/issues/45))
   * Fix ```-Wshift-count-overflow``` warning on avr CPU architecture ([#41](https://github.com/ridiculousfish/libdivide/pull/41))
   * Fix ```-Wshadow``` warning in ```libdivide_s32_do()```
+  * Fix ```-Wignored-attributes``` warnings when compiling SSE2 code using GCC 9
 * ENHANCEMENT
   * Add ```LIBDIVIDE_VERSION``` macro to ```libdivide.h```
 
