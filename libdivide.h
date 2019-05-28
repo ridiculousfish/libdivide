@@ -1887,88 +1887,88 @@ namespace libdivide_internal {
                  libdivide_##TYPE##_crash, \
                  MAYBE_VECTOR(libdivide_##TYPE##_crash_vector)>
 
-    // Base divider, provides storage for the actual divider.
-    // @T: e.g. uint32_t
-    // @DenomType: e.g. libdivide_u32_t
-    // @gen_func(): e.g. libdivide_u32_gen
-    // @do_func(): e.g. libdivide_u32_do
-    // @MAYBE_VECTOR_PARAM: e.g. libdivide_u32_do_vector
-    template<typename T,
-             typename DenomType,
-             DenomType gen_func(T),
-             T do_func(T, const DenomType *),
-             MAYBE_VECTOR_PARAM(DenomType)>
-    struct base {
-        // Storage for the actual divider
-        DenomType denom;
+// Base divider, provides storage for the actual divider.
+// @T: e.g. uint32_t
+// @DenomType: e.g. libdivide_u32_t
+// @gen_func(): e.g. libdivide_u32_gen
+// @do_func(): e.g. libdivide_u32_do
+// @MAYBE_VECTOR_PARAM: e.g. libdivide_u32_do_vector
+template<typename T,
+            typename DenomType,
+            DenomType gen_func(T),
+            T do_func(T, const DenomType *),
+            MAYBE_VECTOR_PARAM(DenomType)>
+struct base {
+    // Storage for the actual divider
+    DenomType denom;
 
-        // Constructor that takes a divisor value, and applies the gen function
-        base(T d) : denom(gen_func(d)) { }
+    // Constructor that takes a divisor value, and applies the gen function
+    base(T d) : denom(gen_func(d)) { }
 
-        // Default constructor to allow uninitialized uses in e.g. arrays
-        base() {}
+    // Default constructor to allow uninitialized uses in e.g. arrays
+    base() {}
 
-        // Needed for unswitch
-        base(const DenomType& d) : denom(d) { }
+    // Needed for unswitch
+    base(const DenomType& d) : denom(d) { }
 
-        T perform_divide(T val) const {
-            return do_func(val, &denom);
-        }
+    T perform_divide(T val) const {
+        return do_func(val, &denom);
+    }
 
 #if defined(LIBDIVIDE_USE_SSE2)
-        __m128i perform_divide_vector(__m128i val) const {
-            return vector_func(val, &denom);
-        }
+    __m128i perform_divide_vector(__m128i val) const {
+        return vector_func(val, &denom);
+    }
 #endif
-    };
+};
 
-    // Functions that will never be called but are required to be able
-    // to use unswitch in C++ template code. Unsigned has fewer algorithms
-    // than signed i.e. alg3 and alg4 are not defined for unsigned. In
-    // order to make templates compile we need to define unsigned alg3 and
-    // alg4 as crash functions.
-    uint32_t libdivide_u32_crash(uint32_t, const libdivide_u32_t *) { exit(-1); }
-    uint64_t libdivide_u64_crash(uint64_t, const libdivide_u64_t *) { exit(-1); }
+// Functions that will never be called but are required to be able
+// to use unswitch in C++ template code. Unsigned has fewer algorithms
+// than signed i.e. alg3 and alg4 are not defined for unsigned. In
+// order to make templates compile we need to define unsigned alg3 and
+// alg4 as crash functions.
+uint32_t libdivide_u32_crash(uint32_t, const libdivide_u32_t *) { exit(-1); }
+uint64_t libdivide_u64_crash(uint64_t, const libdivide_u64_t *) { exit(-1); }
 
 #if defined(LIBDIVIDE_USE_SSE2)
     __m128i libdivide_u32_crash_vector(__m128i, const libdivide_u32_t *) { exit(-1); }
     __m128i libdivide_u64_crash_vector(__m128i, const libdivide_u64_t *) { exit(-1); }
 #endif
 
-    template<typename T, int ALGO> struct dispatcher { };
+template<typename T, int ALGO> struct dispatcher { };
 
-    // Templated dispatch using partial specialization
-    template<> struct dispatcher<int32_t, BRANCHFULL> { BRANCHFULL_DIVIDER(int32_t, s32) divider; };
-    template<> struct dispatcher<int32_t, BRANCHFREE> { BRANCHFREE_DIVIDER(int32_t, s32) divider; };
-    template<> struct dispatcher<int32_t, ALGORITHM0> { ALGORITHM_DIVIDER(int32_t, s32, alg0) divider; };
-    template<> struct dispatcher<int32_t, ALGORITHM1> { ALGORITHM_DIVIDER(int32_t, s32, alg1) divider; };
-    template<> struct dispatcher<int32_t, ALGORITHM2> { ALGORITHM_DIVIDER(int32_t, s32, alg2) divider; };
-    template<> struct dispatcher<int32_t, ALGORITHM3> { ALGORITHM_DIVIDER(int32_t, s32, alg3) divider; };
-    template<> struct dispatcher<int32_t, ALGORITHM4> { ALGORITHM_DIVIDER(int32_t, s32, alg4) divider; };
+// Templated dispatch using partial specialization
+template<> struct dispatcher<int32_t, BRANCHFULL> { BRANCHFULL_DIVIDER(int32_t, s32) divider; };
+template<> struct dispatcher<int32_t, BRANCHFREE> { BRANCHFREE_DIVIDER(int32_t, s32) divider; };
+template<> struct dispatcher<int32_t, ALGORITHM0> { ALGORITHM_DIVIDER(int32_t, s32, alg0) divider; };
+template<> struct dispatcher<int32_t, ALGORITHM1> { ALGORITHM_DIVIDER(int32_t, s32, alg1) divider; };
+template<> struct dispatcher<int32_t, ALGORITHM2> { ALGORITHM_DIVIDER(int32_t, s32, alg2) divider; };
+template<> struct dispatcher<int32_t, ALGORITHM3> { ALGORITHM_DIVIDER(int32_t, s32, alg3) divider; };
+template<> struct dispatcher<int32_t, ALGORITHM4> { ALGORITHM_DIVIDER(int32_t, s32, alg4) divider; };
 
-    template<> struct dispatcher<uint32_t, BRANCHFULL> { BRANCHFULL_DIVIDER(uint32_t, u32) divider; };
-    template<> struct dispatcher<uint32_t, BRANCHFREE> { BRANCHFREE_DIVIDER(uint32_t, u32) divider; };
-    template<> struct dispatcher<uint32_t, ALGORITHM0> { ALGORITHM_DIVIDER(uint32_t, u32, alg0) divider; };
-    template<> struct dispatcher<uint32_t, ALGORITHM1> { ALGORITHM_DIVIDER(uint32_t, u32, alg1) divider; };
-    template<> struct dispatcher<uint32_t, ALGORITHM2> { ALGORITHM_DIVIDER(uint32_t, u32, alg2) divider; };
-    template<> struct dispatcher<uint32_t, ALGORITHM3> { CRASH_DIVIDER(uint32_t, u32) divider; };
-    template<> struct dispatcher<uint32_t, ALGORITHM4> { CRASH_DIVIDER(uint32_t, u32) divider; };
+template<> struct dispatcher<uint32_t, BRANCHFULL> { BRANCHFULL_DIVIDER(uint32_t, u32) divider; };
+template<> struct dispatcher<uint32_t, BRANCHFREE> { BRANCHFREE_DIVIDER(uint32_t, u32) divider; };
+template<> struct dispatcher<uint32_t, ALGORITHM0> { ALGORITHM_DIVIDER(uint32_t, u32, alg0) divider; };
+template<> struct dispatcher<uint32_t, ALGORITHM1> { ALGORITHM_DIVIDER(uint32_t, u32, alg1) divider; };
+template<> struct dispatcher<uint32_t, ALGORITHM2> { ALGORITHM_DIVIDER(uint32_t, u32, alg2) divider; };
+template<> struct dispatcher<uint32_t, ALGORITHM3> { CRASH_DIVIDER(uint32_t, u32) divider; };
+template<> struct dispatcher<uint32_t, ALGORITHM4> { CRASH_DIVIDER(uint32_t, u32) divider; };
 
-    template<> struct dispatcher<int64_t, BRANCHFULL> { BRANCHFULL_DIVIDER(int64_t, s64) divider; };
-    template<> struct dispatcher<int64_t, BRANCHFREE> { BRANCHFREE_DIVIDER(int64_t, s64) divider; };
-    template<> struct dispatcher<int64_t, ALGORITHM0> { ALGORITHM_DIVIDER (int64_t, s64, alg0) divider; };
-    template<> struct dispatcher<int64_t, ALGORITHM1> { ALGORITHM_DIVIDER (int64_t, s64, alg1) divider; };
-    template<> struct dispatcher<int64_t, ALGORITHM2> { ALGORITHM_DIVIDER (int64_t, s64, alg2) divider; };
-    template<> struct dispatcher<int64_t, ALGORITHM3> { ALGORITHM_DIVIDER (int64_t, s64, alg3) divider; };
-    template<> struct dispatcher<int64_t, ALGORITHM4> { ALGORITHM_DIVIDER (int64_t, s64, alg4) divider; };
+template<> struct dispatcher<int64_t, BRANCHFULL> { BRANCHFULL_DIVIDER(int64_t, s64) divider; };
+template<> struct dispatcher<int64_t, BRANCHFREE> { BRANCHFREE_DIVIDER(int64_t, s64) divider; };
+template<> struct dispatcher<int64_t, ALGORITHM0> { ALGORITHM_DIVIDER (int64_t, s64, alg0) divider; };
+template<> struct dispatcher<int64_t, ALGORITHM1> { ALGORITHM_DIVIDER (int64_t, s64, alg1) divider; };
+template<> struct dispatcher<int64_t, ALGORITHM2> { ALGORITHM_DIVIDER (int64_t, s64, alg2) divider; };
+template<> struct dispatcher<int64_t, ALGORITHM3> { ALGORITHM_DIVIDER (int64_t, s64, alg3) divider; };
+template<> struct dispatcher<int64_t, ALGORITHM4> { ALGORITHM_DIVIDER (int64_t, s64, alg4) divider; };
 
-    template<> struct dispatcher<uint64_t, BRANCHFULL> { BRANCHFULL_DIVIDER(uint64_t, u64) divider; };
-    template<> struct dispatcher<uint64_t, BRANCHFREE> { BRANCHFREE_DIVIDER(uint64_t, u64) divider; };
-    template<> struct dispatcher<uint64_t, ALGORITHM0> { ALGORITHM_DIVIDER(uint64_t, u64, alg0) divider; };
-    template<> struct dispatcher<uint64_t, ALGORITHM1> { ALGORITHM_DIVIDER(uint64_t, u64, alg1) divider; };
-    template<> struct dispatcher<uint64_t, ALGORITHM2> { ALGORITHM_DIVIDER(uint64_t, u64, alg2) divider; };
-    template<> struct dispatcher<uint64_t, ALGORITHM3> { CRASH_DIVIDER(uint64_t, u64) divider; };
-    template<> struct dispatcher<uint64_t, ALGORITHM4> { CRASH_DIVIDER(uint64_t, u64) divider; };
+template<> struct dispatcher<uint64_t, BRANCHFULL> { BRANCHFULL_DIVIDER(uint64_t, u64) divider; };
+template<> struct dispatcher<uint64_t, BRANCHFREE> { BRANCHFREE_DIVIDER(uint64_t, u64) divider; };
+template<> struct dispatcher<uint64_t, ALGORITHM0> { ALGORITHM_DIVIDER(uint64_t, u64, alg0) divider; };
+template<> struct dispatcher<uint64_t, ALGORITHM1> { ALGORITHM_DIVIDER(uint64_t, u64, alg1) divider; };
+template<> struct dispatcher<uint64_t, ALGORITHM2> { ALGORITHM_DIVIDER(uint64_t, u64, alg2) divider; };
+template<> struct dispatcher<uint64_t, ALGORITHM3> { CRASH_DIVIDER(uint64_t, u64) divider; };
+template<> struct dispatcher<uint64_t, ALGORITHM4> { CRASH_DIVIDER(uint64_t, u64) divider; };
 
 #if defined(LIBDIVIDE_USE_SSE2) && \
     defined(__GNUC__) && \
@@ -1976,25 +1976,26 @@ namespace libdivide_internal {
     #pragma GCC diagnostic pop
 #endif
 
-    // Overloads that don't depend on the algorithm
-    inline int32_t  recover(const libdivide_s32_t *s) { return libdivide_s32_recover(s); }
-    inline uint32_t recover(const libdivide_u32_t *s) { return libdivide_u32_recover(s); }
-    inline int64_t  recover(const libdivide_s64_t *s) { return libdivide_s64_recover(s); }
-    inline uint64_t recover(const libdivide_u64_t *s) { return libdivide_u64_recover(s); }
+// Overloads that don't depend on the algorithm
+inline int32_t  recover(const libdivide_s32_t *s) { return libdivide_s32_recover(s); }
+inline uint32_t recover(const libdivide_u32_t *s) { return libdivide_u32_recover(s); }
+inline int64_t  recover(const libdivide_s64_t *s) { return libdivide_s64_recover(s); }
+inline uint64_t recover(const libdivide_u64_t *s) { return libdivide_u64_recover(s); }
 
-    inline int32_t  recover(const libdivide_s32_branchfree_t *s) { return libdivide_s32_branchfree_recover(s); }
-    inline uint32_t recover(const libdivide_u32_branchfree_t *s) { return libdivide_u32_branchfree_recover(s); }
-    inline int64_t  recover(const libdivide_s64_branchfree_t *s) { return libdivide_s64_branchfree_recover(s); }
-    inline uint64_t recover(const libdivide_u64_branchfree_t *s) { return libdivide_u64_branchfree_recover(s); }
+inline int32_t  recover(const libdivide_s32_branchfree_t *s) { return libdivide_s32_branchfree_recover(s); }
+inline uint32_t recover(const libdivide_u32_branchfree_t *s) { return libdivide_u32_branchfree_recover(s); }
+inline int64_t  recover(const libdivide_s64_branchfree_t *s) { return libdivide_s64_branchfree_recover(s); }
+inline uint64_t recover(const libdivide_u64_branchfree_t *s) { return libdivide_u64_branchfree_recover(s); }
 
-    inline int get_algorithm(const libdivide_s32_t *s) { return libdivide_s32_get_algorithm(s); }
-    inline int get_algorithm(const libdivide_u32_t *s) { return libdivide_u32_get_algorithm(s); }
-    inline int get_algorithm(const libdivide_s64_t *s) { return libdivide_s64_get_algorithm(s); }
-    inline int get_algorithm(const libdivide_u64_t *s) { return libdivide_u64_get_algorithm(s); }
+inline int get_algorithm(const libdivide_s32_t *s) { return libdivide_s32_get_algorithm(s); }
+inline int get_algorithm(const libdivide_u32_t *s) { return libdivide_u32_get_algorithm(s); }
+inline int get_algorithm(const libdivide_s64_t *s) { return libdivide_s64_get_algorithm(s); }
+inline int get_algorithm(const libdivide_u64_t *s) { return libdivide_u64_get_algorithm(s); }
 
-    // Fallback for branchfree variants, which do not support unswitching
-    template<typename T> int get_algorithm(const T *) { return -1; }
-}
+// Fallback for branchfree variants, which do not support unswitching
+template<typename T> int get_algorithm(const T *) { return -1; }
+
+}  // namespace libdivide_internal
 
 // This is the main divider class for use by the user (C++ API).
 // The divider itself is stored in the div variable who's
