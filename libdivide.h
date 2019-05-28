@@ -839,7 +839,8 @@ uint64_t libdivide_u64_do(uint64_t numer, const struct libdivide_u64_t *denom) {
             return t >> (more & LIBDIVIDE_64_SHIFT_MASK);
         }
         else {
-             // all upper bits are 0 - don't need to mask them off
+             // All upper bits are 0,
+             // don't need to mask them off.
             return q >> more;
         }
     }
@@ -1894,10 +1895,10 @@ namespace libdivide_internal {
 // @do_func(): e.g. libdivide_u32_do
 // @MAYBE_VECTOR_PARAM: e.g. libdivide_u32_do_vector
 template<typename T,
-            typename DenomType,
-            DenomType gen_func(T),
-            T do_func(T, const DenomType *),
-            MAYBE_VECTOR_PARAM(DenomType)>
+         typename DenomType,
+         DenomType gen_func(T),
+         T do_func(T, const DenomType *),
+         MAYBE_VECTOR_PARAM(DenomType)>
 struct base {
     // Storage for the actual divider
     DenomType denom;
