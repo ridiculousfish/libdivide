@@ -22,14 +22,6 @@
     #include <stdio.h>
 #endif
 
-#if defined(_MSC_VER)
-    #include <intrin.h>
-    // disable warning C4146: unary minus operator applied to
-    // unsigned type, result still unsigned
-    #pragma warning(disable: 4146)
-    #define LIBDIVIDE_VC
-#endif
-
 #if defined(LIBDIVIDE_USE_SSE2)
     #include <emmintrin.h>
 #endif
@@ -43,7 +35,6 @@
 #endif
 
 #if !defined(__has_builtin)
-    // Compatibility with non-clang compilers
     #define __has_builtin(x) 0
 #endif
 
@@ -67,6 +58,26 @@
     #define LIBDIVIDE_FUNCTION __FUNCTION__
 #else
     #define LIBDIVIDE_FUNCTION __func__
+#endif
+
+#if defined(_MSC_VER)
+    #include <intrin.h>
+    // disable warning C4146: unary minus operator applied
+    // to unsigned type, result still unsigned
+    #pragma warning(disable: 4146)
+    #define LIBDIVIDE_VC
+
+    // _udiv128() is available in Visual Studio 2019
+    // or later on the x64 CPU architecture
+    #if defined(LIBDIVIDE_X86_64) && _MSC_VER >= 1920
+        #if !defined(__has_include)
+            #include <immintrin.h>
+            #define LIBDIVIDE_VC_UDIV128
+        #elif __has_include(<immintrin.h>)
+            #include <immintrin.h>
+            #define LIBDIVIDE_VC_UDIV128
+        #endif
+    #endif
 #endif
 
 #define LIBDIVIDE_ERROR(msg) \
@@ -384,8 +395,14 @@ static uint32_t libdivide_64_div_32_to_32(uint32_t u1, uint32_t u0, uint32_t v, 
 
 #endif
 
-#if defined(LIBDIVIDE_X86_64) && \
-    defined(LIBDIVIDE_GCC_STYLE_ASM)
+#if defined(LIBDIVIDE_VC_UDIV128)
+
+static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v, uint64_t *r) {
+    return _udiv128(u1, u0, v, r);
+}
+
+#elif defined(LIBDIVIDE_X86_64) && \
+      defined(LIBDIVIDE_GCC_STYLE_ASM)
 
 static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v, uint64_t *r) {
     // u0 -> rax
