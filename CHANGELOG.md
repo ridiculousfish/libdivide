@@ -11,6 +11,7 @@ This is a list of notable changes to libdivide.
 * ENHANCEMENT
   * Add ```LIBDIVIDE_VERSION``` macro to ```libdivide.h```
   * Clean up SSE2 code in ```libdivide.h```
+  * Clean up macros in ```libdivide.h```
   * Increase runtime of test cases in ```primes_benchmark.cpp```
 * BUILD
   * Remove windows directory with legacy Visual Studio project files

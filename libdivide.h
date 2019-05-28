@@ -12,55 +12,61 @@
 #define LIBDIVIDE_VERSION_MAJOR 1
 #define LIBDIVIDE_VERSION_MINOR 1
 
-#if defined(_MSC_VER)
-// disable warning C4146: unary minus operator applied to
-// unsigned type, result still unsigned
-#pragma warning(disable: 4146)
-#define LIBDIVIDE_VC
-#endif
-
-#ifdef __cplusplus
-#include <cstdlib>
-#include <cstdio>
-#else
-#include <stdlib.h>
-#include <stdio.h>
-#endif
-
 #include <stdint.h>
 
+#if defined(__cplusplus)
+    #include <cstdlib>
+    #include <cstdio>
+#else
+    #include <stdlib.h>
+    #include <stdio.h>
+#endif
+
+#if defined(_MSC_VER)
+    #include <intrin.h>
+    // disable warning C4146: unary minus operator applied to
+    // unsigned type, result still unsigned
+    #pragma warning(disable: 4146)
+    #define LIBDIVIDE_VC
+#endif
+
 #if defined(LIBDIVIDE_USE_SSE2)
-#include <emmintrin.h>
+    #include <emmintrin.h>
 #endif
 
-#if defined(LIBDIVIDE_VC)
-#include <intrin.h>
+// libdivide may use the pmuldq (vector signed 32x32->64 mult instruction)
+// which is in SSE 4.1. However, signed multiplication can be emulated
+// efficiently with unsigned multiplication, and SSE 4.1 is currently rare,
+// so it is OK to not turn this on.
+#if defined(LIBDIVIDE_USE_SSE4_1)
+    #include <smmintrin.h>
 #endif
 
-#ifndef __has_builtin
-#define __has_builtin(x) 0 // Compatibility with non-clang compilers.
+#if !defined(__has_builtin)
+    // Compatibility with non-clang compilers
+    #define __has_builtin(x) 0
 #endif
 
 #if defined(__SIZEOF_INT128__)
-#define HAS_INT128_T
+    #define HAS_INT128_T
 #endif
 
 #if defined(__x86_64__) || defined(_WIN64) || defined(_M_X64)
-#define LIBDIVIDE_IS_X86_64
+    #define LIBDIVIDE_X86_64
 #endif
 
 #if defined(__i386__)
-#define LIBDIVIDE_IS_i386
+    #define LIBDIVIDE_i386
 #endif
 
 #if defined(__GNUC__) || defined(__clang__)
-#define LIBDIVIDE_GCC_STYLE_ASM
+    #define LIBDIVIDE_GCC_STYLE_ASM
 #endif
 
 #if defined(__cplusplus) || defined(LIBDIVIDE_VC)
-#define LIBDIVIDE_FUNCTION __FUNCTION__
+    #define LIBDIVIDE_FUNCTION __FUNCTION__
 #else
-#define LIBDIVIDE_FUNCTION __func__
+    #define LIBDIVIDE_FUNCTION __func__
 #endif
 
 #define LIBDIVIDE_ERROR(msg) \
@@ -71,24 +77,16 @@
     } while (0)
 
 #if defined(LIBDIVIDE_ASSERTIONS_ON)
-#define LIBDIVIDE_ASSERT(x) \
-    do { \
-        if (!(x)) { \
-            fprintf(stderr, "libdivide.h:%d: %s(): Assertion failed: %s\n", \
-                __LINE__, LIBDIVIDE_FUNCTION, #x); \
-            exit(-1); \
-        } \
-    } while (0)
+    #define LIBDIVIDE_ASSERT(x) \
+        do { \
+            if (!(x)) { \
+                fprintf(stderr, "libdivide.h:%d: %s(): Assertion failed: %s\n", \
+                    __LINE__, LIBDIVIDE_FUNCTION, #x); \
+                exit(-1); \
+            } \
+        } while (0)
 #else
-#define LIBDIVIDE_ASSERT(x)
-#endif
-
-// libdivide may use the pmuldq (vector signed 32x32->64 mult instruction)
-// which is in SSE 4.1. However, signed multiplication can be emulated
-// efficiently with unsigned multiplication, and SSE 4.1 is currently rare, so
-// it is OK to not turn this on.
-#ifdef LIBDIVIDE_USE_SSE4_1
-#include <smmintrin.h>
+    #define LIBDIVIDE_ASSERT(x)
 #endif
 
 #ifdef __cplusplus
@@ -269,7 +267,8 @@ static inline int32_t libdivide_mullhi_s32(int32_t x, int32_t y) {
 }
 
 static uint64_t libdivide_mullhi_u64(uint64_t x, uint64_t y) {
-#if defined(LIBDIVIDE_VC) && defined(LIBDIVIDE_IS_X86_64)
+#if defined(LIBDIVIDE_VC) && \
+    defined(LIBDIVIDE_X86_64)
     return __umulh(x, y);
 #elif defined(HAS_INT128_T)
     __uint128_t xl = x, yl = y;
@@ -295,7 +294,8 @@ static uint64_t libdivide_mullhi_u64(uint64_t x, uint64_t y) {
 }
 
 static inline int64_t libdivide_mullhi_s64(int64_t x, int64_t y) {
-#if defined(LIBDIVIDE_VC) && defined(LIBDIVIDE_IS_X86_64)
+#if defined(LIBDIVIDE_VC) && \
+    defined(LIBDIVIDE_X86_64)
     return __mulh(x, y);
 #elif defined(HAS_INT128_T)
     __int128_t xl = x, yl = y;
@@ -317,7 +317,8 @@ static inline int64_t libdivide_mullhi_s64(int64_t x, int64_t y) {
 }
 
 static inline int32_t libdivide_count_leading_zeros32(uint32_t val) {
-#if defined(__GNUC__) || __has_builtin(__builtin_clz)
+#if defined(__GNUC__) || \
+    __has_builtin(__builtin_clz)
     // Fast way to count leading zeros
     return __builtin_clz(val);
 #elif defined(LIBDIVIDE_VC)
@@ -327,19 +328,20 @@ static inline int32_t libdivide_count_leading_zeros32(uint32_t val) {
     }
     return 0;
 #else
-  int32_t result = 0;
-  uint32_t hi = 1U << 31;
+    int32_t result = 0;
+    uint32_t hi = 1U << 31;
 
-  while (~val & hi) {
-      hi >>= 1;
-      result++;
-  }
-  return result;
+    while (~val & hi) {
+        hi >>= 1;
+        result++;
+    }
+    return result;
 #endif
 }
 
 static inline int32_t libdivide_count_leading_zeros64(uint64_t val) {
-#if defined(__GNUC__) || __has_builtin(__builtin_clzll)
+#if defined(__GNUC__) || \
+    __has_builtin(__builtin_clzll)
     // Fast way to count leading zeros
     return __builtin_clzll(val);
 #elif defined(LIBDIVIDE_VC) && defined(_WIN64)
@@ -356,7 +358,7 @@ static inline int32_t libdivide_count_leading_zeros64(uint64_t val) {
 #endif
 }
 
-#if (defined(LIBDIVIDE_IS_i386) || defined(LIBDIVIDE_IS_X86_64)) && \
+#if (defined(LIBDIVIDE_i386) || defined(LIBDIVIDE_X86_64)) && \
      defined(LIBDIVIDE_GCC_STYLE_ASM)
 
 // libdivide_64_div_32_to_32: divides a 64 bit uint {u1, u0} by a 32 bit
@@ -382,7 +384,7 @@ static uint32_t libdivide_64_div_32_to_32(uint32_t u1, uint32_t u0, uint32_t v, 
 
 #endif
 
-#if defined(LIBDIVIDE_IS_X86_64) && \
+#if defined(LIBDIVIDE_X86_64) && \
     defined(LIBDIVIDE_GCC_STYLE_ASM)
 
 static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v, uint64_t *r) {
