@@ -2,14 +2,15 @@
 
 This is a list of notable changes to libdivide.
 
-## [1.1](https://github.com/ridiculousfish/libdivide/releases/tag/v1.1) - 2019-05-27
+## [1.1](https://github.com/ridiculousfish/libdivide/releases/tag/v1.1) - 2019-05-28
 * BUG FIXES
   * Fix bug in ```libdivide_128_div_64_to_64()``` ([#45](https://github.com/ridiculousfish/libdivide/issues/45))
   * Fix ```-Wshift-count-overflow``` warning on avr CPU architecture ([#41](https://github.com/ridiculousfish/libdivide/pull/41))
   * Fix ```-Wshadow``` warning in ```libdivide_s32_do()```
   * Fix ```-Wignored-attributes``` warnings when compiling SSE2 code using GCC 9
 * ENHANCEMENT
-  * Optimize ```libdivide_128_div_64_to_64()``` using ```_udiv128()``` for MSVC 2019 or later
+  * ```libdivide_128_div_64_to_64()```: optimize using ```_udiv128()``` for MSVC 2019 or later
+  * ```libdivide_128_div_64_to_64()```: optimize using ```__uint128_t``` for GCC/Clang on 64-bit CPU architectures
   * Add ```LIBDIVIDE_VERSION``` macro to ```libdivide.h```
   * Clean up SSE2 code in ```libdivide.h```
   * Increase runtime of test cases in ```primes_benchmark.cpp```
