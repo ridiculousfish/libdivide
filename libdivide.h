@@ -1862,22 +1862,22 @@ namespace libdivide_internal {
                  MAYBE_VECTOR(libdivide_##TYPE##_crash_vector)>
 
     // Base divider, provides storage for the actual divider.
-    // @IntType: e.g. uint32_t
+    // @T: e.g. uint32_t
     // @DenomType: e.g. libdivide_u32_t
     // @gen_func(): e.g. libdivide_u32_gen
     // @do_func(): e.g. libdivide_u32_do
     // @MAYBE_VECTOR_PARAM: e.g. libdivide_u32_do_vector
-    template<typename IntType,
+    template<typename T,
              typename DenomType,
-             DenomType gen_func(IntType),
-             IntType do_func(IntType, const DenomType *),
+             DenomType gen_func(T),
+             T do_func(T, const DenomType *),
              MAYBE_VECTOR_PARAM(DenomType)>
     struct base {
         // Storage for the actual divider
         DenomType denom;
 
         // Constructor that takes a divisor value, and applies the gen function
-        base(IntType d) : denom(gen_func(d)) { }
+        base(T d) : denom(gen_func(d)) { }
 
         // Default constructor to allow uninitialized uses in e.g. arrays
         base() {}
@@ -1885,7 +1885,7 @@ namespace libdivide_internal {
         // Needed for unswitch
         base(const DenomType& d) : denom(d) { }
 
-        IntType perform_divide(IntType val) const {
+        T perform_divide(T val) const {
             return do_func(val, &denom);
         }
 
@@ -2049,14 +2049,14 @@ divider<T, NEW_ALGO> unswitch(const divider<T, BRANCHFULL>& d) {
 }
 
 // Overload of the / operator for scalar division
-template<typename int_type, int ALGO>
-int_type operator/(int_type numer, const divider<int_type, ALGO>& denom) {
+template<typename T, int ALGO>
+T operator/(T numer, const divider<T, ALGO>& denom) {
     return denom.perform_divide(numer);
 }
 
 // Overload of the /= operator for scalar division
-template<typename int_type, int ALGO>
-int_type operator/=(int_type& numer, const divider<int_type, ALGO>& denom) {
+template<typename T, int ALGO>
+T operator/=(T& numer, const divider<T, ALGO>& denom) {
     numer = denom.perform_divide(numer);
     return numer;
 }
@@ -2064,14 +2064,14 @@ int_type operator/=(int_type& numer, const divider<int_type, ALGO>& denom) {
 #if defined(LIBDIVIDE_USE_SSE2)
 
 // Overload of the / operator for vector division
-template<typename int_type, int ALGO>
-__m128i operator/(__m128i numer, const divider<int_type, ALGO>& denom) {
+template<typename T, int ALGO>
+__m128i operator/(__m128i numer, const divider<T, ALGO>& denom) {
     return denom.perform_divide_vector(numer);
 }
 
 // Overload of the /= operator for vector division
-template<typename int_type, int ALGO>
-__m128i operator/=(__m128i& numer, const divider<int_type, ALGO>& denom) {
+template<typename T, int ALGO>
+__m128i operator/=(__m128i& numer, const divider<T, ALGO>& denom) {
     numer = denom.perform_divide_vector(numer);
     return numer;
 }
