@@ -485,8 +485,7 @@ static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v,
 }
 
 // Bitshift a u128 in place, left (signed_shift > 0) or right (signed_shift < 0)
-static inline void libdivide_u128_shift(uint64_t *u1, uint64_t *u0, int32_t signed_shift)
-{
+static inline void libdivide_u128_shift(uint64_t *u1, uint64_t *u0, int32_t signed_shift) {
     if (signed_shift > 0) {
         uint32_t shift = signed_shift;
         *u1 <<= shift;
@@ -2005,8 +2004,7 @@ template<typename T> int get_algorithm(const T *) { return -1; }
 // The divider itself is stored in the div variable who's
 // type is chosen by the dispatcher based on the template paramaters.
 template<typename T, int ALGO = BRANCHFULL>
-class divider
-{
+class divider {
 private:
     // Here's the actual divider
     typedef typename libdivide_internal::dispatcher<T, ALGO>::divider div_t;
