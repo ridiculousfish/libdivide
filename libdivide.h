@@ -341,9 +341,7 @@ static inline int32_t libdivide_count_leading_zeros32(uint32_t val) {
 #else
     int32_t result = 0;
     uint32_t hi = 1U << 31;
-
-    while (~val & hi) {
-        hi >>= 1;
+    for (; ~val & hi; hi >>= 1) {
         result++;
     }
     return result;
@@ -369,61 +367,54 @@ static inline int32_t libdivide_count_leading_zeros64(uint64_t val) {
 #endif
 }
 
-#if (defined(LIBDIVIDE_i386) || defined(LIBDIVIDE_X86_64)) && \
-     defined(LIBDIVIDE_GCC_STYLE_ASM)
-
-// libdivide_64_div_32_to_32: divides a 64 bit uint {u1, u0} by a 32 bit
+// libdivide_64_div_32_to_32: divides a 64-bit uint {u1, u0} by a 32-bit
 // uint {v}. The result must fit in 32 bits.
 // Returns the quotient directly and the remainder in *r
 static uint32_t libdivide_64_div_32_to_32(uint32_t u1, uint32_t u0, uint32_t v, uint32_t *r) {
+#if (defined(LIBDIVIDE_i386) || defined(LIBDIVIDE_X86_64)) && \
+     defined(LIBDIVIDE_GCC_STYLE_ASM)
     uint32_t result;
     __asm__("divl %[v]"
             : "=a"(result), "=d"(*r)
             : [v] "r"(v), "a"(u0), "d"(u1)
             );
     return result;
-}
-
 #else
-
-static uint32_t libdivide_64_div_32_to_32(uint32_t u1, uint32_t u0, uint32_t v, uint32_t *r) {
-    uint64_t n = (((uint64_t)u1) << 32) | u0;
+    uint64_t n = ((uint64_t)u1 << 32) | u0;
     uint32_t result = (uint32_t)(n / v);
     *r = (uint32_t)(n - result * (uint64_t)v);
     return result;
-}
-
 #endif
-
-#if defined(LIBDIVIDE_VC_UDIV128)
-
-static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v, uint64_t *r) {
-    return _udiv128(u1, u0, v, r);
 }
+
+// libdivide_128_div_64_to_64: divides a 128-bit uint {u1, u0} by a 64-bit
+// uint {v}. The result must fit in 64 bits.
+// Returns the quotient directly and the remainder in *r
+static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v, uint64_t *r) {
+#if defined(LIBDIVIDE_VC_UDIV128)
+    return _udiv128(u1, u0, v, r);
 
 #elif defined(LIBDIVIDE_X86_64) && \
       defined(LIBDIVIDE_GCC_STYLE_ASM)
 
-static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v, uint64_t *r) {
-    // u0 -> rax
-    // u1 -> rdx
-    // divq
     uint64_t result;
     __asm__("divq %[v]"
             : "=a"(result), "=d"(*r)
             : [v] "r"(v), "a"(u0), "d"(u1)
             );
     return result;
-}
 
+#elif defined(HAS_INT128_T)
+    __uint128_t n = ((__uint128_t)u1 << 64) | u0;
+    uint64_t result = (uint64_t)(n / v);
+    *r = (uint64_t)(n - result * (__uint128_t)v);
+    return result;
 #else
+    // Code taken from Hacker's Delight:
+    // http://www.hackersdelight.org/HDcode/divlu.c.
+    // License permits inclusion here per:
+    // http://www.hackersdelight.org/permissions.htm
 
-// Code taken from Hacker's Delight:
-// http://www.hackersdelight.org/HDcode/divlu.c.
-// License permits inclusion here per:
-// http://www.hackersdelight.org/permissions.htm
-
-static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v, uint64_t *r) {
     const uint64_t b = (1ULL << 32); // Number base (32 bits)
     uint64_t un1, un0; // Norm. dividend LSD's
     uint64_t vn1, vn0; // Norm. divisor digits
@@ -435,8 +426,7 @@ static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v,
     // If overflow, set rem. to an impossible value,
     // and return the largest possible quotient
     if (u1 >= v) {
-        if (r != NULL)
-            *r = (uint64_t) -1;
+        *r = (uint64_t) -1;
         return (uint64_t) -1;
     }
 
@@ -489,14 +479,10 @@ static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v,
             break;
     }
 
-    // If remainder is wanted, return it
-    if (r != NULL)
-        *r = (un21 * b + un0 - q0 * v) >> s;
-
+    *r = (un21 * b + un0 - q0 * v) >> s;
     return q1 * b + q0;
-}
-
 #endif
+}
 
 // Bitshift a u128 in place, left (signed_shift > 0) or right (signed_shift < 0)
 static inline void libdivide_u128_shift(uint64_t *u1, uint64_t *u0, int32_t signed_shift)
