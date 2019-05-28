@@ -10,6 +10,7 @@ This is a list of notable changes to libdivide.
   * Fix ```-Wignored-attributes``` warnings when compiling SSE2 code using GCC 9
 * ENHANCEMENT
   * Add ```LIBDIVIDE_VERSION``` macro to ```libdivide.h```
+  * Clean up SSE2 code in ```libdivide.h```
   * Increase runtime of test cases in ```primes_benchmark.cpp```
 * BUILD
   * Remove windows directory with legacy Visual Studio project files
