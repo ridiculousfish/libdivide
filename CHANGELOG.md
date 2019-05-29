@@ -2,9 +2,10 @@
 
 This is a list of notable changes to libdivide.
 
-## [1.1](https://github.com/ridiculousfish/libdivide/releases/tag/v1.1) - 2019-05-28
+## [1.1](https://github.com/ridiculousfish/libdivide/releases/tag/v1.1) - 2019-05-29
 * BUG FIXES
   * Fix bug in ```libdivide_128_div_64_to_64()``` ([#45](https://github.com/ridiculousfish/libdivide/issues/45))
+  * Fix MSVC ARM 64-bit bug ([07931e9](https://github.com/ridiculousfish/libdivide/commit/07931e9cb670311ba67cd6a16fdbcb67bb97a592))
   * Fix ```-Wshift-count-overflow``` warning on avr CPU architecture ([#41](https://github.com/ridiculousfish/libdivide/pull/41))
   * Fix ```-Wshadow``` warning in ```libdivide_s32_do()```
   * Fix ```-Wignored-attributes``` warnings when compiling SSE2 code using GCC 9
