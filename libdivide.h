@@ -42,7 +42,7 @@
     #define HAS_INT128_T
 #endif
 
-#if defined(__x86_64__) || defined(_WIN64) || defined(_M_X64)
+#if defined(__x86_64__) || defined(_M_X64)
     #define LIBDIVIDE_X86_64
 #endif
 
@@ -1406,7 +1406,7 @@ LIBDIVIDE_API __m128i libdivide_s64_branchfree_do_vector(__m128i numers, const s
 //////// Internal Utility Functions
 
 static inline __m128i libdivide_u64_to_m128(uint64_t x) {
-#if defined(LIBDIVIDE_VC) && !defined(_WIN64)
+#if defined(LIBDIVIDE_VC) && defined(_M_IX86)
     // 64 bit windows doesn't seem to have an implementation of any of these
     // load intrinsics, and 32 bit Visual C++ crashes
     _declspec(align(16)) uint64_t temp[2] = {x, x};
