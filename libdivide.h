@@ -1406,15 +1406,7 @@ LIBDIVIDE_API __m128i libdivide_s64_branchfree_do_vector(__m128i numers, const s
 //////// Internal Utility Functions
 
 static inline __m128i libdivide_u64_to_m128(uint64_t x) {
-#if defined(LIBDIVIDE_VC) && defined(_M_IX86)
-    // 64 bit windows doesn't seem to have an implementation of any of these
-    // load intrinsics, and 32 bit Visual C++ crashes
-    _declspec(align(16)) uint64_t temp[2] = {x, x};
-    return _mm_load_si128((const __m128i*)temp);
-#else
-    // everyone else gets it right
     return _mm_set1_epi64x(x);
-#endif
 }
 
 static inline __m128i libdivide_get_FFFFFFFF00000000(void) {
