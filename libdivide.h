@@ -1405,25 +1405,9 @@ LIBDIVIDE_API __m128i libdivide_s64_branchfree_do_vector(__m128i numers, const s
 
 //////// Internal Utility Functions
 
-static inline __m128i libdivide_u64_to_m128(uint64_t x) {
-    return _mm_set1_epi64x(x);
-}
-
-static inline __m128i libdivide_get_FFFFFFFF00000000(void) {
-    // returns the same as _mm_set1_epi64(0xFFFFFFFF00000000ULL)
-    // without touching memory.
-    // optimizes to pcmpeqd on OS X
-    __m128i result = _mm_set1_epi8(-1);
-    return _mm_slli_epi64(result, 32);
-}
-
-static inline __m128i libdivide_get_00000000FFFFFFFF(void) {
-    // returns the same as _mm_set1_epi64(0x00000000FFFFFFFFULL)
-    // without touching memory.
-    // optimizes to pcmpeqd on OS X
-    __m128i result = _mm_set1_epi8(-1);
-    result = _mm_srli_epi64(result, 32);
-    return result;
+// Returns an __m128i whose low 32 bits are equal to x and has zero elsewhere.
+static inline __m128i libdivide_u32_to_m128i(uint32_t x) {
+    return _mm_set_epi32(0, 0, 0, x);
 }
 
 static inline __m128i libdivide_s64_signbits(__m128i v) {
@@ -1438,17 +1422,12 @@ static inline __m128i libdivide_s64_signbits(__m128i v) {
     return signBits;
 }
 
-// Returns an __m128i whose low 32 bits are equal to amt and has zero elsewhere.
-static inline __m128i libdivide_u32_to_m128i(uint32_t amt) {
-    return _mm_set_epi32(0, 0, 0, amt);
-}
-
 static inline __m128i libdivide_s64_shift_right_vector(__m128i v, int amt) {
     // implementation of _mm_sra_epi64. Here we have two 64 bit values which
     // are shifted right to logically become (64 - amt) values, and are then
     // sign extended from a (64 - amt) bit number.
     const int b = 64 - amt;
-    __m128i m = libdivide_u64_to_m128(1ULL << (b - 1));
+    __m128i m = _mm_set1_epi64x(1ULL << (b - 1));
     __m128i x = _mm_srl_epi64(v, libdivide_u32_to_m128i(amt));
     __m128i result = _mm_sub_epi64(_mm_xor_si128(x, m), m);
     return result;
@@ -1459,7 +1438,7 @@ static inline __m128i libdivide_s64_shift_right_vector(__m128i v, int amt) {
 static inline __m128i libdivide_mullhi_u32_flat_vector(__m128i a, __m128i b) {
     __m128i hi_product_0Z2Z = _mm_srli_epi64(_mm_mul_epu32(a, b), 32);
     __m128i a1X3X = _mm_srli_epi64(a, 32);
-    __m128i mask = libdivide_get_FFFFFFFF00000000();
+    __m128i mask = _mm_set_epi32(-1, 0, -1, 0);
     __m128i hi_product_Z1Z3 = _mm_and_si128(_mm_mul_epu32(a1X3X, b), mask);
     // return hi_product_0123
     return _mm_or_si128(hi_product_0Z2Z, hi_product_Z1Z3);
@@ -1467,8 +1446,9 @@ static inline __m128i libdivide_mullhi_u32_flat_vector(__m128i a, __m128i b) {
 
 // Here, y is assumed to contain one 64 bit value repeated twice.
 static inline __m128i libdivide_mullhi_u64_flat_vector(__m128i x, __m128i y) {
-    // full 128 bits are x0 * y0 + (x0 * y1 << 32) + (x1 * y0 << 32) + (x1 * y1 << 64)
-    __m128i mask = libdivide_get_00000000FFFFFFFF();
+    // full 128 bits are:
+    // x0 * y0 + (x0 * y1 << 32) + (x1 * y0 << 32) + (x1 * y1 << 64)
+    __m128i mask = _mm_set_epi32(0, -1, 0, -1);
     // x0 is low half of 2 64 bit values, x1 is high half in low slots
     __m128i x0 = _mm_and_si128(x, mask);
     __m128i x1 = _mm_srli_epi64(x, 32);
@@ -1506,7 +1486,7 @@ static inline __m128i libdivide_mullhi_s64_flat_vector(__m128i x, __m128i y) {
 static inline __m128i libdivide_mullhi_s32_flat_vector(__m128i a, __m128i b) {
     __m128i hi_product_0Z2Z = _mm_srli_epi64(_mm_mul_epi32(a, b), 32);
     __m128i a1X3X = _mm_srli_epi64(a, 32);
-    __m128i mask = libdivide_get_FFFFFFFF00000000();
+    __m128i mask = _mm_set_epi32(-1, 0, -1, 0);
     __m128i hi_product_Z1Z3 = _mm_and_si128(_mm_mul_epi32(a1X3X, b), mask);
     // return hi_product_0123
     return _mm_or_si128(hi_product_0Z2Z, hi_product_Z1Z3);
@@ -1583,7 +1563,7 @@ __m128i libdivide_u64_do_vector(__m128i numers, const struct libdivide_u64_t *de
         return _mm_srl_epi64(numers, libdivide_u32_to_m128i(shift));
     }
     else {
-        __m128i q = libdivide_mullhi_u64_flat_vector(numers, libdivide_u64_to_m128(denom->magic));
+        __m128i q = libdivide_mullhi_u64_flat_vector(numers, _mm_set1_epi64x(denom->magic));
         if (more & LIBDIVIDE_ADD_MARKER) {
             // uint32_t t = ((numer - q) >> 1) + q;
             // return t >> denom->shift;
@@ -1603,18 +1583,18 @@ __m128i libdivide_u64_do_vector_alg0(__m128i numers, const struct libdivide_u64_
 }
 
 __m128i libdivide_u64_do_vector_alg1(__m128i numers, const struct libdivide_u64_t *denom) {
-    __m128i q = libdivide_mullhi_u64_flat_vector(numers, libdivide_u64_to_m128(denom->magic));
+    __m128i q = libdivide_mullhi_u64_flat_vector(numers, _mm_set1_epi64x(denom->magic));
     return _mm_srl_epi64(q, libdivide_u32_to_m128i(denom->more));
 }
 
 __m128i libdivide_u64_do_vector_alg2(__m128i numers, const struct libdivide_u64_t *denom) {
-    __m128i q = libdivide_mullhi_u64_flat_vector(numers, libdivide_u64_to_m128(denom->magic));
+    __m128i q = libdivide_mullhi_u64_flat_vector(numers, _mm_set1_epi64x(denom->magic));
     __m128i t = _mm_add_epi64(_mm_srli_epi64(_mm_sub_epi64(numers, q), 1), q);
     return _mm_srl_epi64(t, libdivide_u32_to_m128i(denom->more & LIBDIVIDE_64_SHIFT_MASK));
 }
 
 __m128i libdivide_u64_branchfree_do_vector(__m128i numers, const struct libdivide_u64_branchfree_t *denom) {
-    __m128i q = libdivide_mullhi_u64_flat_vector(numers, libdivide_u64_to_m128(denom->magic));
+    __m128i q = libdivide_mullhi_u64_flat_vector(numers, _mm_set1_epi64x(denom->magic));
     __m128i t = _mm_add_epi64(_mm_srli_epi64(_mm_sub_epi64(numers, q), 1), q);
     return _mm_srl_epi64(t, libdivide_u32_to_m128i(denom->more));
 }
@@ -1723,7 +1703,7 @@ __m128i libdivide_s64_do_vector(__m128i numers, const struct libdivide_s64_t *de
     if (magic == 0) { // shift path
         uint32_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
         uint64_t mask = (1ULL << shift) - 1;
-        __m128i roundToZeroTweak = libdivide_u64_to_m128(mask);
+        __m128i roundToZeroTweak = _mm_set1_epi64x(mask);
         // q = numer + ((numer >> 63) & roundToZeroTweak);
         __m128i q = _mm_add_epi64(numers, _mm_and_si128(libdivide_s64_signbits(numers), roundToZeroTweak));
         q = libdivide_s64_shift_right_vector(q, shift);
@@ -1733,7 +1713,7 @@ __m128i libdivide_s64_do_vector(__m128i numers, const struct libdivide_s64_t *de
         return q;
     }
     else {
-        __m128i q = libdivide_mullhi_s64_flat_vector(numers, libdivide_u64_to_m128(magic));
+        __m128i q = libdivide_mullhi_s64_flat_vector(numers, _mm_set1_epi64x(magic));
         if (more & LIBDIVIDE_ADD_MARKER) {
             // must be arithmetic shift
             __m128i sign = _mm_set1_epi32((int32_t)((int8_t)more >> 7));
@@ -1750,7 +1730,7 @@ __m128i libdivide_s64_do_vector(__m128i numers, const struct libdivide_s64_t *de
 __m128i libdivide_s64_do_vector_alg0(__m128i numers, const struct libdivide_s64_t *denom) {
     uint32_t shift = denom->more & LIBDIVIDE_64_SHIFT_MASK;
     uint64_t mask = (1ULL << shift) - 1;
-    __m128i roundToZeroTweak = libdivide_u64_to_m128(mask);
+    __m128i roundToZeroTweak = _mm_set1_epi64x(mask);
     __m128i q = _mm_add_epi64(numers, _mm_and_si128(libdivide_s64_signbits(numers), roundToZeroTweak));
     q = libdivide_s64_shift_right_vector(q, shift);
     return q;
@@ -1759,14 +1739,14 @@ __m128i libdivide_s64_do_vector_alg0(__m128i numers, const struct libdivide_s64_
 __m128i libdivide_s64_do_vector_alg1(__m128i numers, const struct libdivide_s64_t *denom) {
     uint32_t shift = denom->more & LIBDIVIDE_64_SHIFT_MASK;
     uint64_t mask = (1ULL << shift) - 1;
-    __m128i roundToZeroTweak = libdivide_u64_to_m128(mask);
+    __m128i roundToZeroTweak = _mm_set1_epi64x(mask);
     __m128i q = _mm_add_epi64(numers, _mm_and_si128(libdivide_s64_signbits(numers), roundToZeroTweak));
     q = libdivide_s64_shift_right_vector(q, shift);
     return _mm_sub_epi64(_mm_setzero_si128(), q);
 }
 
 __m128i libdivide_s64_do_vector_alg2(__m128i numers, const struct libdivide_s64_t *denom) {
-    __m128i q = libdivide_mullhi_s64_flat_vector(numers, libdivide_u64_to_m128(denom->magic));
+    __m128i q = libdivide_mullhi_s64_flat_vector(numers, _mm_set1_epi64x(denom->magic));
     q = _mm_add_epi64(q, numers);
     q = libdivide_s64_shift_right_vector(q, denom->more & LIBDIVIDE_64_SHIFT_MASK);
     q = _mm_add_epi64(q, _mm_srli_epi64(q, 63)); // q += (q < 0)
@@ -1774,7 +1754,7 @@ __m128i libdivide_s64_do_vector_alg2(__m128i numers, const struct libdivide_s64_
 }
 
 __m128i libdivide_s64_do_vector_alg3(__m128i numers, const struct libdivide_s64_t *denom) {
-    __m128i q = libdivide_mullhi_s64_flat_vector(numers, libdivide_u64_to_m128(denom->magic));
+    __m128i q = libdivide_mullhi_s64_flat_vector(numers, _mm_set1_epi64x(denom->magic));
     q = _mm_sub_epi64(q, numers);
     q = libdivide_s64_shift_right_vector(q, denom->more & LIBDIVIDE_64_SHIFT_MASK);
     q = _mm_add_epi64(q, _mm_srli_epi64(q, 63)); // q += (q < 0)
@@ -1782,7 +1762,7 @@ __m128i libdivide_s64_do_vector_alg3(__m128i numers, const struct libdivide_s64_
 }
 
 __m128i libdivide_s64_do_vector_alg4(__m128i numers, const struct libdivide_s64_t *denom) {
-    __m128i q = libdivide_mullhi_s64_flat_vector(numers, libdivide_u64_to_m128(denom->magic));
+    __m128i q = libdivide_mullhi_s64_flat_vector(numers, _mm_set1_epi64x(denom->magic));
     q = libdivide_s64_shift_right_vector(q, denom->more & LIBDIVIDE_64_SHIFT_MASK);
     q = _mm_add_epi64(q, _mm_srli_epi64(q, 63));
     return q;
@@ -1796,7 +1776,7 @@ __m128i libdivide_s64_branchfree_do_vector(__m128i numers, const struct libdivid
     __m128i sign = _mm_set1_epi32((int32_t)(int8_t)more >> 7);
 
      // libdivide_mullhi_s64(numers, magic);
-    __m128i q = libdivide_mullhi_s64_flat_vector(numers, libdivide_u64_to_m128(magic));
+    __m128i q = libdivide_mullhi_s64_flat_vector(numers, _mm_set1_epi64x(magic));
     q = _mm_add_epi64(q, numers); // q += numers
 
     // If q is non-negative, we have nothing to do.
@@ -1804,7 +1784,7 @@ __m128i libdivide_s64_branchfree_do_vector(__m128i numers, const struct libdivid
     // a power of 2, or (2**shift) if it is not a power of 2.
     uint32_t is_power_of_2 = (magic == 0);
     __m128i q_sign = libdivide_s64_signbits(q); // q_sign = q >> 63
-    __m128i mask = libdivide_u64_to_m128((1ULL << shift) - is_power_of_2);
+    __m128i mask = _mm_set1_epi64x((1ULL << shift) - is_power_of_2);
     q = _mm_add_epi64(q, _mm_and_si128(q_sign, mask)); // q = q + (q_sign & mask)
     q = libdivide_s64_shift_right_vector(q, shift); // q >>= shift
     q = _mm_sub_epi64(_mm_xor_si128(q, sign), sign); // q = (q ^ sign) - sign
