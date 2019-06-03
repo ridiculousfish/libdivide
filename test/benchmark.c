@@ -198,7 +198,7 @@ NOINLINE static uint64_t mine_u32_vector(struct FunctionParams_t *params) {
         sumX4 = _mm256_add_epi32(sumX4, libdivide_u32_do_vector(numers, &denom));
     }
     const uint32_t *comps = (const uint32_t *)&sumX4;
-    return comps[0] + comps[1] + comps[2] + comps[3];
+    return comps[0] + comps[1] + comps[2] + comps[3] + comps[4] + comps[5] + comps[6] + comps[7];
 }
 
 NOINLINE static uint64_t mine_u32_vector_unswitched(struct FunctionParams_t *params) {
@@ -226,7 +226,7 @@ NOINLINE static uint64_t mine_u32_vector_unswitched(struct FunctionParams_t *par
         }        
     }
     const uint32_t *comps = (const uint32_t *)&sumX4;
-    return comps[0] + comps[1] + comps[2] + comps[3];
+    return comps[0] + comps[1] + comps[2] + comps[3] + comps[4] + comps[5] + comps[6] + comps[7];
 }
 
 
@@ -240,7 +240,7 @@ NOINLINE static uint64_t mine_u32_vector_branchfree(struct FunctionParams_t *par
         sumX4 = _mm256_add_epi32(sumX4, libdivide_u32_branchfree_do_vector(numers, &denom));
     }
     const uint32_t *comps = (const uint32_t *)&sumX4;
-    return comps[0] + comps[1] + comps[2] + comps[3];
+    return comps[0] + comps[1] + comps[2] + comps[3] + comps[4] + comps[5] + comps[6] + comps[7];
     
 }
 #endif
@@ -413,7 +413,7 @@ static uint64_t mine_s32_vector(struct FunctionParams_t *params) {
         sumX4 = _mm256_add_epi32(sumX4, libdivide_s32_do_vector(numers, &denom));
     }
     const int32_t *comps = (const int32_t *)&sumX4;
-    int32_t sum = comps[0] + comps[1] + comps[2] + comps[3];
+    int32_t sum = comps[0] + comps[1] + comps[2] + comps[3] + comps[4] + comps[5] + comps[6] + comps[7];
     return sum;
 }
 
@@ -455,7 +455,7 @@ static uint64_t mine_s32_vector_unswitched(struct FunctionParams_t *params) {
         }                
     }
     const int32_t *comps = (const int32_t *)&sumX4;
-    int32_t sum = comps[0] + comps[1] + comps[2] + comps[3];
+    int32_t sum = comps[0] + comps[1] + comps[2] + comps[3] + comps[4] + comps[5] + comps[6] + comps[7];
     return sum;
 }
 
@@ -470,7 +470,7 @@ static uint64_t mine_s32_vector_branchfree(struct FunctionParams_t *params) {
         sumX4 = _mm256_add_epi32(sumX4, libdivide_s32_branchfree_do_vector(numers, &denom));
     }
     const int32_t *comps = (const int32_t *)&sumX4;
-    int32_t sum = comps[0] + comps[1] + comps[2] + comps[3];
+    int32_t sum = comps[0] + comps[1] + comps[2] + comps[3] + comps[4] + comps[5] + comps[6] + comps[7];
     return sum;
 }
 
@@ -681,7 +681,7 @@ NOINLINE static uint64_t mine_u64_vector_unswitched(struct FunctionParams_t *par
         }        
     }
     const uint64_t *comps = (const uint64_t *)&sumX2;
-    return comps[0] + comps[1];
+    return comps[0] + comps[1] + comps[2] + comps[3];
 }
 
 NOINLINE static uint64_t mine_u64_vector(struct FunctionParams_t *params) {
@@ -694,7 +694,7 @@ NOINLINE static uint64_t mine_u64_vector(struct FunctionParams_t *params) {
         sumX2 = _mm256_add_epi64(sumX2, libdivide_u64_do_vector(numers, &denom));
     }
     const uint64_t *comps = (const uint64_t *)&sumX2;
-    return comps[0] + comps[1];
+    return comps[0] + comps[1] + comps[2] + comps[3];
 }
 
 NOINLINE static uint64_t mine_u64_vector_branchfree(struct FunctionParams_t *params) {
@@ -707,7 +707,7 @@ NOINLINE static uint64_t mine_u64_vector_branchfree(struct FunctionParams_t *par
         sumX2 = _mm256_add_epi64(sumX2, libdivide_u64_branchfree_do_vector(numers, &denom));
     }
     const uint64_t *comps = (const uint64_t *)&sumX2;
-    return comps[0] + comps[1];
+    return comps[0] + comps[1] + comps[2] + comps[3];
 }
 #endif
 
@@ -851,7 +851,7 @@ static uint64_t mine_s64_vector(struct FunctionParams_t *params) {
         sumX2 = _mm256_add_epi64(sumX2, libdivide_s64_do_vector(numers, &denom));
     }
     const int64_t *comps = (const int64_t *)&sumX2;
-    int64_t sum = comps[0] + comps[1];
+    int64_t sum = comps[0] + comps[1] + comps[2] + comps[3];
     return sum;
 }
 
@@ -867,7 +867,7 @@ static uint64_t mine_s64_vector_branchfree(struct FunctionParams_t *params) {
         sumX2 = _mm256_add_epi64(sumX2, libdivide_s64_branchfree_do_vector(numers, &denom));
     }
     const int64_t *comps = (const int64_t *)&sumX2;
-    int64_t sum = comps[0] + comps[1];
+    int64_t sum = comps[0] + comps[1] + comps[2] + comps[3];
     return sum;
 }
 
@@ -910,7 +910,7 @@ static uint64_t mine_s64_vector_unswitched(struct FunctionParams_t *params) {
         }        
     }
     const int64_t *comps = (const int64_t *)&sumX2;
-    int64_t sum = comps[0] + comps[1];
+    int64_t sum = comps[0] + comps[1] + comps[2] + comps[3];
     return sum;
 }
 #endif
