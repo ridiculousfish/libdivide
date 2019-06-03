@@ -1654,8 +1654,6 @@ __m128i libdivide_s32_branchfree_do_vector(__m128i numers, const struct libdivid
     uint8_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
      // must be arithmetic shift
     __m128i sign = _mm_set1_epi32((int32_t)(int8_t)more >> 7);
-
-     // libdivide_mullhi_s32(numers, magic);
     __m128i q = libdivide_mullhi_s32_flat_vector(numers, _mm_set1_epi32(magic));
     q = _mm_add_epi32(q, numers); // q += numers
 
@@ -2043,8 +2041,6 @@ __m256i libdivide_s32_branchfree_do_vector(__m256i numers, const struct libdivid
     uint8_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
      // must be arithmetic shift
     __m256i sign = _mm256_set1_epi32((int32_t)(int8_t)more >> 7);
-
-     // libdivide_mullhi_s32(numers, magic);
     __m256i q = libdivide_mullhi_s32_flat_vector(numers, _mm256_set1_epi32(magic));
     q = _mm256_add_epi32(q, numers); // q += numers
 
