@@ -1445,29 +1445,25 @@ static inline __m128i libdivide_mullhi_u32_flat_vector(__m128i a, __m128i b) {
 }
 
 // Here, y is assumed to contain one 64 bit value repeated twice.
-static inline __m128i libdivide_mullhi_u64_flat_vector(__m128i x, __m128i y) {
-    // full 128 bits are:
-    // x0 * y0 + (x0 * y1 << 32) + (x1 * y0 << 32) + (x1 * y1 << 64)
-    __m128i mask = _mm_set_epi32(0, -1, 0, -1);
-    // x0 is low half of 2 64 bit values, x1 is high half in low slots
-    __m128i x0 = _mm_and_si128(x, mask);
-    __m128i x1 = _mm_srli_epi64(x, 32);
-    __m128i y0 = _mm_and_si128(y, mask);
-    __m128i y1 = _mm_srli_epi64(y, 32);
-    // x0 happens to have the low half of the two 64 bit values in 32 bit slots
-    // 0 and 2, so _mm_mul_epu32 computes their full product, and then we shift
-    // right by 32 to get just the high values
-    __m128i x0y0_hi = _mm_srli_epi64(_mm_mul_epu32(x0, y0), 32);
-    __m128i x0y1 = _mm_mul_epu32(x0, y1);
-    __m128i x1y0 = _mm_mul_epu32(x1, y0);
-    __m128i x1y1 = _mm_mul_epu32(x1, y1);
-    __m128i temp = _mm_add_epi64(x1y0, x0y0_hi);
-    __m128i temp_lo = _mm_and_si128(temp, mask);
-    __m128i temp_hi = _mm_srli_epi64(temp, 32);
-    temp_lo = _mm_srli_epi64(_mm_add_epi64(temp_lo, x0y1), 32);
-    temp_hi = _mm_add_epi64(x1y1, temp_hi);
+// https://stackoverflow.com/a/28827013
+static inline __m128i libdivide_mullhi_u64_flat_vector(__m128i x, __m128i y) {    
+    __m128i lomask = _mm_set1_epi64x(0xffffffff);
+    __m128i xh = _mm_shuffle_epi32(x, 0xB1);        // x0l, x0h, x1l, x1h
+    __m128i yh = _mm_shuffle_epi32(y, 0xB1);        // y0l, y0h, y1l, y1h
+    __m128i w0 = _mm_mul_epu32(x, y);               // x0l*y0l, x1l*y1l
+    __m128i w1 = _mm_mul_epu32(x, yh);              // x0l*y0h, x1l*y1h
+    __m128i w2 = _mm_mul_epu32(xh, y);              // x0h*y0l, x1h*y0l
+    __m128i w3 = _mm_mul_epu32(xh, yh);             // x0h*y0h, x1h*y1h
+    __m128i w0h = _mm_srli_epi64(w0, 32);
+    __m128i s1 = _mm_add_epi64(w1, w0h);
+    __m128i s1l = _mm_and_si128(s1, lomask);
+    __m128i s1h = _mm_srli_epi64(s1, 32);
+    __m128i s2 = _mm_add_epi64(w2, s1l);
+    __m128i s2h = _mm_srli_epi64(s2, 32);
+    __m128i hi = _mm_add_epi64(w3, s1h);
+            hi = _mm_add_epi64(hi, s2h);
 
-    return _mm_add_epi64(temp_lo, temp_hi);
+    return hi;
 }
 
 // y is one 64 bit value repeated twice
