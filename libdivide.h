@@ -1606,7 +1606,6 @@ __m128i libdivide_s32_do_vector(__m128i numers, const struct libdivide_s32_t *de
     if (more & LIBDIVIDE_S32_SHIFT_PATH) {
         uint32_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
         uint32_t mask = (1U << shift) - 1;
-        // could use _mm_srli_epi32 with an all -1 register
         __m128i roundToZeroTweak = _mm_set1_epi32(mask);
         // q = numer + ((numer >> 31) & roundToZeroTweak);
         __m128i q = _mm_add_epi32(numers, _mm_and_si128(_mm_srai_epi32(numers, 31), roundToZeroTweak));
