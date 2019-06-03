@@ -1220,7 +1220,7 @@ static const uint32_t *random_data(unsigned multiple) {
 #else
     /* Linux doesn't always give us data sufficiently aligned for SSE, so we can't use malloc(). */
     void *ptr = NULL;
-    int failed = posix_memalign(&ptr, 16, multiple * ITERATIONS * sizeof(uint32_t));
+    int failed = posix_memalign(&ptr, 32, multiple * ITERATIONS * sizeof(uint32_t));
     if (failed) {
         printf("Failed to align memory!\n");
         exit(1);
