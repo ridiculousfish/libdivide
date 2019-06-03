@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.1)
 project(libdivide C CXX)
 include(CheckCXXCompilerFlag)
+include(CheckCXXSourceRuns)
 include(CMakePushCheckState)
 
 set(CMAKE_CXX_STANDARD 11)
@@ -26,17 +27,48 @@ if(wall)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WALL_FLAGS}")
 endif()
 
-# Check -msse2 compiler flag ###################################
+# Check if compiler supports AVX2 ##############################
 
 cmake_push_check_state()
 set(CMAKE_REQUIRED_FLAGS -Werror)
-check_cxx_compiler_flag(-msse2 msse2)
+check_cxx_compiler_flag(-mavx2 mavx2)
 cmake_pop_check_state()
 
-if(msse2)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse2")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2")
-    add_definitions(-DLIBDIVIDE_USE_SSE2)
+# Check if CPU supports AVX2 ###################################
+
+if(mavx2)
+    check_cxx_source_runs("
+        #include <immintrin.h>
+        int main()
+        {
+            __m256i a = _mm256_set_epi32(1, 0, 1, 0, 1, 0, 1, 0);
+            __m256i b = _mm256_set_epi32(0, 1, 0, 1, 0, 1, 0, 1);
+            __m256i c = _mm256_add_epi32(a, b);
+            __m256i d = _mm256_sra_epi32(c, 23);
+            return 0;
+        }"
+        cpu_avx2)
+
+    if(cpu_avx2)
+        add_definitions(-DLIBDIVIDE_USE_AVX2)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mavx2")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2")
+    endif()
+endif()
+
+# Check -msse2 compiler flag ###################################
+
+if (NOT cpu_avx2)
+    cmake_push_check_state()
+    set(CMAKE_REQUIRED_FLAGS -Werror)
+    check_cxx_compiler_flag(-msse2 msse2)
+    cmake_pop_check_state()
+
+    if(msse2)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse2")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2")
+        add_definitions(-DLIBDIVIDE_USE_SSE2)
+    endif()
 endif()
 
 # Build test programs ##########################################
