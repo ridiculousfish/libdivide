@@ -121,7 +121,33 @@ private:
         test_unswitching(numer, denom, the_divider);
     }
 
-#if defined(LIBDIVIDE_USE_SSE2)
+
+#if defined(LIBDIVIDE_USE_AVX2)
+    template<int ALGO>
+    void test_eight(const T *numers, T denom, const divider<T, ALGO> & the_divider) {
+        const size_t count = 32 / sizeof(T);
+#if defined(LIBDIVIDE_VC)
+        _declspec(align(32)) T results[count];
+#else
+        T __attribute__((aligned)) results[count];
+#endif
+        __m256i resultVector = _mm256_loadu_si256((const __m256i *)numers) / the_divider;
+        *(__m256i *)results = resultVector;
+
+        for (size_t i = 0; i < count; i++) {
+            T numer = numers[i];
+            T actual = results[i];
+            T expect = numer / denom;
+            if (actual != expect) {
+                cerr << "Vector failure for " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " expected " << expect << " actual " << actual << endl;
+                exit(1);
+            }
+            else {
+                //cout << "Vector success for " << numer << " / " << denom << " = " << actual << " (" << i << ")" << endl;
+            }
+        }
+    }
+#elif defined(LIBDIVIDE_USE_SSE2)
     template<int ALGO>
     void test_eight(const T *numers, T denom, const divider<T, ALGO> & the_divider) {
         const size_t count = 16 / sizeof(T);
@@ -146,31 +172,6 @@ private:
                 } 
             }
             numers += 4;
-        }
-    }
-#elif defined(LIBDIVIDE_USE_AVX2)
-    template<int ALGO>
-    void test_eight(const T *numers, T denom, const divider<T, ALGO> & the_divider) {
-        const size_t count = 32 / sizeof(T);
-#if defined(LIBDIVIDE_VC)
-        _declspec(align(32)) T results[count];
-#else
-        T __attribute__((aligned)) results[count];
-#endif
-        __m256i resultVector = _mm256_loadu_si256((const __m256i *)numers) / the_divider;
-        *(__m256i *)results = resultVector;
-
-        for (size_t i = 0; i < count; i++) {
-            T numer = numers[i];
-            T actual = results[i];
-            T expect = numer / denom;
-            if (actual != expect) {
-                cerr << "Vector failure for " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " expected " << expect << " actual " << actual << endl;
-                exit(1);
-            }
-            else {
-                //cout << "Vector success for " << numer << " / " << denom << " = " << actual << " (" << i << ")" << endl;
-            }
         }
     }
 #endif
