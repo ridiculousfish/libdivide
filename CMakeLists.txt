@@ -98,7 +98,7 @@ endif()
 
 # Build test programs ##########################################
 
-find_package(Threads REQUIRED)
+find_package(Threads REQUIRED QUIET)
 
 add_executable(tester test/tester.cpp)
 add_executable(benchmark test/benchmark.c)
