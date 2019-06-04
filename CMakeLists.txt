@@ -57,6 +57,7 @@ if(cpu_x86 AND march_native)
             __m512i b = _mm512_set_epi32(0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1);
             __m512i c = _mm512_add_epi32(a, b);
             __m512i d = _mm512_srai_epi32(c, 23);
+            __m512i e = _mm512_shuffle_epi32(d, 0xB1);
             return 0;
         }"
         avx512)
