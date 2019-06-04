@@ -826,9 +826,11 @@ NOINLINE static uint64_t mine_s64_generate(struct FunctionParams_t *params) {
     return *dPtr;
 }
 
-/* Stub functions for when we have no SSE2 */
-#if !defined(LIBDIVIDE_USE_SSE2) && \
-    !defined(LIBDIVIDE_USE_AVX2)
+/* Stub functions for when we have no AVX512/AVX2/SSE2 */
+#if !defined(LIBDIVIDE_USE_AVX512) && \
+    !defined(LIBDIVIDE_USE_AVX2) && \
+    !defined(LIBDIVIDE_USE_SSE2)
+    
 NOINLINE static uint64_t mine_u32_vector(struct FunctionParams_t *params) { return mine_u32(params); }
 NOINLINE static uint64_t mine_u32_vector_unswitched(struct FunctionParams_t *params) { return mine_u32_unswitched(params); }
 NOINLINE static uint64_t mine_u32_vector_branchfree(struct FunctionParams_t *params) { return mine_u32_branchfree(params); }
@@ -841,6 +843,7 @@ NOINLINE static uint64_t mine_u64_vector_branchfree(struct FunctionParams_t *par
 NOINLINE static uint64_t mine_s64_vector(struct FunctionParams_t *params) { return mine_s64(params); }
 NOINLINE static uint64_t mine_s64_vector_unswitched(struct FunctionParams_t *params) { return mine_s64_unswitched(params); }
 NOINLINE static uint64_t mine_s64_vector_branchfree(struct FunctionParams_t *params) { return mine_s64_branchfree(params); }
+
 #endif
  
 struct TestResult {
