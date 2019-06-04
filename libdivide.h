@@ -1365,7 +1365,7 @@ int64_t libdivide_s64_do_alg4(int64_t numer, const struct libdivide_s64_t *denom
     return q;
 }
 
-#if defined(LIBDIVIDE_USE_AVX2)
+#if defined(LIBDIVIDE_USE_AVX512)
 
 LIBDIVIDE_API __m512i libdivide_u32_do_vector(__m512i numers, const struct libdivide_u32_t *denom);
 LIBDIVIDE_API __m512i libdivide_s32_do_vector(__m512i numers, const struct libdivide_s32_t *denom);
