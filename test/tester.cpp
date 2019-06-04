@@ -10,6 +10,7 @@
 #include <limits>
 #include <string.h>
 #include <string>
+#include <sstream>
 
 #if defined(_WIN32) || defined(WIN32)
 /* Windows makes you do a lot to stop it from "helping" */
@@ -121,57 +122,54 @@ private:
         test_unswitching(numer, denom, the_divider);
     }
 
+#if defined(LIBDIVIDE_USE_AVX512) || \
+    defined(LIBDIVIDE_USE_AVX2) || \
+    defined(LIBDIVIDE_USE_SSE2)   
 
-#if defined(LIBDIVIDE_USE_AVX2)
-    template<int ALGO>
-    void test_eight(const T *numers, T denom, const divider<T, ALGO> & the_divider) {
-        const size_t count = 32 / sizeof(T);
-#if defined(LIBDIVIDE_VC)
-        _declspec(align(32)) T results[count];
-#else
-        T __attribute__((aligned)) results[count];
-#endif
-        __m256i resultVector = _mm256_loadu_si256((const __m256i *)numers) / the_divider;
-        *(__m256i *)results = resultVector;
-
-        for (size_t i = 0; i < count; i++) {
-            T numer = numers[i];
-            T actual = results[i];
-            T expect = numer / denom;
-            if (actual != expect) {
-                cerr << "Vector failure for " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " expected " << expect << " actual " << actual << endl;
-                exit(1);
-            }
-            else {
-                //cout << "Vector success for " << numer << " / " << denom << " = " << actual << " (" << i << ")" << endl;
-            }
-        }
-    }
+#if defined(LIBDIVIDE_USE_AVX512)
+    #define VECTOR_TYPE __m512i
+    #define VECTOR_LOAD _mm512_loadu_si512
+#elif defined(LIBDIVIDE_USE_AVX2)
+    #define VECTOR_TYPE __m256i)
+    #define VECTOR_LOAD _mm256_loadu_si256
 #elif defined(LIBDIVIDE_USE_SSE2)
-    template<int ALGO>
-    void test_eight(const T *numers, T denom, const divider<T, ALGO> & the_divider) {
-        const size_t count = 16 / sizeof(T);
-#if defined(LIBDIVIDE_VC)
-        _declspec(align(16)) T results[count];
-#else
-        T __attribute__((aligned)) results[count];
+    #define VECTOR_TYPE __m128i
+    #define VECTOR_LOAD _mm_loadu_si128
 #endif
-        for (size_t j = 0; j < 2; j++) {
-            __m128i resultVector = _mm_loadu_si128((const __m128i *)numers) / the_divider;
-            *(__m128i *)results = resultVector;
-            for (size_t i = 0; i < count; i++) {
+
+    template<int ALGO>
+    void test_16(const T *numers, T denom, const divider<T, ALGO> & the_divider) {
+        // Align memory to 64 byte boundary for AVX512
+        char mem[16 * sizeof(T) + 64];
+        size_t offset = 64 - (size_t)&mem % 64;
+        T* results = (T*) &mem[offset];
+
+        size_t iters = 64 / sizeof(VECTOR_TYPE);
+        size_t size = sizeof(VECTOR_TYPE) / sizeof(T);
+
+        for (size_t j = 0; j < iters; j++, numers += size) {
+            VECTOR_TYPE x = VECTOR_LOAD((const VECTOR_TYPE*) numers);
+            VECTOR_TYPE resultVector = x / the_divider;
+            results = (T*) &resultVector;
+
+            for (size_t i = 0; i < size; i++) {
                 T numer = numers[i];
                 T actual = results[i];
                 T expect = numer / denom;
                 if (actual != expect) {
-                    cerr << "Vector failure for " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " expected " << expect << " actual " << actual << endl;
+                    ostringstream oss;
+                    oss << "Vector failure for: " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " expected " << expect << " actual " << actual << endl;
+                    cerr << oss.str();
                     exit(1);
                 }
                 else {
-                    //cout << "Vector success for " << numer << " / " << denom << " = " << actual << " (" << i << ")" << endl;
-                } 
+                    #if 0
+                        ostringstream oss;
+                        oss << "Vector success for: " << numer << " / " << denom << " = " << actual << " (" << i << ")" << endl;
+                        cout << oss.str();
+                    #endif
+                }
             }
-            numers += 4;
         }
     }
 #endif
@@ -189,36 +187,31 @@ private:
             cerr << "Failed to recover divisor for " << testcase_name(ALGO) << ": "<< denom << ", but got " << recovered << endl;
             exit(1);
         }
-        
-        size_t j;
-        for (j=0; j < 100000 / 8; j++) {
-            T numers[8] = {(T)this->next_random(), 
-                           (T)this->next_random(), 
-                           (T)this->next_random(), 
-                           (T)this->next_random(), 
-                           (T)this->next_random(), 
-                           (T)this->next_random(), 
-                           (T)this->next_random(), 
-                           (T)this->next_random()};
 
-            test_one(numers[0], denom, the_divider);
-            test_one(numers[1], denom, the_divider);
-            test_one(numers[2], denom, the_divider);
-            test_one(numers[3], denom, the_divider);
-            test_one(numers[4], denom, the_divider);
-            test_one(numers[5], denom, the_divider);
-            test_one(numers[6], denom, the_divider);
-            test_one(numers[7], denom, the_divider);
+        // Align memory to 64 byte boundary for AVX512
+        char mem[16 * sizeof(T) + 64];
+        size_t offset = 64 - (size_t)&mem % 64;
+        T* numers = (T*) &mem[offset];
 
-#if defined(LIBDIVIDE_USE_SSE2) || \
-    defined(LIBDIVIDE_USE_AVX2)
-            test_eight(numers, denom, the_divider);
+        for (size_t i = 0; i < 100000 / 16; i++) {
+            for (size_t j = 0; j < 16; j++) {
+                numers[j] = (T) this->next_random();
+            }
+            for (size_t j = 0; j < 16; j++) {
+                test_one(numers[j], denom, the_divider);
+            }
+
+#if defined(LIBDIVIDE_USE_AVX512) || \
+    defined(LIBDIVIDE_USE_AVX2) || \
+    defined(LIBDIVIDE_USE_SSE2)   
+            test_16(numers, denom, the_divider);
 #endif
         }
         const T min = limits::min(), max = limits::max();
         const T wellKnownNumers[] = {0, max, max-1, max/2, max/2 - 1, min, min/2, min/4, 1, 2, 3, 4, 5, 6, 7, 8, 10, 36847, 50683, SHRT_MAX};
-        for (j=0; j < sizeof wellKnownNumers / sizeof *wellKnownNumers; j++) {
-            if (wellKnownNumers[j] == 0 && j != 0) continue;
+        for (size_t j =0; j < sizeof wellKnownNumers / sizeof *wellKnownNumers; j++) {
+            if (wellKnownNumers[j] == 0 && j != 0)
+                continue;
             test_one(wellKnownNumers[j], denom, the_divider);
         }
         T powerOf2Numer = (limits::max()>>1)+1;
