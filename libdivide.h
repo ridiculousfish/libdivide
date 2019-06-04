@@ -1367,6 +1367,385 @@ int64_t libdivide_s64_do_alg4(int64_t numer, const struct libdivide_s64_t *denom
 
 #if defined(LIBDIVIDE_USE_AVX2)
 
+LIBDIVIDE_API __m512i libdivide_u32_do_vector(__m512i numers, const struct libdivide_u32_t *denom);
+LIBDIVIDE_API __m512i libdivide_s32_do_vector(__m512i numers, const struct libdivide_s32_t *denom);
+LIBDIVIDE_API __m512i libdivide_u64_do_vector(__m512i numers, const struct libdivide_u64_t *denom);
+LIBDIVIDE_API __m512i libdivide_s64_do_vector(__m512i numers, const struct libdivide_s64_t *denom);
+
+LIBDIVIDE_API __m512i libdivide_u32_do_vector_alg0(__m512i numers, const struct libdivide_u32_t *denom);
+LIBDIVIDE_API __m512i libdivide_u32_do_vector_alg1(__m512i numers, const struct libdivide_u32_t *denom);
+LIBDIVIDE_API __m512i libdivide_u32_do_vector_alg2(__m512i numers, const struct libdivide_u32_t *denom);
+
+LIBDIVIDE_API __m512i libdivide_s32_do_vector_alg0(__m512i numers, const struct libdivide_s32_t *denom);
+LIBDIVIDE_API __m512i libdivide_s32_do_vector_alg1(__m512i numers, const struct libdivide_s32_t *denom);
+LIBDIVIDE_API __m512i libdivide_s32_do_vector_alg2(__m512i numers, const struct libdivide_s32_t *denom);
+LIBDIVIDE_API __m512i libdivide_s32_do_vector_alg3(__m512i numers, const struct libdivide_s32_t *denom);
+LIBDIVIDE_API __m512i libdivide_s32_do_vector_alg4(__m512i numers, const struct libdivide_s32_t *denom);
+
+LIBDIVIDE_API __m512i libdivide_u64_do_vector_alg0(__m512i numers, const struct libdivide_u64_t *denom);
+LIBDIVIDE_API __m512i libdivide_u64_do_vector_alg1(__m512i numers, const struct libdivide_u64_t *denom);
+LIBDIVIDE_API __m512i libdivide_u64_do_vector_alg2(__m512i numers, const struct libdivide_u64_t *denom);
+
+LIBDIVIDE_API __m512i libdivide_s64_do_vector_alg0(__m512i numers, const struct libdivide_s64_t *denom);
+LIBDIVIDE_API __m512i libdivide_s64_do_vector_alg1(__m512i numers, const struct libdivide_s64_t *denom);
+LIBDIVIDE_API __m512i libdivide_s64_do_vector_alg2(__m512i numers, const struct libdivide_s64_t *denom);
+LIBDIVIDE_API __m512i libdivide_s64_do_vector_alg3(__m512i numers, const struct libdivide_s64_t *denom);
+LIBDIVIDE_API __m512i libdivide_s64_do_vector_alg4(__m512i numers, const struct libdivide_s64_t *denom);
+
+LIBDIVIDE_API __m512i libdivide_u32_branchfree_do_vector(__m512i numers, const struct libdivide_u32_branchfree_t *denom);
+LIBDIVIDE_API __m512i libdivide_s32_branchfree_do_vector(__m512i numers, const struct libdivide_s32_branchfree_t *denom);
+LIBDIVIDE_API __m512i libdivide_u64_branchfree_do_vector(__m512i numers, const struct libdivide_u64_branchfree_t *denom);
+LIBDIVIDE_API __m512i libdivide_s64_branchfree_do_vector(__m512i numers, const struct libdivide_s64_branchfree_t *denom);
+
+//////// Internal Utility Functions
+
+// Returns an __m512i whose low 32 bits are equal to x and has zero elsewhere.
+static inline __m128i libdivide_u32_to_m128i(uint32_t x) {
+    return _mm_set_epi32(0, 0, 0, x);
+}
+
+static inline __m512i libdivide_s64_signbits(__m512i v) {;
+    return _mm512_srai_epi64(v, 63);
+}
+
+static inline __m512i libdivide_s64_shift_right_vector(__m512i v, int amt) {
+    return _mm512_sra_epi64(v, amt);
+}
+
+// Here, b is assumed to contain one 32 bit value repeated four times.
+// If it did not, the function would not work.
+static inline __m512i libdivide_mullhi_u32_flat_vector(__m512i a, __m512i b) {
+    __m512i hi_product_0Z2Z = _mm512_srli_epi64(_mm512_mul_epu32(a, b), 32);
+    __m512i a1X3X = _mm512_srli_epi64(a, 32);
+    __m512i mask = _mm512_set_epi32(-1, 0, -1, 0, -1, 0, -1, 0);
+    __m512i hi_product_Z1Z3 = _mm512_and_si512(_mm512_mul_epu32(a1X3X, b), mask);
+    // return hi_product_0123
+    return _mm512_or_si512(hi_product_0Z2Z, hi_product_Z1Z3);
+}
+
+// Here, y is assumed to contain one 64 bit value repeated twice.
+// https://stackoverflow.com/a/28827013
+static inline __m512i libdivide_mullhi_u64_flat_vector(__m512i x, __m512i y) {    
+    __m512i lomask = _mm512_set1_epi64x(0xffffffff);
+    __m512i xh = _mm512_shuffle_epi32(x, 0xB1);        // x0l, x0h, x1l, x1h
+    __m512i yh = _mm512_shuffle_epi32(y, 0xB1);        // y0l, y0h, y1l, y1h
+    __m512i w0 = _mm512_mul_epu32(x, y);               // x0l*y0l, x1l*y1l
+    __m512i w1 = _mm512_mul_epu32(x, yh);              // x0l*y0h, x1l*y1h
+    __m512i w2 = _mm512_mul_epu32(xh, y);              // x0h*y0l, x1h*y0l
+    __m512i w3 = _mm512_mul_epu32(xh, yh);             // x0h*y0h, x1h*y1h
+    __m512i w0h = _mm512_srli_epi64(w0, 32);
+    __m512i s1 = _mm512_add_epi64(w1, w0h);
+    __m512i s1l = _mm512_and_si512(s1, lomask);
+    __m512i s1h = _mm512_srli_epi64(s1, 32);
+    __m512i s2 = _mm512_add_epi64(w2, s1l);
+    __m512i s2h = _mm512_srli_epi64(s2, 32);
+    __m512i hi = _mm512_add_epi64(w3, s1h);
+            hi = _mm512_add_epi64(hi, s2h);
+
+    return hi;
+}
+
+// y is one 64 bit value repeated twice
+static inline __m512i libdivide_mullhi_s64_flat_vector(__m512i x, __m512i y) {
+    __m512i p = libdivide_mullhi_u64_flat_vector(x, y);
+    __m512i t1 = _mm512_and_si512(libdivide_s64_signbits(x), y);
+    p = _mm512_sub_epi64(p, t1);
+    __m512i t2 = _mm512_and_si512(libdivide_s64_signbits(y), x);
+    p = _mm512_sub_epi64(p, t2);
+    return p;
+}
+
+// b is one 32 bit value repeated four times.
+static inline __m512i libdivide_mullhi_s32_flat_vector(__m512i a, __m512i b) {
+    __m512i hi_product_0Z2Z = _mm512_srli_epi64(_mm512_mul_epi32(a, b), 32);
+    __m512i a1X3X = _mm512_srli_epi64(a, 32);
+    __m512i mask = _mm512_set_epi32(-1, 0, -1, 0, -1, 0, -1, 0);
+    __m512i hi_product_Z1Z3 = _mm512_and_si512(_mm512_mul_epi32(a1X3X, b), mask);
+    // return hi_product_0123
+    return _mm512_or_si512(hi_product_0Z2Z, hi_product_Z1Z3);
+}
+
+////////// UINT32
+
+__m512i libdivide_u32_do_vector(__m512i numers, const struct libdivide_u32_t *denom) {
+    uint8_t more = denom->more;
+    if (more & LIBDIVIDE_U32_SHIFT_PATH) {
+        uint32_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
+        return _mm512_srl_epi32(numers, libdivide_u32_to_m128i(shift));
+    }
+    else {
+        __m512i q = libdivide_mullhi_u32_flat_vector(numers, _mm512_set1_epi32(denom->magic));
+        if (more & LIBDIVIDE_ADD_MARKER) {
+            // uint32_t t = ((numer - q) >> 1) + q;
+            // return t >> denom->shift;
+            uint32_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
+            __m512i t = _mm512_add_epi32(_mm512_srli_epi32(_mm512_sub_epi32(numers, q), 1), q);
+            return _mm512_srl_epi32(t, libdivide_u32_to_m128i(shift));
+        }
+        else {
+            // q >> denom->shift
+            return _mm512_srl_epi32(q, libdivide_u32_to_m128i(more));
+        }
+    }
+}
+
+__m512i libdivide_u32_do_vector_alg0(__m512i numers, const struct libdivide_u32_t *denom) {
+    return _mm512_srl_epi32(numers, libdivide_u32_to_m128i(denom->more & LIBDIVIDE_32_SHIFT_MASK));
+}
+
+__m512i libdivide_u32_do_vector_alg1(__m512i numers, const struct libdivide_u32_t *denom) {
+    __m512i q = libdivide_mullhi_u32_flat_vector(numers, _mm512_set1_epi32(denom->magic));
+    return _mm512_srl_epi32(q, libdivide_u32_to_m128i(denom->more));
+}
+
+__m512i libdivide_u32_do_vector_alg2(__m512i numers, const struct libdivide_u32_t *denom) {
+    __m512i q = libdivide_mullhi_u32_flat_vector(numers, _mm512_set1_epi32(denom->magic));
+    __m512i t = _mm512_add_epi32(_mm512_srli_epi32(_mm512_sub_epi32(numers, q), 1), q);
+    return _mm512_srl_epi32(t, libdivide_u32_to_m128i(denom->more & LIBDIVIDE_32_SHIFT_MASK));
+}
+
+LIBDIVIDE_API __m512i libdivide_u32_branchfree_do_vector(__m512i numers, const struct libdivide_u32_branchfree_t *denom) {
+    __m512i q = libdivide_mullhi_u32_flat_vector(numers, _mm512_set1_epi32(denom->magic));
+    __m512i t = _mm512_add_epi32(_mm512_srli_epi32(_mm512_sub_epi32(numers, q), 1), q);
+    return _mm512_srl_epi32(t, libdivide_u32_to_m128i(denom->more));
+}
+
+////////// UINT64
+
+__m512i libdivide_u64_do_vector(__m512i numers, const struct libdivide_u64_t *denom) {
+    uint8_t more = denom->more;
+    if (more & LIBDIVIDE_U64_SHIFT_PATH) {
+        uint32_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
+        return _mm512_srl_epi64(numers, libdivide_u32_to_m128i(shift));
+    }
+    else {
+        __m512i q = libdivide_mullhi_u64_flat_vector(numers, _mm512_set1_epi64x(denom->magic));
+        if (more & LIBDIVIDE_ADD_MARKER) {
+            // uint32_t t = ((numer - q) >> 1) + q;
+            // return t >> denom->shift;
+            uint32_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
+            __m512i t = _mm512_add_epi64(_mm512_srli_epi64(_mm512_sub_epi64(numers, q), 1), q);
+            return _mm512_srl_epi64(t, libdivide_u32_to_m128i(shift));
+        }
+        else {
+            // q >> denom->shift
+            return _mm512_srl_epi64(q, libdivide_u32_to_m128i(more));
+        }
+    }
+}
+
+__m512i libdivide_u64_do_vector_alg0(__m512i numers, const struct libdivide_u64_t *denom) {
+    return _mm512_srl_epi64(numers, libdivide_u32_to_m128i(denom->more & LIBDIVIDE_64_SHIFT_MASK));
+}
+
+__m512i libdivide_u64_do_vector_alg1(__m512i numers, const struct libdivide_u64_t *denom) {
+    __m512i q = libdivide_mullhi_u64_flat_vector(numers, _mm512_set1_epi64x(denom->magic));
+    return _mm512_srl_epi64(q, libdivide_u32_to_m128i(denom->more));
+}
+
+__m512i libdivide_u64_do_vector_alg2(__m512i numers, const struct libdivide_u64_t *denom) {
+    __m512i q = libdivide_mullhi_u64_flat_vector(numers, _mm512_set1_epi64x(denom->magic));
+    __m512i t = _mm512_add_epi64(_mm512_srli_epi64(_mm512_sub_epi64(numers, q), 1), q);
+    return _mm512_srl_epi64(t, libdivide_u32_to_m128i(denom->more & LIBDIVIDE_64_SHIFT_MASK));
+}
+
+__m512i libdivide_u64_branchfree_do_vector(__m512i numers, const struct libdivide_u64_branchfree_t *denom) {
+    __m512i q = libdivide_mullhi_u64_flat_vector(numers, _mm512_set1_epi64x(denom->magic));
+    __m512i t = _mm512_add_epi64(_mm512_srli_epi64(_mm512_sub_epi64(numers, q), 1), q);
+    return _mm512_srl_epi64(t, libdivide_u32_to_m128i(denom->more));
+}
+
+////////// SINT32
+
+__m512i libdivide_s32_do_vector(__m512i numers, const struct libdivide_s32_t *denom) {
+    uint8_t more = denom->more;
+    if (more & LIBDIVIDE_S32_SHIFT_PATH) {
+        uint32_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
+        uint32_t mask = (1U << shift) - 1;
+        __m512i roundToZeroTweak = _mm512_set1_epi32(mask);
+        // q = numer + ((numer >> 31) & roundToZeroTweak);
+        __m512i q = _mm512_add_epi32(numers, _mm512_and_si512(_mm512_srai_epi32(numers, 31), roundToZeroTweak));
+        q = _mm512_sra_epi32(q, libdivide_u32_to_m128i(shift));
+        // set all bits of shift mask = to the sign bit of more
+        __m512i shiftMask = _mm512_set1_epi32((int32_t)((int8_t)more >> 7));
+        // q = (q ^ shiftMask) - shiftMask;
+        q = _mm512_sub_epi32(_mm512_xor_si512(q, shiftMask), shiftMask);
+        return q;
+    }
+    else {
+        __m512i q = libdivide_mullhi_s32_flat_vector(numers, _mm512_set1_epi32(denom->magic));
+        if (more & LIBDIVIDE_ADD_MARKER) {
+             // must be arithmetic shift
+            __m512i sign = _mm512_set1_epi32((int32_t)(int8_t)more >> 7);
+             // q += ((numer ^ sign) - sign);
+            q = _mm512_add_epi32(q, _mm512_sub_epi32(_mm512_xor_si512(numers, sign), sign));
+        }
+        // q >>= shift
+        q = _mm512_sra_epi32(q, libdivide_u32_to_m128i(more & LIBDIVIDE_32_SHIFT_MASK));
+        q = _mm512_add_epi32(q, _mm512_srli_epi32(q, 31)); // q += (q < 0)
+        return q;
+    }
+}
+
+__m512i libdivide_s32_do_vector_alg0(__m512i numers, const struct libdivide_s32_t *denom) {
+    uint8_t shift = denom->more & LIBDIVIDE_32_SHIFT_MASK;
+    uint32_t mask = (1U << shift) - 1;
+    __m512i roundToZeroTweak = _mm512_set1_epi32(mask);
+    __m512i q = _mm512_add_epi32(numers, _mm512_and_si512(_mm512_srai_epi32(numers, 31), roundToZeroTweak));
+    return _mm512_sra_epi32(q, libdivide_u32_to_m128i(shift));
+}
+
+__m512i libdivide_s32_do_vector_alg1(__m512i numers, const struct libdivide_s32_t *denom) {
+    uint8_t shift = denom->more & LIBDIVIDE_32_SHIFT_MASK;
+    uint32_t mask = (1U << shift) - 1;
+    __m512i roundToZeroTweak = _mm512_set1_epi32(mask);
+    __m512i q = _mm512_add_epi32(numers, _mm512_and_si512(_mm512_srai_epi32(numers, 31), roundToZeroTweak));
+    return _mm512_sub_epi32(_mm512_setzero_si512(), _mm512_sra_epi32(q, libdivide_u32_to_m128i(shift)));
+}
+
+__m512i libdivide_s32_do_vector_alg2(__m512i numers, const struct libdivide_s32_t *denom) {
+    __m512i q = libdivide_mullhi_s32_flat_vector(numers, _mm512_set1_epi32(denom->magic));
+    q = _mm512_add_epi32(q, numers);
+    q = _mm512_sra_epi32(q, libdivide_u32_to_m128i(denom->more & LIBDIVIDE_32_SHIFT_MASK));
+    q = _mm512_add_epi32(q, _mm512_srli_epi32(q, 31));
+    return q;
+}
+
+__m512i libdivide_s32_do_vector_alg3(__m512i numers, const struct libdivide_s32_t *denom) {
+    __m512i q = libdivide_mullhi_s32_flat_vector(numers, _mm512_set1_epi32(denom->magic));
+    q = _mm512_sub_epi32(q, numers);
+    q = _mm512_sra_epi32(q, libdivide_u32_to_m128i(denom->more & LIBDIVIDE_32_SHIFT_MASK));
+    q = _mm512_add_epi32(q, _mm512_srli_epi32(q, 31));
+    return q;
+}
+
+__m512i libdivide_s32_do_vector_alg4(__m512i numers, const struct libdivide_s32_t *denom) {
+    uint8_t more = denom->more;
+    __m512i q = libdivide_mullhi_s32_flat_vector(numers, _mm512_set1_epi32(denom->magic));
+    q = _mm512_sra_epi32(q, libdivide_u32_to_m128i(more & LIBDIVIDE_32_SHIFT_MASK));
+    q = _mm512_add_epi32(q, _mm512_srli_epi32(q, 31)); // q += (q < 0)
+    return q;
+}
+
+__m512i libdivide_s32_branchfree_do_vector(__m512i numers, const struct libdivide_s32_branchfree_t *denom) {
+    int32_t magic = denom->magic;
+    uint8_t more = denom->more;
+    uint8_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
+     // must be arithmetic shift
+    __m512i sign = _mm512_set1_epi32((int32_t)(int8_t)more >> 7);
+    __m512i q = libdivide_mullhi_s32_flat_vector(numers, _mm512_set1_epi32(magic));
+    q = _mm512_add_epi32(q, numers); // q += numers
+
+    // If q is non-negative, we have nothing to do
+    // If q is negative, we want to add either (2**shift)-1 if d is
+    // a power of 2, or (2**shift) if it is not a power of 2
+    uint32_t is_power_of_2 = (magic == 0);
+    __m512i q_sign = _mm512_srai_epi32(q, 31); // q_sign = q >> 31
+    __m512i mask = _mm512_set1_epi32((1 << shift) - is_power_of_2);
+    q = _mm512_add_epi32(q, _mm512_and_si512(q_sign, mask)); // q = q + (q_sign & mask)
+    q = _mm512_srai_epi32(q, shift); // q >>= shift
+    q = _mm512_sub_epi32(_mm512_xor_si512(q, sign), sign); // q = (q ^ sign) - sign
+    return q;
+}
+
+////////// SINT64
+
+__m512i libdivide_s64_do_vector(__m512i numers, const struct libdivide_s64_t *denom) {
+    uint8_t more = denom->more;
+    int64_t magic = denom->magic;
+    if (magic == 0) { // shift path
+        uint32_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
+        uint64_t mask = (1ULL << shift) - 1;
+        __m512i roundToZeroTweak = _mm512_set1_epi64x(mask);
+        // q = numer + ((numer >> 63) & roundToZeroTweak);
+        __m512i q = _mm512_add_epi64(numers, _mm512_and_si512(libdivide_s64_signbits(numers), roundToZeroTweak));
+        q = libdivide_s64_shift_right_vector(q, shift);
+        __m512i shiftMask = _mm512_set1_epi32((int32_t)((int8_t)more >> 7));
+         // q = (q ^ shiftMask) - shiftMask;
+        q = _mm512_sub_epi64(_mm512_xor_si512(q, shiftMask), shiftMask);
+        return q;
+    }
+    else {
+        __m512i q = libdivide_mullhi_s64_flat_vector(numers, _mm512_set1_epi64x(magic));
+        if (more & LIBDIVIDE_ADD_MARKER) {
+            // must be arithmetic shift
+            __m512i sign = _mm512_set1_epi32((int32_t)((int8_t)more >> 7));
+            // q += ((numer ^ sign) - sign);
+            q = _mm512_add_epi64(q, _mm512_sub_epi64(_mm512_xor_si512(numers, sign), sign));
+        }
+        // q >>= denom->mult_path.shift
+        q = libdivide_s64_shift_right_vector(q, more & LIBDIVIDE_64_SHIFT_MASK);
+        q = _mm512_add_epi64(q, _mm512_srli_epi64(q, 63)); // q += (q < 0)
+        return q;
+    }
+}
+
+__m512i libdivide_s64_do_vector_alg0(__m512i numers, const struct libdivide_s64_t *denom) {
+    uint32_t shift = denom->more & LIBDIVIDE_64_SHIFT_MASK;
+    uint64_t mask = (1ULL << shift) - 1;
+    __m512i roundToZeroTweak = _mm512_set1_epi64x(mask);
+    __m512i q = _mm512_add_epi64(numers, _mm512_and_si512(libdivide_s64_signbits(numers), roundToZeroTweak));
+    q = libdivide_s64_shift_right_vector(q, shift);
+    return q;
+}
+
+__m512i libdivide_s64_do_vector_alg1(__m512i numers, const struct libdivide_s64_t *denom) {
+    uint32_t shift = denom->more & LIBDIVIDE_64_SHIFT_MASK;
+    uint64_t mask = (1ULL << shift) - 1;
+    __m512i roundToZeroTweak = _mm512_set1_epi64x(mask);
+    __m512i q = _mm512_add_epi64(numers, _mm512_and_si512(libdivide_s64_signbits(numers), roundToZeroTweak));
+    q = libdivide_s64_shift_right_vector(q, shift);
+    return _mm512_sub_epi64(_mm512_setzero_si512(), q);
+}
+
+__m512i libdivide_s64_do_vector_alg2(__m512i numers, const struct libdivide_s64_t *denom) {
+    __m512i q = libdivide_mullhi_s64_flat_vector(numers, _mm512_set1_epi64x(denom->magic));
+    q = _mm512_add_epi64(q, numers);
+    q = libdivide_s64_shift_right_vector(q, denom->more & LIBDIVIDE_64_SHIFT_MASK);
+    q = _mm512_add_epi64(q, _mm512_srli_epi64(q, 63)); // q += (q < 0)
+    return q;
+}
+
+__m512i libdivide_s64_do_vector_alg3(__m512i numers, const struct libdivide_s64_t *denom) {
+    __m512i q = libdivide_mullhi_s64_flat_vector(numers, _mm512_set1_epi64x(denom->magic));
+    q = _mm512_sub_epi64(q, numers);
+    q = libdivide_s64_shift_right_vector(q, denom->more & LIBDIVIDE_64_SHIFT_MASK);
+    q = _mm512_add_epi64(q, _mm512_srli_epi64(q, 63)); // q += (q < 0)
+    return q;
+}
+
+__m512i libdivide_s64_do_vector_alg4(__m512i numers, const struct libdivide_s64_t *denom) {
+    __m512i q = libdivide_mullhi_s64_flat_vector(numers, _mm512_set1_epi64x(denom->magic));
+    q = libdivide_s64_shift_right_vector(q, denom->more & LIBDIVIDE_64_SHIFT_MASK);
+    q = _mm512_add_epi64(q, _mm512_srli_epi64(q, 63));
+    return q;
+}
+
+__m512i libdivide_s64_branchfree_do_vector(__m512i numers, const struct libdivide_s64_branchfree_t *denom) {
+    int64_t magic = denom->magic;
+    uint8_t more = denom->more;
+    uint8_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
+    // must be arithmetic shift
+    __m512i sign = _mm512_set1_epi32((int32_t)(int8_t)more >> 7);
+
+     // libdivide_mullhi_s64(numers, magic);
+    __m512i q = libdivide_mullhi_s64_flat_vector(numers, _mm512_set1_epi64x(magic));
+    q = _mm512_add_epi64(q, numers); // q += numers
+
+    // If q is non-negative, we have nothing to do.
+    // If q is negative, we want to add either (2**shift)-1 if d is
+    // a power of 2, or (2**shift) if it is not a power of 2.
+    uint32_t is_power_of_2 = (magic == 0);
+    __m512i q_sign = libdivide_s64_signbits(q); // q_sign = q >> 63
+    __m512i mask = _mm512_set1_epi64x((1ULL << shift) - is_power_of_2);
+    q = _mm512_add_epi64(q, _mm512_and_si512(q_sign, mask)); // q = q + (q_sign & mask)
+    q = libdivide_s64_shift_right_vector(q, shift); // q >>= shift
+    q = _mm512_sub_epi64(_mm512_xor_si512(q, sign), sign); // q = (q ^ sign) - sign
+    return q;
+}
+
+#elif defined(LIBDIVIDE_USE_AVX2)
+
 LIBDIVIDE_API __m256i libdivide_u32_do_vector(__m256i numers, const struct libdivide_u32_t *denom);
 LIBDIVIDE_API __m256i libdivide_s32_do_vector(__m256i numers, const struct libdivide_s32_t *denom);
 LIBDIVIDE_API __m256i libdivide_u64_do_vector(__m256i numers, const struct libdivide_u64_t *denom);
@@ -1404,7 +1783,7 @@ static inline __m128i libdivide_u32_to_m128i(uint32_t x) {
     return _mm_set_epi32(0, 0, 0, x);
 }
 
-// Implementation of _mm256_sra_epi64(v, 63) (from AVX512).
+// Implementation of _mm256_srai_epi64(v, 63) (from AVX512).
 static inline __m256i libdivide_s64_signbits(__m256i v) {
     __m256i hiBitsDuped = _mm256_shuffle_epi32(v, _MM_SHUFFLE(3, 3, 1, 1));
     __m256i signBits = _mm256_srai_epi32(hiBitsDuped, 31);
@@ -1791,22 +2170,15 @@ static inline __m128i libdivide_u32_to_m128i(uint32_t x) {
     return _mm_set_epi32(0, 0, 0, x);
 }
 
+// Implementation of _mm_srai_epi64(v, 63) (from AVX512).
 static inline __m128i libdivide_s64_signbits(__m128i v) {
-    // we want to compute v >> 63, that is, _mm_srai_epi64(v, 63). But there
-    // is no 64 bit shift right arithmetic instruction in SSE2. So we have to
-    // fake it by first duplicating the high 32 bit values, and then using a 32
-    // bit shift. Another option would be to use _mm_srli_epi64(v, 63) and
-    // then subtract that from 0, but that approach appears to be substantially
-    // slower for unknown reasons
     __m128i hiBitsDuped = _mm_shuffle_epi32(v, _MM_SHUFFLE(3, 3, 1, 1));
     __m128i signBits = _mm_srai_epi32(hiBitsDuped, 31);
     return signBits;
 }
 
+// Implementation of _mm_sra_epi64 (from AVX512).
 static inline __m128i libdivide_s64_shift_right_vector(__m128i v, int amt) {
-    // implementation of _mm_sra_epi64. Here we have two 64 bit values which
-    // are shifted right to logically become (64 - amt) values, and are then
-    // sign extended from a (64 - amt) bit number.
     const int b = 64 - amt;
     __m128i m = _mm_set1_epi64x(1ULL << (b - 1));
     __m128i x = _mm_srl_epi64(v, libdivide_u32_to_m128i(amt));
@@ -2172,7 +2544,8 @@ namespace libdivide_internal {
 
 #if defined(__GNUC__) && \
     __GNUC__ >= 6 && \
-    (defined(LIBDIVIDE_USE_AVX2) || \
+    (defined(LIBDIVIDE_USE_AVX512) || \
+     defined(LIBDIVIDE_USE_AVX2) || \
      defined(LIBDIVIDE_USE_SSE2))
     // Using vector functions as template arguments causes many
     // -Wignored-attributes compiler warnings with GCC 9.
@@ -2181,7 +2554,11 @@ namespace libdivide_internal {
     #pragma GCC diagnostic ignored "-Wignored-attributes"
 #endif
 
-#if defined(LIBDIVIDE_USE_AVX2)
+
+#if defined(LIBDIVIDE_USE_AVX512)
+    #define MAYBE_VECTOR(X) X
+    #define MAYBE_VECTOR_PARAM(X) __m512i vector_func(__m512i, const X *)
+#elif defined(LIBDIVIDE_USE_AVX2)
     #define MAYBE_VECTOR(X) X
     #define MAYBE_VECTOR_PARAM(X) __m256i vector_func(__m256i, const X *)
 #elif defined(LIBDIVIDE_USE_SSE2)
@@ -2252,7 +2629,11 @@ struct base {
         return do_func(val, &denom);
     }
 
-#if defined(LIBDIVIDE_USE_AVX2)
+#if defined(LIBDIVIDE_USE_AVX512)
+    __m512i perform_divide_vector(__m512i val) const {
+        return vector_func(val, &denom);
+    }
+#elif defined(LIBDIVIDE_USE_AVX2)
     __m256i perform_divide_vector(__m256i val) const {
         return vector_func(val, &denom);
     }
@@ -2271,7 +2652,10 @@ struct base {
 uint32_t libdivide_u32_crash(uint32_t, const libdivide_u32_t *) { exit(-1); }
 uint64_t libdivide_u64_crash(uint64_t, const libdivide_u64_t *) { exit(-1); }
 
-#if defined(LIBDIVIDE_USE_AVX2)
+#if defined(LIBDIVIDE_USE_AVX512)
+    __m512i libdivide_u32_crash_vector(__m512i, const libdivide_u32_t *) { exit(-1); }
+    __m512i libdivide_u64_crash_vector(__m512i, const libdivide_u64_t *) { exit(-1); }
+#elif defined(LIBDIVIDE_USE_AVX2)
     __m256i libdivide_u32_crash_vector(__m256i, const libdivide_u32_t *) { exit(-1); }
     __m256i libdivide_u64_crash_vector(__m256i, const libdivide_u64_t *) { exit(-1); }
 #elif defined(LIBDIVIDE_USE_SSE2)
@@ -2314,10 +2698,10 @@ template<> struct dispatcher<uint64_t, ALGORITHM2> { ALGORITHM_DIVIDER(uint64_t,
 template<> struct dispatcher<uint64_t, ALGORITHM3> { CRASH_DIVIDER(uint64_t, u64) divider; };
 template<> struct dispatcher<uint64_t, ALGORITHM4> { CRASH_DIVIDER(uint64_t, u64) divider; };
 
-
 #if defined(__GNUC__) && \
     __GNUC__ >= 6 && \
-    (defined(LIBDIVIDE_USE_AVX2) || \
+    (defined(LIBDIVIDE_USE_AVX512) || \
+     defined(LIBDIVIDE_USE_AVX2) || \
      defined(LIBDIVIDE_USE_SSE2))
     #pragma GCC diagnostic pop
 #endif
@@ -2379,7 +2763,14 @@ public:
         return libdivide_internal::recover(&div.denom);
     }
 
-#if defined(LIBDIVIDE_USE_AVX2)
+#if defined(LIBDIVIDE_USE_AVX512)
+    // Treats the vector as either 8 or 16 packed values (depending on the
+    // size), and divides each of them by the divisor,
+    // returning the packed quotients.
+    __m512i perform_divide_vector(__m512i val) const {
+        return div.perform_divide_vector(val);
+    }
+#elif defined(LIBDIVIDE_USE_AVX2)
     // Treats the vector as either 4 or 8 packed values (depending on the
     // size), and divides each of them by the divisor,
     // returning the packed quotients.
@@ -2440,36 +2831,45 @@ T operator/=(T& numer, const divider<T, ALGO>& denom) {
     return numer;
 }
 
-#if defined(LIBDIVIDE_USE_AVX2)
+#if defined(LIBDIVIDE_USE_AVX512)
+    // Overload of the / operator for vector division
+    template<typename T, int ALGO>
+    __m512i operator/(__m512i numer, const divider<T, ALGO>& denom) {
+        return denom.perform_divide_vector(numer);
+    }
 
-// Overload of the / operator for vector division
-template<typename T, int ALGO>
-__m256i operator/(__m256i numer, const divider<T, ALGO>& denom) {
-    return denom.perform_divide_vector(numer);
-}
+    // Overload of the /= operator for vector division
+    template<typename T, int ALGO>
+    __m512i operator/=(__m512i& numer, const divider<T, ALGO>& denom) {
+        numer = denom.perform_divide_vector(numer);
+        return numer;
+    }
+#elif defined(LIBDIVIDE_USE_AVX2)
+    // Overload of the / operator for vector division
+    template<typename T, int ALGO>
+    __m256i operator/(__m256i numer, const divider<T, ALGO>& denom) {
+        return denom.perform_divide_vector(numer);
+    }
 
-// Overload of the /= operator for vector division
-template<typename T, int ALGO>
-__m256i operator/=(__m256i& numer, const divider<T, ALGO>& denom) {
-    numer = denom.perform_divide_vector(numer);
-    return numer;
-}
-
+    // Overload of the /= operator for vector division
+    template<typename T, int ALGO>
+    __m256i operator/=(__m256i& numer, const divider<T, ALGO>& denom) {
+        numer = denom.perform_divide_vector(numer);
+        return numer;
+    }
 #elif defined(LIBDIVIDE_USE_SSE2)
+    // Overload of the / operator for vector division
+    template<typename T, int ALGO>
+    __m128i operator/(__m128i numer, const divider<T, ALGO>& denom) {
+        return denom.perform_divide_vector(numer);
+    }
 
-// Overload of the / operator for vector division
-template<typename T, int ALGO>
-__m128i operator/(__m128i numer, const divider<T, ALGO>& denom) {
-    return denom.perform_divide_vector(numer);
-}
-
-// Overload of the /= operator for vector division
-template<typename T, int ALGO>
-__m128i operator/=(__m128i& numer, const divider<T, ALGO>& denom) {
-    numer = denom.perform_divide_vector(numer);
-    return numer;
-}
-
+    // Overload of the /= operator for vector division
+    template<typename T, int ALGO>
+    __m128i operator/=(__m128i& numer, const divider<T, ALGO>& denom) {
+        numer = denom.perform_divide_vector(numer);
+        return numer;
+    }
 #endif
 
 } // namespace libdivide
