@@ -50,13 +50,13 @@ endif()
 
 if(cpu_x86 AND march_native)
     check_cxx_source_runs("
-        #include <zmmintrin.h>
+        #include <immintrin.h>
         int main()
         {
             __m512i a = _mm512_set_epi32(1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0);
             __m512i b = _mm512_set_epi32(0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1);
             __m512i c = _mm512_add_epi32(a, b);
-            __m512i d = _mm512_sra_epi32(c, 23);
+            __m512i d = _mm512_srai_epi32(c, 23);
             return 0;
         }"
         avx512)
