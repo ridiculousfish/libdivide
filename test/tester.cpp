@@ -130,7 +130,7 @@ private:
     #define VECTOR_TYPE __m512i
     #define VECTOR_LOAD _mm512_loadu_si512
 #elif defined(LIBDIVIDE_USE_AVX2)
-    #define VECTOR_TYPE __m256i)
+    #define VECTOR_TYPE __m256i
     #define VECTOR_LOAD _mm256_loadu_si256
 #elif defined(LIBDIVIDE_USE_SSE2)
     #define VECTOR_TYPE __m128i
