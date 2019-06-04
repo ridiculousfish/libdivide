@@ -48,7 +48,7 @@ endif()
 
 # Check if CPU supports AVX512/AVX2/SSE2 #######################
 
-if(cpu_x86 AND march_native)
+if(cpu_x86)
     check_cxx_source_runs("
         #include <immintrin.h>
         int main()
