@@ -205,7 +205,7 @@ NOINLINE static uint64_t mine_u32_vector_branchfree(struct FunctionParams_t *par
     const struct libdivide_u32_branchfree_t denom = *(struct libdivide_u32_branchfree_t *)params->denomBranchfreePtr;
     const uint32_t *data = (const uint32_t *)params->data;
     VECTOR_TYPE sumX4 = VECTOR_INTRINSIC(setzero_si)();
-    for (size_t iter = 0; iter < ITERATIONS; iter+=4) {
+    for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
         VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
         sumX4 = VECTOR_INTRINSIC_2(add_epi32)(sumX4, libdivide_u32_branchfree_do_vector(numers, &denom));
     }
@@ -321,7 +321,7 @@ static uint64_t mine_s32_vector(struct FunctionParams_t *params) {
     VECTOR_TYPE sumX4 = VECTOR_INTRINSIC(setzero_si)();
     const struct libdivide_s32_t denom = *(struct libdivide_s32_t *)params->denomPtr;
     const int32_t *data = (const int32_t *)params->data;
-    for (size_t iter = 0; iter < ITERATIONS; iter+=4) {
+    for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
         VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
         sumX4 = VECTOR_INTRINSIC_2(add_epi32)(sumX4, libdivide_s32_do_vector(numers, &denom));
     }
@@ -384,7 +384,7 @@ static uint64_t mine_s32_vector_branchfree(struct FunctionParams_t *params) {
     VECTOR_TYPE sumX4 = VECTOR_INTRINSIC(setzero_si)();
     const struct libdivide_s32_branchfree_t denom = *(struct libdivide_s32_branchfree_t *)params->denomBranchfreePtr;
     const int32_t *data = (const int32_t *)params->data;
-    for (size_t iter = 0; iter < ITERATIONS; iter+=4) {
+    for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
         VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
         sumX4 = VECTOR_INTRINSIC_2(add_epi32)(sumX4, libdivide_s32_branchfree_do_vector(numers, &denom));
     }
@@ -674,7 +674,7 @@ static uint64_t mine_s64_vector(struct FunctionParams_t *params) {
     size_t count = sizeof(VECTOR_TYPE) / sizeof(int64_t);
     
     VECTOR_TYPE sumX2 = VECTOR_INTRINSIC(setzero_si)();
-    for (size_t iter = 0; iter < ITERATIONS; iter+=2) {
+    for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
         VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
         sumX2 = VECTOR_INTRINSIC_2(add_epi64)(sumX2, libdivide_s64_do_vector(numers, &denom));
     }
@@ -693,7 +693,7 @@ static uint64_t mine_s64_vector_branchfree(struct FunctionParams_t *params) {
     size_t count = sizeof(VECTOR_TYPE) / sizeof(int64_t);
     
     VECTOR_TYPE sumX2 = VECTOR_INTRINSIC(setzero_si)();
-    for (size_t iter = 0; iter < ITERATIONS; iter+=2) {
+    for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
         VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
         sumX2 = VECTOR_INTRINSIC_2(add_epi64)(sumX2, libdivide_s64_branchfree_do_vector(numers, &denom));
     }
