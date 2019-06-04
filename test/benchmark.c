@@ -8,31 +8,45 @@
 #include <inttypes.h>
 
 #if defined(__GNUC__)
-#define NOINLINE __attribute__((__noinline__))
+    #define NOINLINE __attribute__((__noinline__))
 #else
-#define NOINLINE
+    #define NOINLINE
 #endif
- 
+
+#if defined(LIBDIVIDE_USE_AVX512)
+    #define VECTOR_TYPE __m512i
+    #define VECTOR_INTRINSIC(x) _mm512_##x##512
+    #define VECTOR_INTRINSIC_2(x) _mm512_##x
+#elif defined(LIBDIVIDE_USE_AVX2)
+    #define VECTOR_TYPE __m256i
+    #define VECTOR_INTRINSIC(x) _mm256_##x##256
+    #define VECTOR_INTRINSIC_2(x) _mm256_##x
+#elif defined(LIBDIVIDE_USE_SSE2)
+    #define VECTOR_TYPE __m128i
+    #define VECTOR_INTRINSIC(x) _mm_##x##128
+    #define VECTOR_INTRINSIC_2(x) _mm_##x
+#endif
+
 #define NANOSEC_PER_SEC 1000000000ULL
 #define NANOSEC_PER_USEC 1000ULL
 #define NANOSEC_PER_MILLISEC 1000000ULL
 
 #if defined(__cplusplus)
-using namespace libdivide;
+    using namespace libdivide;
 #endif
 
 #if defined(_WIN32) || defined(WIN32)
-#define NOMINMAX
-#define WIN32_LEAN_AND_MEAN
-#define VC_EXTRALEAN
-#include <windows.h>
-#include <mmsystem.h>
-#define LIBDIVIDE_WINDOWS
-#pragma comment(lib, "winmm")
+    #define NOMINMAX
+    #define WIN32_LEAN_AND_MEAN
+    #define VC_EXTRALEAN
+    #include <windows.h>
+    #include <mmsystem.h>
+    #define LIBDIVIDE_WINDOWS
+    #pragma comment(lib, "winmm")
 #endif
 
 #if !defined(LIBDIVIDE_WINDOWS)
-#include <sys/time.h> // for gettimeofday()
+    #include <sys/time.h> // for gettimeofday()
 #endif
 
 struct random_state {
@@ -132,119 +146,75 @@ NOINLINE static uint64_t mine_u32_branchfree(struct FunctionParams_t *params) {
     return sum;
 }
 
-#if defined(LIBDIVIDE_USE_AVX2)
+#if defined(LIBDIVIDE_USE_AVX512) || \
+    defined(LIBDIVIDE_USE_AVX2) || \
+    defined(LIBDIVIDE_USE_SSE2)
 
 NOINLINE static uint64_t mine_u32_vector(struct FunctionParams_t *params) {
-    unsigned iter;
+    size_t count = sizeof(VECTOR_TYPE) / sizeof(uint32_t);
     const struct libdivide_u32_t denom = *(struct libdivide_u32_t *)params->denomPtr;
     const uint32_t *data = (const uint32_t *)params->data;
-    __m256i sumX4 = _mm256_setzero_si256();
-    for (iter = 0; iter < ITERATIONS; iter+=8) {
-        __m256i numers = _mm256_load_si256((const __m256i*)(data + iter));
-        sumX4 = _mm256_add_epi32(sumX4, libdivide_u32_do_vector(numers, &denom));
+    VECTOR_TYPE sumX4 = VECTOR_INTRINSIC(setzero_si)();
+        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+        VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
+        sumX4 = VECTOR_INTRINSIC_2(add_epi32)(sumX4, libdivide_u32_do_vector(numers, &denom));
     }
     const uint32_t *comps = (const uint32_t *)&sumX4;
-    return comps[0] + comps[1] + comps[2] + comps[3] + comps[4] + comps[5] + comps[6] + comps[7];
+    uint32_t sum = 0;
+    for (size_t i = 0; i < count; i++) {
+        sum += comps[i];
+    }
+    return sum;
 }
 
 NOINLINE static uint64_t mine_u32_vector_unswitched(struct FunctionParams_t *params) {
-    unsigned iter;
+    size_t count = sizeof(VECTOR_TYPE) / sizeof(uint32_t);
     const struct libdivide_u32_t denom = *(struct libdivide_u32_t *)params->denomPtr;
     const uint32_t *data = (const uint32_t *)params->data;
-    __m256i sumX4 = _mm256_setzero_si256();
+    VECTOR_TYPE sumX4 = VECTOR_INTRINSIC(setzero_si)();
     int algo = libdivide_u32_get_algorithm(&denom);
     if (algo == 0) {
-        for (iter = 0; iter < ITERATIONS; iter+=8) {
-            __m256i numers = _mm256_load_si256((const __m256i*)(data + iter));
-            sumX4 = _mm256_add_epi32(sumX4, libdivide_u32_do_vector_alg0(numers, &denom));
+        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+            VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
+            sumX4 = VECTOR_INTRINSIC_2(add_epi32)(sumX4, libdivide_u32_do_vector_alg0(numers, &denom));
         }        
     }
     else if (algo == 1) {
-        for (iter = 0; iter < ITERATIONS; iter+=8) {
-            __m256i numers = _mm256_load_si256((const __m256i*)(data + iter));
-            sumX4 = _mm256_add_epi32(sumX4, libdivide_u32_do_vector_alg1(numers, &denom));
+        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+            VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
+            sumX4 = VECTOR_INTRINSIC_2(add_epi32)(sumX4, libdivide_u32_do_vector_alg1(numers, &denom));
         }        
     }
     else if (algo == 2) {
-        for (iter = 0; iter < ITERATIONS; iter+=8) {
-            __m256i numers = _mm256_load_si256((const __m256i*)(data + iter));
-            sumX4 = _mm256_add_epi32(sumX4, libdivide_u32_do_vector_alg2(numers, &denom));
+        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+            VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
+            sumX4 = VECTOR_INTRINSIC_2(add_epi32)(sumX4, libdivide_u32_do_vector_alg2(numers, &denom));
         }        
     }
     const uint32_t *comps = (const uint32_t *)&sumX4;
-    return comps[0] + comps[1] + comps[2] + comps[3] + comps[4] + comps[5] + comps[6] + comps[7];
+    uint32_t sum = 0;
+    for (size_t i = 0; i < count; i++) {
+        sum += comps[i];
+    }
+    return sum;
 }
 
 
 NOINLINE static uint64_t mine_u32_vector_branchfree(struct FunctionParams_t *params) {
-    unsigned iter;
+    size_t count = sizeof(VECTOR_TYPE) / sizeof(uint32_t);
     const struct libdivide_u32_branchfree_t denom = *(struct libdivide_u32_branchfree_t *)params->denomBranchfreePtr;
     const uint32_t *data = (const uint32_t *)params->data;
-    __m256i sumX4 = _mm256_setzero_si256();
-    for (iter = 0; iter < ITERATIONS; iter+=8) {
-        __m256i numers = _mm256_load_si256((const __m256i*)(data + iter));
-        sumX4 = _mm256_add_epi32(sumX4, libdivide_u32_branchfree_do_vector(numers, &denom));
+    VECTOR_TYPE sumX4 = VECTOR_INTRINSIC(setzero_si)();
+    for (size_t iter = 0; iter < ITERATIONS; iter+=4) {
+        VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
+        sumX4 = VECTOR_INTRINSIC_2(add_epi32)(sumX4, libdivide_u32_branchfree_do_vector(numers, &denom));
     }
     const uint32_t *comps = (const uint32_t *)&sumX4;
-    return comps[0] + comps[1] + comps[2] + comps[3] + comps[4] + comps[5] + comps[6] + comps[7];
-    
-}
-
-#elif defined(LIBDIVIDE_USE_SSE2)
-
-NOINLINE static uint64_t mine_u32_vector(struct FunctionParams_t *params) {
-    unsigned iter;
-    const struct libdivide_u32_t denom = *(struct libdivide_u32_t *)params->denomPtr;
-    const uint32_t *data = (const uint32_t *)params->data;
-    __m128i sumX4 = _mm_setzero_si128();
-    for (iter = 0; iter < ITERATIONS; iter+=4) {
-        __m128i numers = _mm_load_si128((const __m128i*)(data + iter));
-        sumX4 = _mm_add_epi32(sumX4, libdivide_u32_do_vector(numers, &denom));
+    uint32_t sum = 0;
+    for (size_t i = 0; i < count; i++) {
+        sum += comps[i];
     }
-    const uint32_t *comps = (const uint32_t *)&sumX4;
-    return comps[0] + comps[1] + comps[2] + comps[3];
-}
-
-NOINLINE static uint64_t mine_u32_vector_unswitched(struct FunctionParams_t *params) {
-    unsigned iter;
-    const struct libdivide_u32_t denom = *(struct libdivide_u32_t *)params->denomPtr;
-    const uint32_t *data = (const uint32_t *)params->data;
-    __m128i sumX4 = _mm_setzero_si128();
-    int algo = libdivide_u32_get_algorithm(&denom);
-    if (algo == 0) {
-        for (iter = 0; iter < ITERATIONS; iter+=4) {
-            __m128i numers = _mm_load_si128((const __m128i*)(data + iter));
-            sumX4 = _mm_add_epi32(sumX4, libdivide_u32_do_vector_alg0(numers, &denom));
-        }        
-    }
-    else if (algo == 1) {
-        for (iter = 0; iter < ITERATIONS; iter+=4) {
-            __m128i numers = _mm_load_si128((const __m128i*)(data + iter));
-            sumX4 = _mm_add_epi32(sumX4, libdivide_u32_do_vector_alg1(numers, &denom));
-        }        
-    }
-    else if (algo == 2) {
-        for (iter = 0; iter < ITERATIONS; iter+=4) {
-            __m128i numers = _mm_load_si128((const __m128i*)(data + iter));
-            sumX4 = _mm_add_epi32(sumX4, libdivide_u32_do_vector_alg2(numers, &denom));
-        }        
-    }
-    const uint32_t *comps = (const uint32_t *)&sumX4;
-    return comps[0] + comps[1] + comps[2] + comps[3];
-}
-
-
-NOINLINE static uint64_t mine_u32_vector_branchfree(struct FunctionParams_t *params) {
-    unsigned iter;
-    const struct libdivide_u32_branchfree_t denom = *(struct libdivide_u32_branchfree_t *)params->denomBranchfreePtr;
-    const uint32_t *data = (const uint32_t *)params->data;
-    __m128i sumX4 = _mm_setzero_si128();
-    for (iter = 0; iter < ITERATIONS; iter+=4) {
-        __m128i numers = _mm_load_si128((const __m128i*)(data + iter));
-        sumX4 = _mm_add_epi32(sumX4, libdivide_u32_branchfree_do_vector(numers, &denom));
-    }
-    const uint32_t *comps = (const uint32_t *)&sumX4;
-    return comps[0] + comps[1] + comps[2] + comps[3];
+    return sum;
     
 }
 
@@ -341,151 +311,88 @@ NOINLINE static uint64_t mine_s32_branchfree(struct FunctionParams_t *params) {
     return sum;
 }
 
-#if defined(LIBDIVIDE_USE_AVX2)
+#if defined(LIBDIVIDE_USE_AVX512) || \
+    defined(LIBDIVIDE_USE_AVX2) || \
+    defined(LIBDIVIDE_USE_SSE2)
 
 NOINLINE
 static uint64_t mine_s32_vector(struct FunctionParams_t *params) {
-    unsigned iter;
-    __m256i sumX4 = _mm256_setzero_si256();
+    size_t count = sizeof(VECTOR_TYPE) / sizeof(int32_t);
+    VECTOR_TYPE sumX4 = VECTOR_INTRINSIC(setzero_si)();
     const struct libdivide_s32_t denom = *(struct libdivide_s32_t *)params->denomPtr;
     const int32_t *data = (const int32_t *)params->data;
-    for (iter = 0; iter < ITERATIONS; iter+=8) {
-        __m256i numers = _mm256_load_si256((const __m256i*)(data + iter));
-        sumX4 = _mm256_add_epi32(sumX4, libdivide_s32_do_vector(numers, &denom));
+    for (size_t iter = 0; iter < ITERATIONS; iter+=4) {
+        VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
+        sumX4 = VECTOR_INTRINSIC_2(add_epi32)(sumX4, libdivide_s32_do_vector(numers, &denom));
     }
     const int32_t *comps = (const int32_t *)&sumX4;
-    int32_t sum = comps[0] + comps[1] + comps[2] + comps[3] + comps[4] + comps[5] + comps[6] + comps[7];
+    int32_t sum = 0;
+    for (size_t i = 0; i < count; i++) {
+        sum += comps[i];
+    }
     return sum;
 }
 
 NOINLINE
 static uint64_t mine_s32_vector_unswitched(struct FunctionParams_t *params) {
-    unsigned iter;
-    __m256i sumX4 = _mm256_setzero_si256();
+    size_t count = sizeof(VECTOR_TYPE) / sizeof(int32_t);
+    VECTOR_TYPE sumX4 = VECTOR_INTRINSIC(setzero_si)();
     const struct libdivide_s32_t denom = *(struct libdivide_s32_t *)params->denomPtr;
     const int32_t *data = (const int32_t *)params->data;
     int algo = libdivide_s32_get_algorithm(&denom);
     if (algo == 0) {
-        for (iter = 0; iter < ITERATIONS; iter+=8) {
-            __m256i numers = _mm256_load_si256((const __m256i*)(data + iter));
-            sumX4 = _mm256_add_epi32(sumX4, libdivide_s32_do_vector_alg0(numers, &denom));
+        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+            VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
+            sumX4 = VECTOR_INTRINSIC_2(add_epi32)(sumX4, libdivide_s32_do_vector_alg0(numers, &denom));
         }        
     }
     else if (algo == 1) {
-        for (iter = 0; iter < ITERATIONS; iter+=8) {
-            __m256i numers = _mm256_load_si256((const __m256i*)(data + iter));
-            sumX4 = _mm256_add_epi32(sumX4, libdivide_s32_do_vector_alg1(numers, &denom));
+        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+            VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
+            sumX4 = VECTOR_INTRINSIC_2(add_epi32)(sumX4, libdivide_s32_do_vector_alg1(numers, &denom));
         }                
     }
     else if (algo == 2) {
-        for (iter = 0; iter < ITERATIONS; iter+=8) {
-            __m256i numers = _mm256_load_si256((const __m256i*)(data + iter));
-            sumX4 = _mm256_add_epi32(sumX4, libdivide_s32_do_vector_alg2(numers, &denom));
+        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+            VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
+            sumX4 = VECTOR_INTRINSIC_2(add_epi32)(sumX4, libdivide_s32_do_vector_alg2(numers, &denom));
         }                
     }
     else if (algo == 3) {
-        for (iter = 0; iter < ITERATIONS; iter+=8) {
-            __m256i numers = _mm256_load_si256((const __m256i*)(data + iter));
-            sumX4 = _mm256_add_epi32(sumX4, libdivide_s32_do_vector_alg3(numers, &denom));
+        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+            VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
+            sumX4 = VECTOR_INTRINSIC_2(add_epi32)(sumX4, libdivide_s32_do_vector_alg3(numers, &denom));
         }                
     }
     else if (algo == 4) {
-        for (iter = 0; iter < ITERATIONS; iter+=8) {
-            __m256i numers = _mm256_load_si256((const __m256i*)(data + iter));
-            sumX4 = _mm256_add_epi32(sumX4, libdivide_s32_do_vector_alg4(numers, &denom));
+        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+            VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
+            sumX4 = VECTOR_INTRINSIC_2(add_epi32)(sumX4, libdivide_s32_do_vector_alg4(numers, &denom));
         }                
     }
     const int32_t *comps = (const int32_t *)&sumX4;
-    int32_t sum = comps[0] + comps[1] + comps[2] + comps[3] + comps[4] + comps[5] + comps[6] + comps[7];
+    int32_t sum = 0;
+    for (size_t i = 0; i < count; i++) {
+        sum += comps[i];
+    }
     return sum;
 }
 
 NOINLINE
 static uint64_t mine_s32_vector_branchfree(struct FunctionParams_t *params) {
-    unsigned iter;
-    __m256i sumX4 = _mm256_setzero_si256();
+    size_t count = sizeof(VECTOR_TYPE) / sizeof(int32_t);
+    VECTOR_TYPE sumX4 = VECTOR_INTRINSIC(setzero_si)();
     const struct libdivide_s32_branchfree_t denom = *(struct libdivide_s32_branchfree_t *)params->denomBranchfreePtr;
     const int32_t *data = (const int32_t *)params->data;
-    for (iter = 0; iter < ITERATIONS; iter+=8) {
-        __m256i numers = _mm256_load_si256((const __m256i*)(data + iter));
-        sumX4 = _mm256_add_epi32(sumX4, libdivide_s32_branchfree_do_vector(numers, &denom));
+    for (size_t iter = 0; iter < ITERATIONS; iter+=4) {
+        VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
+        sumX4 = VECTOR_INTRINSIC_2(add_epi32)(sumX4, libdivide_s32_branchfree_do_vector(numers, &denom));
     }
     const int32_t *comps = (const int32_t *)&sumX4;
-    int32_t sum = comps[0] + comps[1] + comps[2] + comps[3] + comps[4] + comps[5] + comps[6] + comps[7];
-    return sum;
-}
-
-#elif defined(LIBDIVIDE_USE_SSE2)
-
-NOINLINE
-static uint64_t mine_s32_vector(struct FunctionParams_t *params) {
-    unsigned iter;
-    __m128i sumX4 = _mm_setzero_si128();
-    const struct libdivide_s32_t denom = *(struct libdivide_s32_t *)params->denomPtr;
-    const int32_t *data = (const int32_t *)params->data;
-    for (iter = 0; iter < ITERATIONS; iter+=4) {
-        __m128i numers = _mm_load_si128((const __m128i*)(data + iter));
-        sumX4 = _mm_add_epi32(sumX4, libdivide_s32_do_vector(numers, &denom));
+    int32_t sum = 0;
+    for (size_t i = 0; i < count; i++) {
+        sum += comps[i];
     }
-    const int32_t *comps = (const int32_t *)&sumX4;
-    int32_t sum = comps[0] + comps[1] + comps[2] + comps[3];
-    return sum;
-}
-
-NOINLINE
-static uint64_t mine_s32_vector_unswitched(struct FunctionParams_t *params) {
-    unsigned iter;
-    __m128i sumX4 = _mm_setzero_si128();
-    const struct libdivide_s32_t denom = *(struct libdivide_s32_t *)params->denomPtr;
-    const int32_t *data = (const int32_t *)params->data;
-    int algo = libdivide_s32_get_algorithm(&denom);
-    if (algo == 0) {
-        for (iter = 0; iter < ITERATIONS; iter+=4) {
-            __m128i numers = _mm_load_si128((const __m128i*)(data + iter));
-            sumX4 = _mm_add_epi32(sumX4, libdivide_s32_do_vector_alg0(numers, &denom));
-        }        
-    }
-    else if (algo == 1) {
-        for (iter = 0; iter < ITERATIONS; iter+=4) {
-            __m128i numers = _mm_load_si128((const __m128i*)(data + iter));
-            sumX4 = _mm_add_epi32(sumX4, libdivide_s32_do_vector_alg1(numers, &denom));
-        }                
-    }
-    else if (algo == 2) {
-        for (iter = 0; iter < ITERATIONS; iter+=4) {
-            __m128i numers = _mm_load_si128((const __m128i*)(data + iter));
-            sumX4 = _mm_add_epi32(sumX4, libdivide_s32_do_vector_alg2(numers, &denom));
-        }                
-    }
-    else if (algo == 3) {
-        for (iter = 0; iter < ITERATIONS; iter+=4) {
-            __m128i numers = _mm_load_si128((const __m128i*)(data + iter));
-            sumX4 = _mm_add_epi32(sumX4, libdivide_s32_do_vector_alg3(numers, &denom));
-        }                
-    }
-    else if (algo == 4) {
-        for (iter = 0; iter < ITERATIONS; iter+=4) {
-            __m128i numers = _mm_load_si128((const __m128i*)(data + iter));
-            sumX4 = _mm_add_epi32(sumX4, libdivide_s32_do_vector_alg4(numers, &denom));
-        }                
-    }
-    const int32_t *comps = (const int32_t *)&sumX4;
-    int32_t sum = comps[0] + comps[1] + comps[2] + comps[3];
-    return sum;
-}
-
-NOINLINE
-static uint64_t mine_s32_vector_branchfree(struct FunctionParams_t *params) {
-    unsigned iter;
-    __m128i sumX4 = _mm_setzero_si128();
-    const struct libdivide_s32_branchfree_t denom = *(struct libdivide_s32_branchfree_t *)params->denomBranchfreePtr;
-    const int32_t *data = (const int32_t *)params->data;
-    for (iter = 0; iter < ITERATIONS; iter+=4) {
-        __m128i numers = _mm_load_si128((const __m128i*)(data + iter));
-        sumX4 = _mm_add_epi32(sumX4, libdivide_s32_branchfree_do_vector(numers, &denom));
-    }
-    const int32_t *comps = (const int32_t *)&sumX4;
-    int32_t sum = comps[0] + comps[1] + comps[2] + comps[3];
     return sum;
 }
 
@@ -626,116 +533,74 @@ NOINLINE static uint64_t mine_u64_unswitched(struct FunctionParams_t *params) {
     return sum;
 }
 
-#if defined(LIBDIVIDE_USE_AVX2)
+#if defined(LIBDIVIDE_USE_AVX512) || \
+    defined(LIBDIVIDE_USE_AVX2) || \
+    defined(LIBDIVIDE_USE_SSE2)
 
 NOINLINE static uint64_t mine_u64_vector_unswitched(struct FunctionParams_t *params) {
-    unsigned iter;
-    __m256i sumX2 = _mm256_setzero_si256();
+    size_t count = sizeof(VECTOR_TYPE) / sizeof(uint64_t);
+    VECTOR_TYPE sumX2 = VECTOR_INTRINSIC(setzero_si)();
     const struct libdivide_u64_t denom = *(struct libdivide_u64_t *)params->denomPtr;
     const uint64_t *data = (const uint64_t *)params->data;
     int algo = libdivide_u64_get_algorithm(&denom);
     if (algo == 0) {
-        for (iter = 0; iter < ITERATIONS; iter+=4) {
-            __m256i numers = _mm256_load_si256((const __m256i*)(data + iter));
-            sumX2 = _mm256_add_epi64(sumX2, libdivide_u64_do_vector_alg0(numers, &denom));
+        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+            VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
+            sumX2 = VECTOR_INTRINSIC_2(add_epi64)(sumX2, libdivide_u64_do_vector_alg0(numers, &denom));
         }   
     }
     else if (algo == 1) {
-        for (iter = 0; iter < ITERATIONS; iter+=4) {
-            __m256i numers = _mm256_load_si256((const __m256i*)(data + iter));
-            sumX2 = _mm256_add_epi64(sumX2, libdivide_u64_do_vector_alg1(numers, &denom));
+        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+            VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
+            sumX2 = VECTOR_INTRINSIC_2(add_epi64)(sumX2, libdivide_u64_do_vector_alg1(numers, &denom));
         }   
     }
     else if (algo == 2) {
-        for (iter = 0; iter < ITERATIONS; iter+=4) {
-            __m256i numers = _mm256_load_si256((const __m256i*)(data + iter));
-            sumX2 = _mm256_add_epi64(sumX2, libdivide_u64_do_vector_alg2(numers, &denom));
+        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+            VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
+            sumX2 = VECTOR_INTRINSIC_2(add_epi64)(sumX2, libdivide_u64_do_vector_alg2(numers, &denom));
         }        
     }
     const uint64_t *comps = (const uint64_t *)&sumX2;
-    return comps[0] + comps[1] + comps[2] + comps[3];
+    uint64_t sum = 0;
+    for (size_t i = 0; i < count; i++) {
+        sum += comps[i];
+    }
+    return sum;
 }
 
 NOINLINE static uint64_t mine_u64_vector(struct FunctionParams_t *params) {
-    unsigned iter;
-    __m256i sumX2 = _mm256_setzero_si256();
+    size_t count = sizeof(VECTOR_TYPE) / sizeof(uint64_t);
+    VECTOR_TYPE sumX2 = VECTOR_INTRINSIC(setzero_si)();
     const struct libdivide_u64_t denom = *(struct libdivide_u64_t *)params->denomPtr;
     const uint64_t *data = (const uint64_t *)params->data;
-    for (iter = 0; iter < ITERATIONS; iter+=4) {
-        __m256i numers = _mm256_load_si256((const __m256i*)(data + iter));
-        sumX2 = _mm256_add_epi64(sumX2, libdivide_u64_do_vector(numers, &denom));
+    for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+        VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
+        sumX2 = VECTOR_INTRINSIC_2(add_epi64)(sumX2, libdivide_u64_do_vector(numers, &denom));
     }
     const uint64_t *comps = (const uint64_t *)&sumX2;
-    return comps[0] + comps[1] + comps[2] + comps[3];
+    uint64_t sum = 0;
+    for (size_t i = 0; i < count; i++) {
+        sum += comps[i];
+    }
+    return sum;
 }
 
 NOINLINE static uint64_t mine_u64_vector_branchfree(struct FunctionParams_t *params) {
-    unsigned iter;
-    __m256i sumX2 = _mm256_setzero_si256();
+    size_t count = sizeof(VECTOR_TYPE) / sizeof(uint64_t);
+    VECTOR_TYPE sumX2 = VECTOR_INTRINSIC(setzero_si)();
     const struct libdivide_u64_branchfree_t denom = *(struct libdivide_u64_branchfree_t *)params->denomBranchfreePtr;
     const uint64_t *data = (const uint64_t *)params->data;
-    for (iter = 0; iter < ITERATIONS; iter+=4) {
-        __m256i numers = _mm256_load_si256((const __m256i*)(data + iter));
-        sumX2 = _mm256_add_epi64(sumX2, libdivide_u64_branchfree_do_vector(numers, &denom));
+    for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+        VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
+        sumX2 = VECTOR_INTRINSIC_2(add_epi64)(sumX2, libdivide_u64_branchfree_do_vector(numers, &denom));
     }
     const uint64_t *comps = (const uint64_t *)&sumX2;
-    return comps[0] + comps[1] + comps[2] + comps[3];
-}
-
-#elif defined(LIBDIVIDE_USE_SSE2)
-
-NOINLINE static uint64_t mine_u64_vector_unswitched(struct FunctionParams_t *params) {
-    unsigned iter;
-    __m128i sumX2 = _mm_setzero_si128();
-    const struct libdivide_u64_t denom = *(struct libdivide_u64_t *)params->denomPtr;
-    const uint64_t *data = (const uint64_t *)params->data;
-    int algo = libdivide_u64_get_algorithm(&denom);
-    if (algo == 0) {
-        for (iter = 0; iter < ITERATIONS; iter+=2) {
-            __m128i numers = _mm_load_si128((const __m128i*)(data + iter));
-            sumX2 = _mm_add_epi64(sumX2, libdivide_u64_do_vector_alg0(numers, &denom));
-        }   
+    uint64_t sum = 0;
+    for (size_t i = 0; i < count; i++) {
+        sum += comps[i];
     }
-    else if (algo == 1) {
-        for (iter = 0; iter < ITERATIONS; iter+=2) {
-            __m128i numers = _mm_load_si128((const __m128i*)(data + iter));
-            sumX2 = _mm_add_epi64(sumX2, libdivide_u64_do_vector_alg1(numers, &denom));
-        }   
-    }
-    else if (algo == 2) {
-        for (iter = 0; iter < ITERATIONS; iter+=2) {
-            __m128i numers = _mm_load_si128((const __m128i*)(data + iter));
-            sumX2 = _mm_add_epi64(sumX2, libdivide_u64_do_vector_alg2(numers, &denom));
-        }        
-    }
-    const uint64_t *comps = (const uint64_t *)&sumX2;
-    return comps[0] + comps[1];
-}
-
-NOINLINE static uint64_t mine_u64_vector(struct FunctionParams_t *params) {
-    unsigned iter;
-    __m128i sumX2 = _mm_setzero_si128();
-    const struct libdivide_u64_t denom = *(struct libdivide_u64_t *)params->denomPtr;
-    const uint64_t *data = (const uint64_t *)params->data;
-    for (iter = 0; iter < ITERATIONS; iter+=2) {
-        __m128i numers = _mm_load_si128((const __m128i*)(data + iter));
-        sumX2 = _mm_add_epi64(sumX2, libdivide_u64_do_vector(numers, &denom));
-    }
-    const uint64_t *comps = (const uint64_t *)&sumX2;
-    return comps[0] + comps[1];
-}
-
-NOINLINE static uint64_t mine_u64_vector_branchfree(struct FunctionParams_t *params) {
-    unsigned iter;
-    __m128i sumX2 = _mm_setzero_si128();
-    const struct libdivide_u64_branchfree_t denom = *(struct libdivide_u64_branchfree_t *)params->denomBranchfreePtr;
-    const uint64_t *data = (const uint64_t *)params->data;
-    for (iter = 0; iter < ITERATIONS; iter+=2) {
-        __m128i numers = _mm_load_si128((const __m128i*)(data + iter));
-        sumX2 = _mm_add_epi64(sumX2, libdivide_u64_branchfree_do_vector(numers, &denom));
-    }
-    const uint64_t *comps = (const uint64_t *)&sumX2;
-    return comps[0] + comps[1];
+    return sum;
 }
 
 #endif
@@ -798,21 +663,26 @@ NOINLINE static uint64_t mine_s64_branchfree(struct FunctionParams_t *params) {
     return sum;
 }
 
-#if defined(LIBDIVIDE_USE_AVX2)
+#if defined(LIBDIVIDE_USE_AVX512) || \
+    defined(LIBDIVIDE_USE_AVX2) || \
+    defined(LIBDIVIDE_USE_SSE2)
 
 NOINLINE
 static uint64_t mine_s64_vector(struct FunctionParams_t *params) {
     const struct libdivide_s64_t denom = *(struct libdivide_s64_t *)params->denomPtr;
     const int64_t *data = (const int64_t *)params->data;
+    size_t count = sizeof(VECTOR_TYPE) / sizeof(int64_t);
     
-    unsigned iter;
-    __m256i sumX2 = _mm256_setzero_si256();
-    for (iter = 0; iter < ITERATIONS; iter+=4) {
-        __m256i numers = _mm256_load_si256((const __m256i*)(data + iter));
-        sumX2 = _mm256_add_epi64(sumX2, libdivide_s64_do_vector(numers, &denom));
+    VECTOR_TYPE sumX2 = VECTOR_INTRINSIC(setzero_si)();
+    for (size_t iter = 0; iter < ITERATIONS; iter+=2) {
+        VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
+        sumX2 = VECTOR_INTRINSIC_2(add_epi64)(sumX2, libdivide_s64_do_vector(numers, &denom));
     }
     const int64_t *comps = (const int64_t *)&sumX2;
-    int64_t sum = comps[0] + comps[1] + comps[2] + comps[3];
+    int64_t sum = 0;
+    for (size_t i = 0; i < count; i++) {
+        sum += comps[i];
+    }
     return sum;
 }
 
@@ -820,15 +690,18 @@ NOINLINE
 static uint64_t mine_s64_vector_branchfree(struct FunctionParams_t *params) {
     const struct libdivide_s64_branchfree_t denom = *(struct libdivide_s64_branchfree_t *)params->denomBranchfreePtr;
     const int64_t *data = (const int64_t *)params->data;
+    size_t count = sizeof(VECTOR_TYPE) / sizeof(int64_t);
     
-    unsigned iter;
-    __m256i sumX2 = _mm256_setzero_si256();
-    for (iter = 0; iter < ITERATIONS; iter+=4) {
-        __m256i numers = _mm256_load_si256((const __m256i*)(data + iter));
-        sumX2 = _mm256_add_epi64(sumX2, libdivide_s64_branchfree_do_vector(numers, &denom));
+    VECTOR_TYPE sumX2 = VECTOR_INTRINSIC(setzero_si)();
+    for (size_t iter = 0; iter < ITERATIONS; iter+=2) {
+        VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
+        sumX2 = VECTOR_INTRINSIC_2(add_epi64)(sumX2, libdivide_s64_branchfree_do_vector(numers, &denom));
     }
     const int64_t *comps = (const int64_t *)&sumX2;
-    int64_t sum = comps[0] + comps[1] + comps[2] + comps[3];
+    int64_t sum = 0;
+    for (size_t i = 0; i < count; i++) {
+        sum += comps[i];
+    }
     return sum;
 }
 
@@ -836,119 +709,45 @@ NOINLINE
 static uint64_t mine_s64_vector_unswitched(struct FunctionParams_t *params) {
     const struct libdivide_s64_t denom = *(struct libdivide_s64_t *)params->denomPtr;
     const int64_t *data = (const int64_t *)params->data;
+    size_t count = sizeof(VECTOR_TYPE) / sizeof(int64_t);
     
-    unsigned iter;
-    __m256i sumX2 = _mm256_setzero_si256();
+    VECTOR_TYPE sumX2 = VECTOR_INTRINSIC(setzero_si)();
     int algo = libdivide_s64_get_algorithm(&denom);
     if (algo == 0) {
-        for (iter = 0; iter < ITERATIONS; iter+=4) {
-            __m256i numers = _mm256_load_si256((const __m256i*)(data + iter));
-            sumX2 = _mm256_add_epi64(sumX2, libdivide_s64_do_vector_alg0(numers, &denom));
+        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+            VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
+            sumX2 = VECTOR_INTRINSIC_2(add_epi64)(sumX2, libdivide_s64_do_vector_alg0(numers, &denom));
         }        
     }
     else if (algo == 1) {
-        for (iter = 0; iter < ITERATIONS; iter+=4) {
-            __m256i numers = _mm256_load_si256((const __m256i*)(data + iter));
-            sumX2 = _mm256_add_epi64(sumX2, libdivide_s64_do_vector_alg1(numers, &denom));
+        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+            VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
+            sumX2 = VECTOR_INTRINSIC_2(add_epi64)(sumX2, libdivide_s64_do_vector_alg1(numers, &denom));
         }        
     }
     else if (algo == 2) {
-        for (iter = 0; iter < ITERATIONS; iter+=4) {
-            __m256i numers = _mm256_load_si256((const __m256i*)(data + iter));
-            sumX2 = _mm256_add_epi64(sumX2, libdivide_s64_do_vector_alg2(numers, &denom));
+        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+            VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
+            sumX2 = VECTOR_INTRINSIC_2(add_epi64)(sumX2, libdivide_s64_do_vector_alg2(numers, &denom));
         }        
     }
     else if (algo == 3) {
-        for (iter = 0; iter < ITERATIONS; iter+=4) {
-            __m256i numers = _mm256_load_si256((const __m256i*)(data + iter));
-            sumX2 = _mm256_add_epi64(sumX2, libdivide_s64_do_vector_alg3(numers, &denom));
+        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+            VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
+            sumX2 = VECTOR_INTRINSIC_2(add_epi64)(sumX2, libdivide_s64_do_vector_alg3(numers, &denom));
         }        
     }
     else if (algo == 4) {
-        for (iter = 0; iter < ITERATIONS; iter+=4) {
-            __m256i numers = _mm256_load_si256((const __m256i*)(data + iter));
-            sumX2 = _mm256_add_epi64(sumX2, libdivide_s64_do_vector_alg4(numers, &denom));
+        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+            VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
+            sumX2 = VECTOR_INTRINSIC_2(add_epi64)(sumX2, libdivide_s64_do_vector_alg4(numers, &denom));
         }        
     }
     const int64_t *comps = (const int64_t *)&sumX2;
-    int64_t sum = comps[0] + comps[1] + comps[2] + comps[3];
-    return sum;
-}
-
-#elif defined(LIBDIVIDE_USE_SSE2)
-
-NOINLINE
-static uint64_t mine_s64_vector(struct FunctionParams_t *params) {
-    const struct libdivide_s64_t denom = *(struct libdivide_s64_t *)params->denomPtr;
-    const int64_t *data = (const int64_t *)params->data;
-    
-    unsigned iter;
-    __m128i sumX2 = _mm_setzero_si128();
-    for (iter = 0; iter < ITERATIONS; iter+=2) {
-        __m128i numers = _mm_load_si128((const __m128i*)(data + iter));
-        sumX2 = _mm_add_epi64(sumX2, libdivide_s64_do_vector(numers, &denom));
+    int64_t sum = 0;
+    for (size_t i = 0; i < count; i++) {
+        sum += comps[i];
     }
-    const int64_t *comps = (const int64_t *)&sumX2;
-    int64_t sum = comps[0] + comps[1];
-    return sum;
-}
-
-NOINLINE
-static uint64_t mine_s64_vector_branchfree(struct FunctionParams_t *params) {
-    const struct libdivide_s64_branchfree_t denom = *(struct libdivide_s64_branchfree_t *)params->denomBranchfreePtr;
-    const int64_t *data = (const int64_t *)params->data;
-    
-    unsigned iter;
-    __m128i sumX2 = _mm_setzero_si128();
-    for (iter = 0; iter < ITERATIONS; iter+=2) {
-        __m128i numers = _mm_load_si128((const __m128i*)(data + iter));
-        sumX2 = _mm_add_epi64(sumX2, libdivide_s64_branchfree_do_vector(numers, &denom));
-    }
-    const int64_t *comps = (const int64_t *)&sumX2;
-    int64_t sum = comps[0] + comps[1];
-    return sum;
-}
-
-NOINLINE
-static uint64_t mine_s64_vector_unswitched(struct FunctionParams_t *params) {
-    const struct libdivide_s64_t denom = *(struct libdivide_s64_t *)params->denomPtr;
-    const int64_t *data = (const int64_t *)params->data;
-    
-    unsigned iter;
-    __m128i sumX2 = _mm_setzero_si128();
-    int algo = libdivide_s64_get_algorithm(&denom);
-    if (algo == 0) {
-        for (iter = 0; iter < ITERATIONS; iter+=2) {
-            __m128i numers = _mm_load_si128((const __m128i*)(data + iter));
-            sumX2 = _mm_add_epi64(sumX2, libdivide_s64_do_vector_alg0(numers, &denom));
-        }        
-    }
-    else if (algo == 1) {
-        for (iter = 0; iter < ITERATIONS; iter+=2) {
-            __m128i numers = _mm_load_si128((const __m128i*)(data + iter));
-            sumX2 = _mm_add_epi64(sumX2, libdivide_s64_do_vector_alg1(numers, &denom));
-        }        
-    }
-    else if (algo == 2) {
-        for (iter = 0; iter < ITERATIONS; iter+=2) {
-            __m128i numers = _mm_load_si128((const __m128i*)(data + iter));
-            sumX2 = _mm_add_epi64(sumX2, libdivide_s64_do_vector_alg2(numers, &denom));
-        }        
-    }
-    else if (algo == 3) {
-        for (iter = 0; iter < ITERATIONS; iter+=2) {
-            __m128i numers = _mm_load_si128((const __m128i*)(data + iter));
-            sumX2 = _mm_add_epi64(sumX2, libdivide_s64_do_vector_alg3(numers, &denom));
-        }        
-    }
-    else if (algo == 4) {
-        for (iter = 0; iter < ITERATIONS; iter+=2) {
-            __m128i numers = _mm_load_si128((const __m128i*)(data + iter));
-            sumX2 = _mm_add_epi64(sumX2, libdivide_s64_do_vector_alg4(numers, &denom));
-        }        
-    }
-    const int64_t *comps = (const int64_t *)&sumX2;
-    int64_t sum = comps[0] + comps[1];
     return sum;
 }
 
@@ -1083,8 +882,9 @@ struct TestResult test_one(TestFunc_t mine, TestFunc_t mine_branchfree, TestFunc
         tresult = time_function(mine, params); my_times[iter] = tresult.time; CHECK(tresult.result, expected);
         tresult = time_function(mine_branchfree, params); my_times_branchfree[iter] = tresult.time; CHECK(tresult.result, expected);
         tresult = time_function(mine_unswitched, params); my_times_unswitched[iter] = tresult.time; CHECK(tresult.result, expected);
-#if defined(LIBDIVIDE_USE_SSE2) || \
-    defined(LIBDIVIDE_USE_AVX2)
+#if defined(LIBDIVIDE_USE_AVX512) || \
+    defined(LIBDIVIDE_USE_AVX2) || \
+    defined(LIBDIVIDE_USE_SSE2)
         tresult = time_function(mine_vector, params); my_times_vector[iter] = tresult.time; CHECK(tresult.result, expected);
         tresult = time_function(mine_vector_branchfree, params); my_times_vector_branchfree[iter] = tresult.time; CHECK(tresult.result, expected);
         tresult = time_function(mine_vector_unswitched, params); my_times_vector_unswitched[iter] = tresult.time; CHECK(tresult.result, expected);
