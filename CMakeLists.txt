@@ -17,57 +17,82 @@ if(NOT "${BUILD_TYPE}" MATCHES DEBUG)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
-# Enable GCC/Clang warnings ####################################
+# Check if x86/x64 CPU  ########################################
 
-set(WALL_FLAGS "-Wall -Wno-unknown-pragmas -fstrict-aliasing")
-check_cxx_compiler_flag("${WALL_FLAGS}" wall)
+check_cxx_source_runs("
+    int main()
+    {
+        #if !defined(__i386__) && \
+            !defined(__x86_64__) && \
+            !defined(_M_IX86) && \
+            !defined(_M_X64)
+            Compile error: not x86 CPU architecture
+        #endif
+        return 0;
+    }"
+    cpu_x86)
 
-if(wall)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WALL_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WALL_FLAGS}")
-endif()
+# Check -march=native compiler flag ############################
 
-# Check if compiler supports AVX2 ##############################
+if (cpu_x86)
+    cmake_push_check_state()
+    set(CMAKE_REQUIRED_FLAGS -Werror)
+    check_cxx_compiler_flag(-march=native march_native)
+    cmake_pop_check_state()
 
-cmake_push_check_state()
-set(CMAKE_REQUIRED_FLAGS -Werror)
-check_cxx_compiler_flag(-mavx2 mavx2)
-cmake_pop_check_state()
-
-# Check if CPU supports AVX2 ###################################
-
-if(mavx2)
-    check_cxx_source_runs("
-        #include <immintrin.h>
-        int main()
-        {
-            __m256i a = _mm256_set_epi32(1, 0, 1, 0, 1, 0, 1, 0);
-            __m256i b = _mm256_set_epi32(0, 1, 0, 1, 0, 1, 0, 1);
-            __m256i c = _mm256_add_epi32(a, b);
-            __m256i d = _mm256_sra_epi32(c, 23);
-            return 0;
-        }"
-        cpu_avx2)
-
-    if(cpu_avx2)
-        add_definitions(-DLIBDIVIDE_USE_AVX2)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mavx2")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2")
+    if(march_native)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
     endif()
 endif()
 
-# Check -msse2 compiler flag ###################################
+# Check if CPU supports AVX512/AVX2/SSE2 #######################
 
-if (NOT cpu_avx2)
-    cmake_push_check_state()
-    set(CMAKE_REQUIRED_FLAGS -Werror)
-    check_cxx_compiler_flag(-msse2 msse2)
-    cmake_pop_check_state()
+if(cpu_x86 AND march_native)
+    check_cxx_source_runs("
+        #include <zmmintrin.h>
+        int main()
+        {
+            __m512i a = _mm512_set_epi32(1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0);
+            __m512i b = _mm512_set_epi32(0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1);
+            __m512i c = _mm512_add_epi32(a, b);
+            __m512i d = _mm512_sra_epi32(c, 23);
+            return 0;
+        }"
+        avx512)
 
-    if(msse2)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse2")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2")
-        add_definitions(-DLIBDIVIDE_USE_SSE2)
+    if(avx512)
+        add_definitions(-DLIBDIVIDE_USE_AVX512)
+    else()
+        check_cxx_source_runs("
+            #include <immintrin.h>
+            int main()
+            {
+                __m256i a = _mm256_set_epi32(1, 0, 1, 0, 1, 0, 1, 0);
+                __m256i b = _mm256_set_epi32(0, 1, 0, 1, 0, 1, 0, 1);
+                __m256i c = _mm256_add_epi32(a, b);
+                return 0;
+            }"
+            avx2)
+
+        if(avx2)
+            add_definitions(-DLIBDIVIDE_USE_AVX2)
+        else()
+            check_cxx_source_runs("
+                #include <emmintrin.h>
+                int main()
+                {
+                    __m128i a = _mm_set_epi32(1, 0, 1, 0);
+                    __m128i b = _mm_set_epi32(0, 1, 0, 1);
+                    __m128i c = _mm_add_epi32(a, b);
+                    return 0;
+                }"
+                sse2)
+
+            if(sse2)
+                add_definitions(-DLIBDIVIDE_USE_SSE2)
+            endif()
+        endif()
     endif()
 endif()
 
