@@ -2,10 +2,12 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include "libdivide.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
+#include <time.h> 
 
 #if defined(__GNUC__)
     #define NOINLINE __attribute__((__noinline__))
@@ -30,6 +32,7 @@
 #define NANOSEC_PER_SEC 1000000000ULL
 #define NANOSEC_PER_USEC 1000ULL
 #define NANOSEC_PER_MILLISEC 1000000ULL
+#define SEED { 2147483563, 2147483563 ^ 0x49616E42 }
 
 #if defined(__cplusplus)
     using namespace libdivide;
@@ -53,12 +56,10 @@ struct random_state {
     uint32_t hi;
     uint32_t lo;
 };
- 
-#define SEED {2147483563, 2147483563 ^ 0x49616E42}
-#define ITERATIONS (1 << 19)
-#define GEN_ITERATIONS (1 << 16)
- 
+
 uint64_t sGlobalUInt64;
+size_t iters = 1 << 19;
+size_t genIters = 1 << 16;
  
 static uint32_t my_random(struct random_state *state) {
     state->hi = (state->hi << 16) + (state->hi >> 16);
@@ -117,11 +118,10 @@ static struct time_result time_function(uint64_t (*func)(struct FunctionParams_t
 // U32
  
 NOINLINE static uint64_t mine_u32(struct FunctionParams_t *params) {
-    unsigned iter;
     const struct libdivide_u32_t denom = *(struct libdivide_u32_t *)params->denomPtr;
     const uint32_t *data = (const uint32_t *)params->data;
     uint32_t sum = 0;
-    for (iter = 0; iter < ITERATIONS; iter++) {
+    for (size_t iter = 0; iter < iters; iter++) {
         uint32_t numer = data[iter];
         sum += libdivide_u32_do(numer, &denom);
     }
@@ -129,11 +129,10 @@ NOINLINE static uint64_t mine_u32(struct FunctionParams_t *params) {
 }
 
 NOINLINE static uint64_t mine_u32_branchfree(struct FunctionParams_t *params) {
-    unsigned iter;
     const struct libdivide_u32_branchfree_t denom = *(struct libdivide_u32_branchfree_t *)params->denomBranchfreePtr;
     const uint32_t *data = (const uint32_t *)params->data;
     uint32_t sum = 0;
-    for (iter = 0; iter < ITERATIONS; iter++) {
+    for (size_t iter = 0; iter < iters; iter++) {
         uint32_t numer = data[iter];
         sum += libdivide_u32_branchfree_do(numer, &denom);
     }
@@ -149,7 +148,7 @@ NOINLINE static uint64_t mine_u32_vector(struct FunctionParams_t *params) {
     const struct libdivide_u32_t denom = *(struct libdivide_u32_t *)params->denomPtr;
     const uint32_t *data = (const uint32_t *)params->data;
     VECTOR_TYPE sumX4 = VECTOR_INTRINSIC(setzero_si)();
-        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+        for (size_t iter = 0; iter < iters; iter += count) {
         VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
         sumX4 = VECTOR_INTRINSIC_2(add_epi32)(sumX4, libdivide_u32_do_vector(numers, &denom));
     }
@@ -168,19 +167,19 @@ NOINLINE static uint64_t mine_u32_vector_unswitched(struct FunctionParams_t *par
     VECTOR_TYPE sumX4 = VECTOR_INTRINSIC(setzero_si)();
     int algo = libdivide_u32_get_algorithm(&denom);
     if (algo == 0) {
-        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+        for (size_t iter = 0; iter < iters; iter += count) {
             VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
             sumX4 = VECTOR_INTRINSIC_2(add_epi32)(sumX4, libdivide_u32_do_vector_alg0(numers, &denom));
         }        
     }
     else if (algo == 1) {
-        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+        for (size_t iter = 0; iter < iters; iter += count) {
             VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
             sumX4 = VECTOR_INTRINSIC_2(add_epi32)(sumX4, libdivide_u32_do_vector_alg1(numers, &denom));
         }        
     }
     else if (algo == 2) {
-        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+        for (size_t iter = 0; iter < iters; iter += count) {
             VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
             sumX4 = VECTOR_INTRINSIC_2(add_epi32)(sumX4, libdivide_u32_do_vector_alg2(numers, &denom));
         }        
@@ -198,7 +197,7 @@ NOINLINE static uint64_t mine_u32_vector_branchfree(struct FunctionParams_t *par
     const struct libdivide_u32_branchfree_t denom = *(struct libdivide_u32_branchfree_t *)params->denomBranchfreePtr;
     const uint32_t *data = (const uint32_t *)params->data;
     VECTOR_TYPE sumX4 = VECTOR_INTRINSIC(setzero_si)();
-    for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+    for (size_t iter = 0; iter < iters; iter += count) {
         VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
         sumX4 = VECTOR_INTRINSIC_2(add_epi32)(sumX4, libdivide_u32_branchfree_do_vector(numers, &denom));
     }
@@ -214,25 +213,24 @@ NOINLINE static uint64_t mine_u32_vector_branchfree(struct FunctionParams_t *par
 #endif
 
 NOINLINE static uint64_t mine_u32_unswitched(struct FunctionParams_t *params) {
-    unsigned iter;
     const struct libdivide_u32_t denom = *(struct libdivide_u32_t *)params->denomPtr;
     const uint32_t *data = (const uint32_t *)params->data;
     uint32_t sum = 0;
     int algo = libdivide_u32_get_algorithm(&denom);
     if (algo == 0) {
-        for (iter = 0; iter < ITERATIONS; iter++) {
+        for (size_t iter = 0; iter < iters; iter++) {
             uint32_t numer = data[iter];
             sum += libdivide_u32_do_alg0(numer, &denom);
         }
     }
     else if (algo == 1) {
-        for (iter = 0; iter < ITERATIONS; iter++) {
+        for (size_t iter= 0; iter < iters; iter++) {
             uint32_t numer = data[iter];
             sum += libdivide_u32_do_alg1(numer, &denom);
         }        
     }
     else if (algo == 2) {
-        for (iter = 0; iter < ITERATIONS; iter++) {
+        for (size_t iter= 0; iter < iters; iter++) {
             uint32_t numer = data[iter];
             sum += libdivide_u32_do_alg2(numer, &denom);
         }        
@@ -242,11 +240,10 @@ NOINLINE static uint64_t mine_u32_unswitched(struct FunctionParams_t *params) {
 }
 
 NOINLINE static uint64_t his_u32(struct FunctionParams_t *params) {
-    unsigned iter;
     const uint32_t *data = (const uint32_t *)params->data;
     const uint32_t d = *(uint32_t *)params->d;
     uint32_t sum = 0;
-    for (iter = 0; iter < ITERATIONS; iter++) {
+    for (size_t iter= 0; iter < iters; iter++) {
         uint32_t numer = data[iter];
         sum += numer / d;
     }
@@ -256,8 +253,7 @@ NOINLINE static uint64_t his_u32(struct FunctionParams_t *params) {
 NOINLINE static uint64_t mine_u32_generate(struct FunctionParams_t *params) {
     uint32_t *dPtr = (uint32_t *)params->d;
     struct libdivide_u32_t *denomPtr = (struct libdivide_u32_t *)params->denomPtr;
-    unsigned iter;
-    for (iter = 0; iter < GEN_ITERATIONS; iter++) {
+    for (size_t iter= 0; iter < genIters; iter++) {
         *denomPtr = libdivide_u32_gen(*dPtr);
     }
     return *dPtr;
@@ -266,11 +262,10 @@ NOINLINE static uint64_t mine_u32_generate(struct FunctionParams_t *params) {
 // S32
  
 NOINLINE static uint64_t mine_s32(struct FunctionParams_t *params) {
-    unsigned iter;
     const struct libdivide_s32_t denom = *(struct libdivide_s32_t *)params->denomPtr;
     const int32_t *data = (const int32_t *)params->data;
     int32_t sum = 0;
-    for (iter = 0; iter < ITERATIONS; iter++) {
+    for (size_t iter= 0; iter < iters; iter++) {
         int32_t numer = data[iter];
         sum += libdivide_s32_do(numer, &denom);
     }
@@ -278,11 +273,10 @@ NOINLINE static uint64_t mine_s32(struct FunctionParams_t *params) {
 }
 
 NOINLINE static uint64_t mine_s32_branchfree(struct FunctionParams_t *params) {
-    unsigned iter;
     const struct libdivide_s32_branchfree_t denom = *(struct libdivide_s32_branchfree_t *)params->denomBranchfreePtr;
     const int32_t *data = (const int32_t *)params->data;
     int32_t sum = 0;
-    for (iter = 0; iter < ITERATIONS; iter++) {
+    for (size_t iter= 0; iter < iters; iter++) {
         int32_t numer = data[iter];
         sum += libdivide_s32_branchfree_do(numer, &denom);
     }
@@ -299,7 +293,7 @@ static uint64_t mine_s32_vector(struct FunctionParams_t *params) {
     VECTOR_TYPE sumX4 = VECTOR_INTRINSIC(setzero_si)();
     const struct libdivide_s32_t denom = *(struct libdivide_s32_t *)params->denomPtr;
     const int32_t *data = (const int32_t *)params->data;
-    for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+    for (size_t iter = 0; iter < iters; iter += count) {
         VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
         sumX4 = VECTOR_INTRINSIC_2(add_epi32)(sumX4, libdivide_s32_do_vector(numers, &denom));
     }
@@ -319,31 +313,31 @@ static uint64_t mine_s32_vector_unswitched(struct FunctionParams_t *params) {
     const int32_t *data = (const int32_t *)params->data;
     int algo = libdivide_s32_get_algorithm(&denom);
     if (algo == 0) {
-        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+        for (size_t iter = 0; iter < iters; iter += count) {
             VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
             sumX4 = VECTOR_INTRINSIC_2(add_epi32)(sumX4, libdivide_s32_do_vector_alg0(numers, &denom));
         }        
     }
     else if (algo == 1) {
-        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+        for (size_t iter = 0; iter < iters; iter += count) {
             VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
             sumX4 = VECTOR_INTRINSIC_2(add_epi32)(sumX4, libdivide_s32_do_vector_alg1(numers, &denom));
         }                
     }
     else if (algo == 2) {
-        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+        for (size_t iter = 0; iter < iters; iter += count) {
             VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
             sumX4 = VECTOR_INTRINSIC_2(add_epi32)(sumX4, libdivide_s32_do_vector_alg2(numers, &denom));
         }                
     }
     else if (algo == 3) {
-        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+        for (size_t iter = 0; iter < iters; iter += count) {
             VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
             sumX4 = VECTOR_INTRINSIC_2(add_epi32)(sumX4, libdivide_s32_do_vector_alg3(numers, &denom));
         }                
     }
     else if (algo == 4) {
-        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+        for (size_t iter = 0; iter < iters; iter += count) {
             VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
             sumX4 = VECTOR_INTRINSIC_2(add_epi32)(sumX4, libdivide_s32_do_vector_alg4(numers, &denom));
         }                
@@ -362,7 +356,7 @@ static uint64_t mine_s32_vector_branchfree(struct FunctionParams_t *params) {
     VECTOR_TYPE sumX4 = VECTOR_INTRINSIC(setzero_si)();
     const struct libdivide_s32_branchfree_t denom = *(struct libdivide_s32_branchfree_t *)params->denomBranchfreePtr;
     const int32_t *data = (const int32_t *)params->data;
-    for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+    for (size_t iter = 0; iter < iters; iter += count) {
         VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
         sumX4 = VECTOR_INTRINSIC_2(add_epi32)(sumX4, libdivide_s32_branchfree_do_vector(numers, &denom));
     }
@@ -377,37 +371,36 @@ static uint64_t mine_s32_vector_branchfree(struct FunctionParams_t *params) {
 #endif
 
 NOINLINE static uint64_t mine_s32_unswitched(struct FunctionParams_t *params) {
-    unsigned iter;
     int32_t sum = 0;
     const struct libdivide_s32_t denom = *(struct libdivide_s32_t *)params->denomPtr;
     const int32_t *data = (const int32_t *)params->data;
     int algo = libdivide_s32_get_algorithm(&denom);
     if (algo == 0) {
-        for (iter = 0; iter < ITERATIONS; iter++) {
+        for (size_t iter= 0; iter < iters; iter++) {
             int32_t numer = data[iter];
             sum += libdivide_s32_do_alg0(numer, &denom);
         }
     }
     else if (algo == 1) {
-        for (iter = 0; iter < ITERATIONS; iter++) {
+        for (size_t iter= 0; iter < iters; iter++) {
             int32_t numer = data[iter];
             sum += libdivide_s32_do_alg1(numer, &denom);
         }        
     }
     else if (algo == 2) {
-        for (iter = 0; iter < ITERATIONS; iter++) {
+        for (size_t iter= 0; iter < iters; iter++) {
             int32_t numer = data[iter];
             sum += libdivide_s32_do_alg2(numer, &denom);
         }        
     }
     else if (algo == 3) {
-        for (iter = 0; iter < ITERATIONS; iter++) {
+        for (size_t iter= 0; iter < iters; iter++) {
             int32_t numer = data[iter];
             sum += libdivide_s32_do_alg3(numer, &denom);
         }        
     }
     else if (algo == 4) {
-        for (iter = 0; iter < ITERATIONS; iter++) {
+        for (size_t iter= 0; iter < iters; iter++) {
             int32_t numer = data[iter];
             sum += libdivide_s32_do_alg4(numer, &denom);
         }        
@@ -417,11 +410,10 @@ NOINLINE static uint64_t mine_s32_unswitched(struct FunctionParams_t *params) {
 }
 
 NOINLINE static uint64_t his_s32(struct FunctionParams_t *params) {
-    unsigned iter;
     int32_t sum = 0;
     const int32_t d = *(int32_t *)params->d;
     const int32_t *data = (const int32_t *)params->data;
-    for (iter = 0; iter < ITERATIONS; iter++) {
+    for (size_t iter= 0; iter < iters; iter++) {
         int32_t numer = data[iter];
         sum += numer / d;
     }
@@ -429,10 +421,9 @@ NOINLINE static uint64_t his_s32(struct FunctionParams_t *params) {
 }
 
 NOINLINE static uint64_t mine_s32_generate(struct FunctionParams_t *params) {
-    unsigned iter;
     int32_t *dPtr = (int32_t *)params->d;
     struct libdivide_s32_t *denomPtr = (struct libdivide_s32_t *)params->denomPtr;
-    for (iter = 0; iter < GEN_ITERATIONS; iter++) {
+    for (size_t iter= 0; iter < genIters; iter++) {
         *denomPtr = libdivide_s32_gen(*dPtr);
     }
     return *dPtr;
@@ -441,11 +432,10 @@ NOINLINE static uint64_t mine_s32_generate(struct FunctionParams_t *params) {
 // U64
 
 NOINLINE static uint64_t mine_u64(struct FunctionParams_t *params) {
-    unsigned iter;
     const struct libdivide_u64_t denom = *(struct libdivide_u64_t *)params->denomPtr;
     const uint64_t *data = (const uint64_t *)params->data;
     uint64_t sum = 0;
-    for (iter = 0; iter < ITERATIONS; iter++) {
+    for (size_t iter= 0; iter < iters; iter++) {
         uint64_t numer = data[iter];
         sum += libdivide_u64_do(numer, &denom);
     }
@@ -453,11 +443,10 @@ NOINLINE static uint64_t mine_u64(struct FunctionParams_t *params) {
 }
 
 NOINLINE static uint64_t mine_u64_branchfree(struct FunctionParams_t *params) {
-    unsigned iter;
     const struct libdivide_u64_branchfree_t denom = *(struct libdivide_u64_branchfree_t *)params->denomBranchfreePtr;
     const uint64_t *data = (const uint64_t *)params->data;
     uint64_t sum = 0;
-    for (iter = 0; iter < ITERATIONS; iter++) {
+    for (size_t iter= 0; iter < iters; iter++) {
         uint64_t numer = data[iter];
         sum += libdivide_u64_branchfree_do(numer, &denom);
     }
@@ -465,25 +454,24 @@ NOINLINE static uint64_t mine_u64_branchfree(struct FunctionParams_t *params) {
 }
 
 NOINLINE static uint64_t mine_u64_unswitched(struct FunctionParams_t *params) {
-    unsigned iter;
     uint64_t sum = 0;
     const struct libdivide_u64_t denom = *(struct libdivide_u64_t *)params->denomPtr;
     const uint64_t *data = (const uint64_t *)params->data;
     int algo = libdivide_u64_get_algorithm(&denom);
     if (algo == 0) {
-        for (iter = 0; iter < ITERATIONS; iter++) {
+        for (size_t iter= 0; iter < iters; iter++) {
             uint64_t numer = data[iter];
             sum += libdivide_u64_do_alg0(numer, &denom);
         }
     }
     else if (algo == 1) {
-        for (iter = 0; iter < ITERATIONS; iter++) {
+        for (size_t iter= 0; iter < iters; iter++) {
             uint64_t numer = data[iter];
             sum += libdivide_u64_do_alg1(numer, &denom);
         }        
     }
     else if (algo == 2) {
-        for (iter = 0; iter < ITERATIONS; iter++) {
+        for (size_t iter= 0; iter < iters; iter++) {
             uint64_t numer = data[iter];
             sum += libdivide_u64_do_alg2(numer, &denom);
         }        
@@ -503,19 +491,19 @@ NOINLINE static uint64_t mine_u64_vector_unswitched(struct FunctionParams_t *par
     const uint64_t *data = (const uint64_t *)params->data;
     int algo = libdivide_u64_get_algorithm(&denom);
     if (algo == 0) {
-        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+        for (size_t iter = 0; iter < iters; iter += count) {
             VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
             sumX2 = VECTOR_INTRINSIC_2(add_epi64)(sumX2, libdivide_u64_do_vector_alg0(numers, &denom));
         }   
     }
     else if (algo == 1) {
-        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+        for (size_t iter = 0; iter < iters; iter += count) {
             VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
             sumX2 = VECTOR_INTRINSIC_2(add_epi64)(sumX2, libdivide_u64_do_vector_alg1(numers, &denom));
         }   
     }
     else if (algo == 2) {
-        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+        for (size_t iter = 0; iter < iters; iter += count) {
             VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
             sumX2 = VECTOR_INTRINSIC_2(add_epi64)(sumX2, libdivide_u64_do_vector_alg2(numers, &denom));
         }        
@@ -533,7 +521,7 @@ NOINLINE static uint64_t mine_u64_vector(struct FunctionParams_t *params) {
     VECTOR_TYPE sumX2 = VECTOR_INTRINSIC(setzero_si)();
     const struct libdivide_u64_t denom = *(struct libdivide_u64_t *)params->denomPtr;
     const uint64_t *data = (const uint64_t *)params->data;
-    for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+    for (size_t iter = 0; iter < iters; iter += count) {
         VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
         sumX2 = VECTOR_INTRINSIC_2(add_epi64)(sumX2, libdivide_u64_do_vector(numers, &denom));
     }
@@ -550,7 +538,7 @@ NOINLINE static uint64_t mine_u64_vector_branchfree(struct FunctionParams_t *par
     VECTOR_TYPE sumX2 = VECTOR_INTRINSIC(setzero_si)();
     const struct libdivide_u64_branchfree_t denom = *(struct libdivide_u64_branchfree_t *)params->denomBranchfreePtr;
     const uint64_t *data = (const uint64_t *)params->data;
-    for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+    for (size_t iter = 0; iter < iters; iter += count) {
         VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
         sumX2 = VECTOR_INTRINSIC_2(add_epi64)(sumX2, libdivide_u64_branchfree_do_vector(numers, &denom));
     }
@@ -565,11 +553,10 @@ NOINLINE static uint64_t mine_u64_vector_branchfree(struct FunctionParams_t *par
 #endif
 
 NOINLINE static uint64_t his_u64(struct FunctionParams_t *params) {
-    unsigned iter;
     uint64_t sum = 0;
     const uint64_t d = *(uint64_t *)params->d;
     const uint64_t *data = (const uint64_t *)params->data;
-    for (iter = 0; iter < ITERATIONS; iter++) {
+    for (size_t iter= 0; iter < iters; iter++) {
         uint64_t numer = data[iter];
         sum += numer / d;
     }
@@ -577,21 +564,19 @@ NOINLINE static uint64_t his_u64(struct FunctionParams_t *params) {
 }
 
 NOINLINE static uint64_t mine_u64_generate(struct FunctionParams_t *params) {
-    unsigned iter;
     uint64_t *dPtr = (uint64_t *)params->d;
     struct libdivide_u64_t *denomPtr = (struct libdivide_u64_t *)params->denomPtr;
-    for (iter = 0; iter < GEN_ITERATIONS; iter++) {
+    for (size_t iter= 0; iter < genIters; iter++) {
         *denomPtr = libdivide_u64_gen(*dPtr);
     }
     return *dPtr;
 }
 
 NOINLINE static uint64_t mine_s64(struct FunctionParams_t *params) {
-    unsigned iter;
     const struct libdivide_s64_t denom = *(struct libdivide_s64_t *)params->denomPtr;
     const int64_t *data = (const int64_t *)params->data;
     int64_t sum = 0;
-    for (iter = 0; iter < ITERATIONS; iter++) {
+    for (size_t iter= 0; iter < iters; iter++) {
         int64_t numer = data[iter];
         sum += libdivide_s64_do(numer, &denom);
     }
@@ -599,11 +584,10 @@ NOINLINE static uint64_t mine_s64(struct FunctionParams_t *params) {
 }
 
 NOINLINE static uint64_t mine_s64_branchfree(struct FunctionParams_t *params) {
-    unsigned iter;
     const struct libdivide_s64_branchfree_t denom = *(struct libdivide_s64_branchfree_t *)params->denomBranchfreePtr;
     const int64_t *data = (const int64_t *)params->data;
     int64_t sum = 0;
-    for (iter = 0; iter < ITERATIONS; iter++) {
+    for (size_t iter= 0; iter < iters; iter++) {
         int64_t numer = data[iter];
         sum += libdivide_s64_branchfree_do(numer, &denom);
     }
@@ -621,7 +605,7 @@ static uint64_t mine_s64_vector(struct FunctionParams_t *params) {
     size_t count = sizeof(VECTOR_TYPE) / sizeof(int64_t);
     
     VECTOR_TYPE sumX2 = VECTOR_INTRINSIC(setzero_si)();
-    for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+    for (size_t iter = 0; iter < iters; iter += count) {
         VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
         sumX2 = VECTOR_INTRINSIC_2(add_epi64)(sumX2, libdivide_s64_do_vector(numers, &denom));
     }
@@ -640,7 +624,7 @@ static uint64_t mine_s64_vector_branchfree(struct FunctionParams_t *params) {
     size_t count = sizeof(VECTOR_TYPE) / sizeof(int64_t);
     
     VECTOR_TYPE sumX2 = VECTOR_INTRINSIC(setzero_si)();
-    for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+    for (size_t iter = 0; iter < iters; iter += count) {
         VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
         sumX2 = VECTOR_INTRINSIC_2(add_epi64)(sumX2, libdivide_s64_branchfree_do_vector(numers, &denom));
     }
@@ -661,31 +645,31 @@ static uint64_t mine_s64_vector_unswitched(struct FunctionParams_t *params) {
     VECTOR_TYPE sumX2 = VECTOR_INTRINSIC(setzero_si)();
     int algo = libdivide_s64_get_algorithm(&denom);
     if (algo == 0) {
-        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+        for (size_t iter = 0; iter < iters; iter += count) {
             VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
             sumX2 = VECTOR_INTRINSIC_2(add_epi64)(sumX2, libdivide_s64_do_vector_alg0(numers, &denom));
         }        
     }
     else if (algo == 1) {
-        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+        for (size_t iter = 0; iter < iters; iter += count) {
             VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
             sumX2 = VECTOR_INTRINSIC_2(add_epi64)(sumX2, libdivide_s64_do_vector_alg1(numers, &denom));
         }        
     }
     else if (algo == 2) {
-        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+        for (size_t iter = 0; iter < iters; iter += count) {
             VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
             sumX2 = VECTOR_INTRINSIC_2(add_epi64)(sumX2, libdivide_s64_do_vector_alg2(numers, &denom));
         }        
     }
     else if (algo == 3) {
-        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+        for (size_t iter = 0; iter < iters; iter += count) {
             VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
             sumX2 = VECTOR_INTRINSIC_2(add_epi64)(sumX2, libdivide_s64_do_vector_alg3(numers, &denom));
         }        
     }
     else if (algo == 4) {
-        for (size_t iter = 0; iter < ITERATIONS; iter+=count) {
+        for (size_t iter = 0; iter < iters; iter += count) {
             VECTOR_TYPE numers = VECTOR_INTRINSIC(load_si)((const VECTOR_TYPE*)(data + iter));
             sumX2 = VECTOR_INTRINSIC_2(add_epi64)(sumX2, libdivide_s64_do_vector_alg4(numers, &denom));
         }        
@@ -703,36 +687,35 @@ static uint64_t mine_s64_vector_unswitched(struct FunctionParams_t *params) {
 NOINLINE static uint64_t mine_s64_unswitched(struct FunctionParams_t *params) {
     const struct libdivide_s64_t denom = *(struct libdivide_s64_t *)params->denomPtr;
     const int64_t *data = (const int64_t *)params->data;
-
-    unsigned iter;
     int64_t sum = 0;
     int algo = libdivide_s64_get_algorithm(&denom);
+
     if (algo == 0) {
-        for (iter = 0; iter < ITERATIONS; iter++) {
+        for (size_t iter= 0; iter < iters; iter++) {
             int64_t numer = data[iter];
             sum += libdivide_s64_do_alg0(numer, &denom);
         }
     }
     else if (algo == 1) {
-        for (iter = 0; iter < ITERATIONS; iter++) {
+        for (size_t iter= 0; iter < iters; iter++) {
             int64_t numer = data[iter];
             sum += libdivide_s64_do_alg1(numer, &denom);
         }        
     }
     else if (algo == 2) {
-        for (iter = 0; iter < ITERATIONS; iter++) {
+        for (size_t iter= 0; iter < iters; iter++) {
             int64_t numer = data[iter];
             sum += libdivide_s64_do_alg2(numer, &denom);
         }        
     }
     else if (algo == 3) {
-        for (iter = 0; iter < ITERATIONS; iter++) {
+        for (size_t iter= 0; iter < iters; iter++) {
             int64_t numer = data[iter];
             sum += libdivide_s64_do_alg3(numer, &denom);
         }        
     }
     else if (algo == 4) {
-        for (iter = 0; iter < ITERATIONS; iter++) {
+        for (size_t iter= 0; iter < iters; iter++) {
             int64_t numer = data[iter];
             sum += libdivide_s64_do_alg4(numer, &denom);
         }        
@@ -744,10 +727,8 @@ NOINLINE static uint64_t mine_s64_unswitched(struct FunctionParams_t *params) {
 NOINLINE static uint64_t his_s64(struct FunctionParams_t *params) {
     const int64_t *data = (const int64_t *)params->data;
     const int64_t d = *(int64_t *)params->d;
-
-    unsigned iter;
     int64_t sum = 0;
-    for (iter = 0; iter < ITERATIONS; iter++) {
+    for (size_t iter= 0; iter < iters; iter++) {
         int64_t numer = data[iter];
         sum += numer / d;
     }
@@ -757,8 +738,7 @@ NOINLINE static uint64_t his_s64(struct FunctionParams_t *params) {
 NOINLINE static uint64_t mine_s64_generate(struct FunctionParams_t *params) {
     int64_t *dPtr = (int64_t *)params->d;
     struct libdivide_s64_t *denomPtr = (struct libdivide_s64_t *)params->denomPtr;
-    unsigned iter;
-    for (iter = 0; iter < GEN_ITERATIONS; iter++) {
+    for (size_t iter= 0; iter < genIters; iter++) {
         *denomPtr = libdivide_s64_gen(*dPtr);
     }
     return *dPtr;
@@ -816,9 +796,8 @@ struct TestResult test_one(TestFunc_t mine, TestFunc_t mine_branchfree, TestFunc
 #define CHECK(actual, expected) do { if (1 && actual != expected) printf("Failure on line %lu\n", (unsigned long)__LINE__); } while (0)
     
     uint64_t my_times[TEST_COUNT], my_times_branchfree[TEST_COUNT], my_times_unswitched[TEST_COUNT], my_times_vector[TEST_COUNT], my_times_vector_unswitched[TEST_COUNT], my_times_vector_branchfree[TEST_COUNT], his_times[TEST_COUNT], gen_times[TEST_COUNT];
-    unsigned iter;
     struct time_result tresult;
-    for (iter = 0; iter < TEST_COUNT; iter++) {
+    for (size_t iter= 0; iter < TEST_COUNT; iter++) {
         tresult = time_function(his, params); his_times[iter] = tresult.time; const uint64_t expected = tresult.result;
         tresult = time_function(mine, params); my_times[iter] = tresult.time; CHECK(tresult.result, expected);
         tresult = time_function(mine_branchfree, params); my_times_branchfree[iter] = tresult.time; CHECK(tresult.result, expected);
@@ -840,15 +819,15 @@ struct TestResult test_one(TestFunc_t mine, TestFunc_t mine_branchfree, TestFunc
         tresult = time_function(generate, params); gen_times[iter] = tresult.time;
     }
         
-    result.gen_time = find_min(gen_times, TEST_COUNT) / (double)GEN_ITERATIONS;
-    result.my_base_time = find_min(my_times, TEST_COUNT) / (double)ITERATIONS;
-    result.my_branchfree_time = find_min(my_times_branchfree, TEST_COUNT) / (double)ITERATIONS;
-    result.my_vector_time = find_min(my_times_vector, TEST_COUNT) / (double)ITERATIONS;
-	//printf("%f - %f\n", find_min(my_times_vector, TEST_COUNT) / (double)ITERATIONS, result.my_vector_time);
-    result.my_unswitched_time = find_min(my_times_unswitched, TEST_COUNT) / (double)ITERATIONS;
-    result.my_vector_branchfree_time = find_min(my_times_vector_branchfree, TEST_COUNT) / (double)ITERATIONS;
-    result.my_vector_unswitched_time = find_min(my_times_vector_unswitched, TEST_COUNT) / (double)ITERATIONS;
-    result.his_time = find_min(his_times, TEST_COUNT) / (double)ITERATIONS;
+    result.gen_time = find_min(gen_times, TEST_COUNT) / (double)genIters;
+    result.my_base_time = find_min(my_times, TEST_COUNT) / (double)iters;
+    result.my_branchfree_time = find_min(my_times_branchfree, TEST_COUNT) / (double)iters;
+    result.my_vector_time = find_min(my_times_vector, TEST_COUNT) / (double)iters;
+	//printf("%f - %f\n", find_min(my_times_vector, TEST_COUNT) / (double)iters, result.my_vector_time);
+    result.my_unswitched_time = find_min(my_times_unswitched, TEST_COUNT) / (double)iters;
+    result.my_vector_branchfree_time = find_min(my_times_vector_branchfree, TEST_COUNT) / (double)iters;
+    result.my_vector_unswitched_time = find_min(my_times_vector_unswitched, TEST_COUNT) / (double)iters;
+    result.his_time = find_min(his_times, TEST_COUNT) / (double)iters;
     return result;
 #undef TEST_COUNT
 }
@@ -1003,11 +982,11 @@ static void test_many_s64(const int64_t *data) {
 static const uint32_t *random_data(unsigned multiple) {
 #if defined(LIBDIVIDE_WINDOWS)
     /* Align memory to 64 byte boundary for AVX512 */
-    uint32_t *data = (uint32_t *) _aligned_malloc(multiple * ITERATIONS * sizeof *data, 64);
+    uint32_t *data = (uint32_t *) _aligned_malloc(multiple * iters * sizeof *data, 64);
 #else
     /* Align memory to 64 byte boundary for AVX512 */
     void *ptr = NULL;
-    int failed = posix_memalign(&ptr, 64, multiple * ITERATIONS * sizeof(uint32_t));
+    int failed = posix_memalign(&ptr, 64, multiple * iters * sizeof(uint32_t));
     if (failed) {
         printf("Failed to align memory!\n");
         exit(1);
@@ -1016,7 +995,7 @@ static const uint32_t *random_data(unsigned multiple) {
 #endif
     uint32_t i;
     struct random_state state = SEED;
-    for (i=0; i < ITERATIONS * multiple; i++) {
+    for (i=0; i < iters * multiple; i++) {
         data[i] = my_random(&state);
     }
     return data;
@@ -1040,6 +1019,17 @@ int main(int argc, char* argv[]) {
             else printf("Unknown test '%s'\n", argv[i]), exit(0);
         }
     }
+
+    /*
+     * Make sure that the number of iterations is not
+     * known at compile time to prevent the compiler
+     * from magically calculating results at compile
+     * time and hence falsifying the benchmark.
+     */
+    srand((unsigned) time(NULL));
+    iters += (rand() % 3) * (1 << 10);
+    genIters += (rand() % 3) * (1 << 10);
+
     const uint32_t *data = NULL;
     data = random_data(1);
     if (u32) test_many_u32(data);
