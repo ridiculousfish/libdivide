@@ -199,7 +199,6 @@ NOINLINE static uint64_t mine_u32_vector_unswitched(struct FunctionParams_t *par
     return sum;
 }
 
-
 NOINLINE static uint64_t mine_u32_vector_branchfree(struct FunctionParams_t *params) {
     size_t count = sizeof(VECTOR_TYPE) / sizeof(uint32_t);
     const struct libdivide_u32_branchfree_t denom = *(struct libdivide_u32_branchfree_t *)params->denomBranchfreePtr;
