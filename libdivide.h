@@ -1428,12 +1428,12 @@ static inline __m512i libdivide_mullhi_u32_flat_vector(__m512i a, __m512i b) {
 // https://stackoverflow.com/a/28827013
 static inline __m512i libdivide_mullhi_u64_flat_vector(__m512i x, __m512i y) {    
     __m512i lomask = _mm512_set1_epi64(0xffffffff);
-    __m512i xh = _mm512_shuffle_epi32(x, 0xB1);        // x0l, x0h, x1l, x1h
-    __m512i yh = _mm512_shuffle_epi32(y, 0xB1);        // y0l, y0h, y1l, y1h
-    __m512i w0 = _mm512_mul_epu32(x, y);               // x0l*y0l, x1l*y1l
-    __m512i w1 = _mm512_mul_epu32(x, yh);              // x0l*y0h, x1l*y1h
-    __m512i w2 = _mm512_mul_epu32(xh, y);              // x0h*y0l, x1h*y0l
-    __m512i w3 = _mm512_mul_epu32(xh, yh);             // x0h*y0h, x1h*y1h
+    __m512i xh = _mm512_shuffle_epi32(x, (_MM_PERM_ENUM) 0xB1);
+    __m512i yh = _mm512_shuffle_epi32(y, (_MM_PERM_ENUM) 0xB1);
+    __m512i w0 = _mm512_mul_epu32(x, y);
+    __m512i w1 = _mm512_mul_epu32(x, yh);
+    __m512i w2 = _mm512_mul_epu32(xh, y);
+    __m512i w3 = _mm512_mul_epu32(xh, yh);
     __m512i w0h = _mm512_srli_epi64(w0, 32);
     __m512i s1 = _mm512_add_epi64(w1, w0h);
     __m512i s1l = _mm512_and_si512(s1, lomask);
