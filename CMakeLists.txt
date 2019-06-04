@@ -110,6 +110,22 @@ target_include_directories(primes_benchmark PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}
 
 target_link_libraries(tester Threads::Threads)
 
+# Disable auto vectorization for benchmark #####################
+
+if(avx512 OR avx2 OR sse2)
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        check_cxx_compiler_flag("-fno-slp-vectorize" fno_slp_vectorize)
+        if(fno_slp_vectorize)
+            target_compile_options(benchmark PRIVATE "-fno-slp-vectorize")
+        endif()
+    elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+        check_cxx_compiler_flag("-fno-tree-vectorize" fno_tree_vectorize)
+        if(fno_tree_vectorize)
+            target_compile_options(benchmark PRIVATE "-fno-tree-vectorize")
+        endif()
+    endif()
+endif()
+
 # Enable testing ###############################################
 
 enable_testing()

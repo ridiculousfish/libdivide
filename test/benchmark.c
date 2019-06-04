@@ -114,11 +114,8 @@ static struct time_result time_function(uint64_t (*func)(struct FunctionParams_t
 	return tresult;
 }
 
-//U32
+// U32
  
-#if __GNUC__
-__attribute__((optimize("no-tree-vectorize")))
-#endif
 NOINLINE static uint64_t mine_u32(struct FunctionParams_t *params) {
     unsigned iter;
     const struct libdivide_u32_t denom = *(struct libdivide_u32_t *)params->denomPtr;
@@ -131,9 +128,6 @@ NOINLINE static uint64_t mine_u32(struct FunctionParams_t *params) {
     return sum;
 }
 
-#if __GNUC__
-__attribute__((optimize("no-tree-vectorize")))
-#endif
 NOINLINE static uint64_t mine_u32_branchfree(struct FunctionParams_t *params) {
     unsigned iter;
     const struct libdivide_u32_branchfree_t denom = *(struct libdivide_u32_branchfree_t *)params->denomBranchfreePtr;
@@ -219,9 +213,6 @@ NOINLINE static uint64_t mine_u32_vector_branchfree(struct FunctionParams_t *par
 
 #endif
 
-#if __GNUC__
-__attribute__((optimize("no-tree-vectorize")))
-#endif
 NOINLINE static uint64_t mine_u32_unswitched(struct FunctionParams_t *params) {
     unsigned iter;
     const struct libdivide_u32_t denom = *(struct libdivide_u32_t *)params->denomPtr;
@@ -249,10 +240,7 @@ NOINLINE static uint64_t mine_u32_unswitched(struct FunctionParams_t *params) {
  
     return sum;
 }
- 
-#if __GNUC__
-__attribute__((optimize("no-tree-vectorize")))
-#endif
+
 NOINLINE static uint64_t his_u32(struct FunctionParams_t *params) {
     unsigned iter;
     const uint32_t *data = (const uint32_t *)params->data;
@@ -264,10 +252,7 @@ NOINLINE static uint64_t his_u32(struct FunctionParams_t *params) {
     }
     return sum;
 }
- 
-#if __GNUC__
-__attribute__((optimize("no-tree-vectorize")))
-#endif
+
 NOINLINE static uint64_t mine_u32_generate(struct FunctionParams_t *params) {
     uint32_t *dPtr = (uint32_t *)params->d;
     struct libdivide_u32_t *denomPtr = (struct libdivide_u32_t *)params->denomPtr;
@@ -278,11 +263,8 @@ NOINLINE static uint64_t mine_u32_generate(struct FunctionParams_t *params) {
     return *dPtr;
 }
  
-//S32
+// S32
  
-#if __GNUC__
-__attribute__((optimize("no-tree-vectorize")))
-#endif
 NOINLINE static uint64_t mine_s32(struct FunctionParams_t *params) {
     unsigned iter;
     const struct libdivide_s32_t denom = *(struct libdivide_s32_t *)params->denomPtr;
@@ -295,9 +277,6 @@ NOINLINE static uint64_t mine_s32(struct FunctionParams_t *params) {
     return sum;
 }
 
-#if __GNUC__
-__attribute__((optimize("no-tree-vectorize")))
-#endif
 NOINLINE static uint64_t mine_s32_branchfree(struct FunctionParams_t *params) {
     unsigned iter;
     const struct libdivide_s32_branchfree_t denom = *(struct libdivide_s32_branchfree_t *)params->denomBranchfreePtr;
@@ -397,9 +376,6 @@ static uint64_t mine_s32_vector_branchfree(struct FunctionParams_t *params) {
 
 #endif
 
-#if __GNUC__
-__attribute__((optimize("no-tree-vectorize")))
-#endif
 NOINLINE static uint64_t mine_s32_unswitched(struct FunctionParams_t *params) {
     unsigned iter;
     int32_t sum = 0;
@@ -440,9 +416,6 @@ NOINLINE static uint64_t mine_s32_unswitched(struct FunctionParams_t *params) {
     return (uint64_t)sum;
 }
 
-#if __GNUC__
-__attribute__((optimize("no-tree-vectorize")))
-#endif
 NOINLINE static uint64_t his_s32(struct FunctionParams_t *params) {
     unsigned iter;
     int32_t sum = 0;
@@ -454,10 +427,7 @@ NOINLINE static uint64_t his_s32(struct FunctionParams_t *params) {
     }
     return sum;
 }
- 
-#if __GNUC__
-__attribute__((optimize("no-tree-vectorize")))
-#endif
+
 NOINLINE static uint64_t mine_s32_generate(struct FunctionParams_t *params) {
     unsigned iter;
     int32_t *dPtr = (int32_t *)params->d;
@@ -467,13 +437,9 @@ NOINLINE static uint64_t mine_s32_generate(struct FunctionParams_t *params) {
     }
     return *dPtr;
 }
- 
- 
-//U64
- 
-#if __GNUC__
-__attribute__((optimize("no-tree-vectorize")))
-#endif
+
+// U64
+
 NOINLINE static uint64_t mine_u64(struct FunctionParams_t *params) {
     unsigned iter;
     const struct libdivide_u64_t denom = *(struct libdivide_u64_t *)params->denomPtr;
@@ -486,9 +452,6 @@ NOINLINE static uint64_t mine_u64(struct FunctionParams_t *params) {
     return sum;
 }
 
-#if __GNUC__
-__attribute__((optimize("no-tree-vectorize")))
-#endif
 NOINLINE static uint64_t mine_u64_branchfree(struct FunctionParams_t *params) {
     unsigned iter;
     const struct libdivide_u64_branchfree_t denom = *(struct libdivide_u64_branchfree_t *)params->denomBranchfreePtr;
@@ -501,9 +464,6 @@ NOINLINE static uint64_t mine_u64_branchfree(struct FunctionParams_t *params) {
     return sum;
 }
 
-#if __GNUC__
-__attribute__((optimize("no-tree-vectorize")))
-#endif
 NOINLINE static uint64_t mine_u64_unswitched(struct FunctionParams_t *params) {
     unsigned iter;
     uint64_t sum = 0;
@@ -604,9 +564,6 @@ NOINLINE static uint64_t mine_u64_vector_branchfree(struct FunctionParams_t *par
 
 #endif
 
-#if __GNUC__
-__attribute__((optimize("no-tree-vectorize")))
-#endif
 NOINLINE static uint64_t his_u64(struct FunctionParams_t *params) {
     unsigned iter;
     uint64_t sum = 0;
@@ -618,10 +575,7 @@ NOINLINE static uint64_t his_u64(struct FunctionParams_t *params) {
     }
     return sum;
 }
- 
-#if __GNUC__
-__attribute__((optimize("no-tree-vectorize")))
-#endif
+
 NOINLINE static uint64_t mine_u64_generate(struct FunctionParams_t *params) {
     unsigned iter;
     uint64_t *dPtr = (uint64_t *)params->d;
@@ -632,9 +586,6 @@ NOINLINE static uint64_t mine_u64_generate(struct FunctionParams_t *params) {
     return *dPtr;
 }
 
-#if __GNUC__
-__attribute__((optimize("no-tree-vectorize")))
-#endif
 NOINLINE static uint64_t mine_s64(struct FunctionParams_t *params) {
     unsigned iter;
     const struct libdivide_s64_t denom = *(struct libdivide_s64_t *)params->denomPtr;
@@ -647,9 +598,6 @@ NOINLINE static uint64_t mine_s64(struct FunctionParams_t *params) {
     return sum;
 }
 
-#if __GNUC__
-__attribute__((optimize("no-tree-vectorize")))
-#endif
 NOINLINE static uint64_t mine_s64_branchfree(struct FunctionParams_t *params) {
     unsigned iter;
     const struct libdivide_s64_branchfree_t denom = *(struct libdivide_s64_branchfree_t *)params->denomBranchfreePtr;
@@ -752,9 +700,6 @@ static uint64_t mine_s64_vector_unswitched(struct FunctionParams_t *params) {
 
 #endif
 
-#if __GNUC__
-__attribute__((optimize("no-tree-vectorize")))
-#endif
 NOINLINE static uint64_t mine_s64_unswitched(struct FunctionParams_t *params) {
     const struct libdivide_s64_t denom = *(struct libdivide_s64_t *)params->denomPtr;
     const int64_t *data = (const int64_t *)params->data;
@@ -795,10 +740,7 @@ NOINLINE static uint64_t mine_s64_unswitched(struct FunctionParams_t *params) {
     
     return sum;
 }
- 
-#if __GNUC__
-__attribute__((optimize("no-tree-vectorize")))
-#endif
+
 NOINLINE static uint64_t his_s64(struct FunctionParams_t *params) {
     const int64_t *data = (const int64_t *)params->data;
     const int64_t d = *(int64_t *)params->d;
@@ -811,10 +753,7 @@ NOINLINE static uint64_t his_s64(struct FunctionParams_t *params) {
     }
     return sum;
 }
- 
-#if __GNUC__
-__attribute__((optimize("no-tree-vectorize")))
-#endif
+
 NOINLINE static uint64_t mine_s64_generate(struct FunctionParams_t *params) {
     int64_t *dPtr = (int64_t *)params->d;
     struct libdivide_s64_t *denomPtr = (struct libdivide_s64_t *)params->denomPtr;
