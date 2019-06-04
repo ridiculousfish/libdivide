@@ -1061,11 +1061,12 @@ static void test_many_s64(const int64_t *data) {
  
 static const uint32_t *random_data(unsigned multiple) {
 #if defined(LIBDIVIDE_WINDOWS)
-    uint32_t *data = (uint32_t *)malloc(multiple * ITERATIONS * sizeof *data);
+    /* Align memory to 64 byte boundary for AVX512 */
+    uint32_t *data = (uint32_t *) _aligned_malloc(multiple * ITERATIONS * sizeof *data, 64);
 #else
-    /* Linux doesn't always give us data sufficiently aligned for SSE, so we can't use malloc(). */
+    /* Align memory to 64 byte boundary for AVX512 */
     void *ptr = NULL;
-    int failed = posix_memalign(&ptr, 32, multiple * ITERATIONS * sizeof(uint32_t));
+    int failed = posix_memalign(&ptr, 64, multiple * ITERATIONS * sizeof(uint32_t));
     if (failed) {
         printf("Failed to align memory!\n");
         exit(1);
@@ -1102,11 +1103,22 @@ int main(int argc, char* argv[]) {
     data = random_data(1);
     if (u32) test_many_u32(data);
     if (s32) test_many_s32((const int32_t *)data);
+
+#if defined(LIBDIVIDE_WINDOWS)
+    _aligned_free((void *)data);
+#else
     free((void *)data);
-    
+#endif
+
     data = random_data(2);
     if (u64) test_many_u64((const uint64_t *)data);
     if (s64) test_many_s64((const int64_t *)data);
+
+#if defined(LIBDIVIDE_WINDOWS)
+    _aligned_free((void *)data);
+#else
     free((void *)data);
+#endif
+
     return 0;
 }
