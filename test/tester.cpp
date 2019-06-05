@@ -1,3 +1,13 @@
+// Usage: tester [OPTIONS]
+//
+// You can pass the tester program one or more of the following options:
+// u32, s32, u64, s64 or run it without arguments to test all four.
+// The tester is multithreaded so it can test multiple cases simultaneously.
+// The tester will verify the correctness of libdivide via a set of
+// randomly chosen denominators, by comparing the result of libdivide's
+// division to hardware division. It may take a long time to run, but it
+// will output as soon as it finds a discrepancy.
+
 #include "libdivide.h"
 
 #include <limits.h>
@@ -13,17 +23,17 @@
 #include <sstream>
 
 #if defined(_WIN32) || defined(WIN32)
-/* Windows makes you do a lot to stop it from "helping" */
-#if !defined(NOMINMAX)
-#define NOMINMAX
-#endif
-#define WIN32_LEAN_AND_MEAN
-#define VC_EXTRALEAN
-#include <windows.h>
-#define LIBDIVIDE_WINDOWS
+    // Windows makes you do a lot to stop it from "helping"
+    #if !defined(NOMINMAX)
+        #define NOMINMAX
+    #endif
+    #define WIN32_LEAN_AND_MEAN
+    #define VC_EXTRALEAN
+    #include <windows.h>
+    #define LIBDIVIDE_WINDOWS
 #else
-/* Linux or Mac OS X or other Unix */
-#include <pthread.h>
+    // Linux or Mac OS X or other Unix
+    #include <pthread.h>
 #endif
 
 using namespace std;
@@ -328,14 +338,24 @@ int main(int argc, char* argv[]) {
         sRunU32 = sRunU64 = sRunS32 = sRunS64 = 1;
     }
     else {
-        int i;
-        for (i=1; i < argc; i++) {
+        for (int i = 1; i < argc; i++) {
             if (! strcmp(argv[i], "u32")) sRunU32 = 1;
             else if (! strcmp(argv[i], "u64")) sRunU64 = 1;
             else if (! strcmp(argv[i], "s32")) sRunS32 = 1;
             else if (! strcmp(argv[i], "s64")) sRunS64 = 1;
-            else printf("Unknown test '%s'\n", argv[i]), exit(0);
-        }        
+            else {
+                printf("Usage: tester [OPTIONS]\n"
+                       "\n"
+                       "You can pass the tester program one or more of the following options:\n"
+                       "u32, s32, u64, s64 or run it without arguments to test all four.\n"
+                       "The tester is multithreaded so it can test multiple cases simultaneously.\n"
+                       "The tester will verify the correctness of libdivide via a set of\n"
+                       "randomly chosen denominators, by comparing the result of libdivide's\n"
+                       "division to hardware division. It may take a long time to run, but it\n"
+                       "will output as soon as it finds a discrepancy.\n");
+                exit(1);
+            }
+        }
     }
 
 /* We could use dispatch, but we prefer to use pthreads because dispatch won't run all four tests at once on a two core machine */
@@ -365,5 +385,7 @@ int main(int argc, char* argv[]) {
         pthread_join(threads[i], &dummy);
     }
 #endif
+
+    printf("\nAll tests passed successfully!\n");
     return 0;
 }
