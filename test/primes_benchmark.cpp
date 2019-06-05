@@ -10,9 +10,11 @@
 #include "libdivide.h"
 
 #if defined(__GNUC__)
-#define NOINLINE __attribute__((__noinline__))
+    #define NOINLINE __attribute__((__noinline__))
+#elif defined(_MSC_VER)
+    #define NOINLINE __declspec(noinline)
 #else
-#define NOINLINE
+    #define NOINLINE
 #endif
 
 template<typename T, int ALGO>
@@ -23,8 +25,8 @@ struct prime_divider_t {
     prime_divider_t(T v) : value(v), divider(v) {}
 };
 
-template<typename T, int ALGO> NOINLINE
-size_t count_primes_libdivide(T max)
+template<typename T, int ALGO>
+NOINLINE size_t count_primes_libdivide(T max)
 {
     std::vector<prime_divider_t<T, ALGO> > primes;
     primes.push_back(2);
@@ -45,8 +47,8 @@ size_t count_primes_libdivide(T max)
     return primes.size();
 }
 
-template<typename T> NOINLINE
-size_t count_primes_system(T max)
+template<typename T>
+NOINLINE size_t count_primes_system(T max)
 {
     std::vector<T> primes;
     primes.push_back(2);
