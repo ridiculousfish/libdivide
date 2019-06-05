@@ -142,9 +142,10 @@ void measure_times(tasks_t tasks, T max, size_t iters) {
         std::cerr << "Disagreement in branchfree path for type " << typeid(T).name() << ": libdivide says " << branchfree.result << " but system says " << sys.result << std::endl;
         std::exit(1);
     }
-    if (test_system) std::cout << "\t    system: " << sys.duration << " seconds" << std::endl;
-    if (test_branchfull) std::cout << "\tbranchfull: " << branchfull.duration << " seconds" << std::endl;
-    if (test_branchfree) std::cout << "\tbranchfree: " << branchfree.duration << " seconds" << std::endl;
+    if (test_system) std::cout << "    system: " << sys.duration << " seconds" << std::endl;
+    if (test_branchfull) std::cout << "branchfull: " << branchfull.duration << " seconds" << std::endl;
+    if (test_branchfree) std::cout << "branchfree: " << branchfree.duration << " seconds" << std::endl;
+    std::cout << std::endl;
 }
 
 static void usage() {
@@ -159,10 +160,10 @@ int main(int argc, const char *argv[]) {
         const char * arg = argv[i];
         if (! strcmp(arg, "u32")) {
             tasks |= TEST_U32;
-        } else if (! strcmp(arg, "u64")) {
-            tasks |= TEST_U64;
         } else if (! strcmp(arg, "s32")) {
             tasks |= TEST_S32;
+        } else if (! strcmp(arg, "u64")) {
+            tasks |= TEST_U64;
         } else if (! strcmp(arg, "s64")) {
             tasks |= TEST_S64;
         } else if (! strcmp(arg, "branchfree")) {
@@ -192,19 +193,22 @@ int main(int argc, const char *argv[]) {
         measure_times<uint32_t>(tasks, 400000, iters);
     }
     
-    if (tasks & TEST_U64) {
-        std::cout << "----- u64 -----" << std::endl;
-        measure_times<uint64_t>(tasks, 400000, iters);
-    }
-    
     if (tasks & TEST_S32) {
         std::cout << "----- s32 -----" << std::endl;
         measure_times<int32_t>(tasks, 400000, iters);
     }
     
+    if (tasks & TEST_U64) {
+        std::cout << "----- u64 -----" << std::endl;
+        measure_times<uint64_t>(tasks, 400000, iters);
+    }
+
     if (tasks & TEST_S64) {
         std::cout << "----- s64 -----" << std::endl;
         measure_times<int64_t>(tasks, 400000, iters);
     }
+
+    std::cout << "All tests passed successfully!" << std::endl;
+
     return 0;
 }
