@@ -998,7 +998,7 @@ static const uint32_t *random_data(unsigned sizeOfType) {
         printf("Failed to align memory!\n");
         exit(1);
     }
-    uint32_t *data = ptr;
+    uint32_t *data = (uint32_t*) ptr;
 #endif
     size_t size = (iters * sizeOfType) / sizeof(*data);
     struct random_state state = SEED;
