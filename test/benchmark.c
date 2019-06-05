@@ -978,24 +978,24 @@ static void test_many_s64(const int64_t *data) {
         if (d > 0) d++;
     }
 }
- 
-static const uint32_t *random_data(unsigned multiple) {
+
+static const uint32_t *random_data(unsigned sizeOfType) {
 #if defined(LIBDIVIDE_WINDOWS)
     /* Align memory to 64 byte boundary for AVX512 */
-    uint32_t *data = (uint32_t *) _aligned_malloc(multiple * iters * sizeof *data, 64);
+    uint32_t *data = (uint32_t *) _aligned_malloc(iters * sizeOfType, 64);
 #else
     /* Align memory to 64 byte boundary for AVX512 */
     void *ptr = NULL;
-    int failed = posix_memalign(&ptr, 64, multiple * iters * sizeof(uint32_t));
+    int failed = posix_memalign(&ptr, 64, iters * sizeOfType);
     if (failed) {
         printf("Failed to align memory!\n");
         exit(1);
     }
     uint32_t *data = ptr;
 #endif
-    uint32_t i;
+    size_t size = (iters * sizeOfType) / sizeof(*data);
     struct random_state state = SEED;
-    for (i=0; i < iters * multiple; i++) {
+    for (size_t i = 0; i < size; i++) {
         data[i] = my_random(&state);
     }
     return data;
@@ -1031,7 +1031,7 @@ int main(int argc, char* argv[]) {
     genIters += (rand() % 3) * (1 << 10);
 
     const uint32_t *data = NULL;
-    data = random_data(1);
+    data = random_data(sizeof(uint32_t));
     if (u32) test_many_u32(data);
     if (s32) test_many_s32((const int32_t *)data);
 
@@ -1041,7 +1041,7 @@ int main(int argc, char* argv[]) {
     free((void *)data);
 #endif
 
-    data = random_data(2);
+    data = random_data(sizeof(uint64_t));
     if (u64) test_many_u64((const uint64_t *)data);
     if (s64) test_many_s64((const int64_t *)data);
 
