@@ -1444,8 +1444,8 @@ static inline __m512i libdivide_mullhi_u64_flat_vector(__m512i x, __m512i y) {
 static inline __m512i libdivide_mullhi_s64_flat_vector(__m512i x, __m512i y) {
     __m512i p = libdivide_mullhi_u64_flat_vector(x, y);
     __m512i t1 = _mm512_and_si512(libdivide_s64_signbits(x), y);
-    p = _mm512_sub_epi64(p, t1);
     __m512i t2 = _mm512_and_si512(libdivide_s64_signbits(y), x);
+    p = _mm512_sub_epi64(p, t1);
     p = _mm512_sub_epi64(p, t2);
     return p;
 }
@@ -2202,8 +2202,8 @@ static inline __m128i libdivide_mullhi_u64_flat_vector(__m128i x, __m128i y) {
 static inline __m128i libdivide_mullhi_s64_flat_vector(__m128i x, __m128i y) {
     __m128i p = libdivide_mullhi_u64_flat_vector(x, y);
     __m128i t1 = _mm_and_si128(libdivide_s64_signbits(x), y);
-    p = _mm_sub_epi64(p, t1);
     __m128i t2 = _mm_and_si128(libdivide_s64_signbits(y), x);
+    p = _mm_sub_epi64(p, t1);
     p = _mm_sub_epi64(p, t2);
     return p;
 }
