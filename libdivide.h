@@ -2151,11 +2151,6 @@ LIBDIVIDE_API __m128i libdivide_s64_branchfree_do_vector(__m128i numers, const s
 
 //////// Internal Utility Functions
 
-// Returns an __m128i whose low 32 bits are equal to x and has zero elsewhere.
-static inline __m128i libdivide_u32_to_m128i(uint32_t x) {
-    return _mm_set_epi32(0, 0, 0, x);
-}
-
 // Implementation of _mm_srai_epi64(v, 63) (from AVX512).
 static inline __m128i libdivide_s64_signbits(__m128i v) {
     __m128i hiBitsDuped = _mm_shuffle_epi32(v, _MM_SHUFFLE(3, 3, 1, 1));
@@ -2167,7 +2162,7 @@ static inline __m128i libdivide_s64_signbits(__m128i v) {
 static inline __m128i libdivide_s64_shift_right_vector(__m128i v, int amt) {
     const int b = 64 - amt;
     __m128i m = _mm_set1_epi64x(1ULL << (b - 1));
-    __m128i x = _mm_srl_epi64(v, libdivide_u32_to_m128i(amt));
+    __m128i x = _mm_srli_epi64(v, amt);
     __m128i result = _mm_sub_epi64(_mm_xor_si128(x, m), m);
     return result;
 }
@@ -2232,7 +2227,7 @@ __m128i libdivide_u32_do_vector(__m128i numers, const struct libdivide_u32_t *de
     uint8_t more = denom->more;
     if (more & LIBDIVIDE_U32_SHIFT_PATH) {
         uint32_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
-        return _mm_srl_epi32(numers, libdivide_u32_to_m128i(shift));
+        return _mm_srli_epi32(numers, shift);
     }
     else {
         __m128i q = libdivide_mullhi_u32_flat_vector(numers, _mm_set1_epi32(denom->magic));
@@ -2241,34 +2236,33 @@ __m128i libdivide_u32_do_vector(__m128i numers, const struct libdivide_u32_t *de
             // return t >> denom->shift;
             uint32_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
             __m128i t = _mm_add_epi32(_mm_srli_epi32(_mm_sub_epi32(numers, q), 1), q);
-            return _mm_srl_epi32(t, libdivide_u32_to_m128i(shift));
+            return _mm_srli_epi32(t, shift);
         }
         else {
-            // q >> denom->shift
-            return _mm_srl_epi32(q, libdivide_u32_to_m128i(more));
+            return _mm_srli_epi32(q, more);
         }
     }
 }
 
 __m128i libdivide_u32_do_vector_alg0(__m128i numers, const struct libdivide_u32_t *denom) {
-    return _mm_srl_epi32(numers, libdivide_u32_to_m128i(denom->more & LIBDIVIDE_32_SHIFT_MASK));
+    return _mm_srli_epi32(numers, denom->more & LIBDIVIDE_32_SHIFT_MASK);
 }
 
 __m128i libdivide_u32_do_vector_alg1(__m128i numers, const struct libdivide_u32_t *denom) {
     __m128i q = libdivide_mullhi_u32_flat_vector(numers, _mm_set1_epi32(denom->magic));
-    return _mm_srl_epi32(q, libdivide_u32_to_m128i(denom->more));
+    return _mm_srli_epi32(q, denom->more);
 }
 
 __m128i libdivide_u32_do_vector_alg2(__m128i numers, const struct libdivide_u32_t *denom) {
     __m128i q = libdivide_mullhi_u32_flat_vector(numers, _mm_set1_epi32(denom->magic));
     __m128i t = _mm_add_epi32(_mm_srli_epi32(_mm_sub_epi32(numers, q), 1), q);
-    return _mm_srl_epi32(t, libdivide_u32_to_m128i(denom->more & LIBDIVIDE_32_SHIFT_MASK));
+    return _mm_srli_epi32(t, denom->more & LIBDIVIDE_32_SHIFT_MASK);
 }
 
 LIBDIVIDE_API __m128i libdivide_u32_branchfree_do_vector(__m128i numers, const struct libdivide_u32_branchfree_t *denom) {
     __m128i q = libdivide_mullhi_u32_flat_vector(numers, _mm_set1_epi32(denom->magic));
     __m128i t = _mm_add_epi32(_mm_srli_epi32(_mm_sub_epi32(numers, q), 1), q);
-    return _mm_srl_epi32(t, libdivide_u32_to_m128i(denom->more));
+    return _mm_srli_epi32(t, denom->more);
 }
 
 ////////// UINT64
@@ -2277,7 +2271,7 @@ __m128i libdivide_u64_do_vector(__m128i numers, const struct libdivide_u64_t *de
     uint8_t more = denom->more;
     if (more & LIBDIVIDE_U64_SHIFT_PATH) {
         uint32_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
-        return _mm_srl_epi64(numers, libdivide_u32_to_m128i(shift));
+        return _mm_srli_epi64(numers, shift);
     }
     else {
         __m128i q = libdivide_mullhi_u64_flat_vector(numers, _mm_set1_epi64x(denom->magic));
@@ -2286,34 +2280,33 @@ __m128i libdivide_u64_do_vector(__m128i numers, const struct libdivide_u64_t *de
             // return t >> denom->shift;
             uint32_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
             __m128i t = _mm_add_epi64(_mm_srli_epi64(_mm_sub_epi64(numers, q), 1), q);
-            return _mm_srl_epi64(t, libdivide_u32_to_m128i(shift));
+            return _mm_srli_epi64(t, shift);
         }
         else {
-            // q >> denom->shift
-            return _mm_srl_epi64(q, libdivide_u32_to_m128i(more));
+            return _mm_srli_epi64(q, more);
         }
     }
 }
 
 __m128i libdivide_u64_do_vector_alg0(__m128i numers, const struct libdivide_u64_t *denom) {
-    return _mm_srl_epi64(numers, libdivide_u32_to_m128i(denom->more & LIBDIVIDE_64_SHIFT_MASK));
+    return _mm_srli_epi64(numers, denom->more & LIBDIVIDE_64_SHIFT_MASK);
 }
 
 __m128i libdivide_u64_do_vector_alg1(__m128i numers, const struct libdivide_u64_t *denom) {
     __m128i q = libdivide_mullhi_u64_flat_vector(numers, _mm_set1_epi64x(denom->magic));
-    return _mm_srl_epi64(q, libdivide_u32_to_m128i(denom->more));
+    return _mm_srli_epi64(q, denom->more);
 }
 
 __m128i libdivide_u64_do_vector_alg2(__m128i numers, const struct libdivide_u64_t *denom) {
     __m128i q = libdivide_mullhi_u64_flat_vector(numers, _mm_set1_epi64x(denom->magic));
     __m128i t = _mm_add_epi64(_mm_srli_epi64(_mm_sub_epi64(numers, q), 1), q);
-    return _mm_srl_epi64(t, libdivide_u32_to_m128i(denom->more & LIBDIVIDE_64_SHIFT_MASK));
+    return _mm_srli_epi64(t, denom->more & LIBDIVIDE_64_SHIFT_MASK);
 }
 
 __m128i libdivide_u64_branchfree_do_vector(__m128i numers, const struct libdivide_u64_branchfree_t *denom) {
     __m128i q = libdivide_mullhi_u64_flat_vector(numers, _mm_set1_epi64x(denom->magic));
     __m128i t = _mm_add_epi64(_mm_srli_epi64(_mm_sub_epi64(numers, q), 1), q);
-    return _mm_srl_epi64(t, libdivide_u32_to_m128i(denom->more));
+    return _mm_srli_epi64(t, denom->more);
 }
 
 ////////// SINT32
@@ -2326,7 +2319,7 @@ __m128i libdivide_s32_do_vector(__m128i numers, const struct libdivide_s32_t *de
         __m128i roundToZeroTweak = _mm_set1_epi32(mask);
         // q = numer + ((numer >> 31) & roundToZeroTweak);
         __m128i q = _mm_add_epi32(numers, _mm_and_si128(_mm_srai_epi32(numers, 31), roundToZeroTweak));
-        q = _mm_sra_epi32(q, libdivide_u32_to_m128i(shift));
+        q = _mm_srai_epi32(q, shift);
         // set all bits of shift mask = to the sign bit of more
         __m128i shiftMask = _mm_set1_epi32((int32_t)((int8_t)more >> 7));
         // q = (q ^ shiftMask) - shiftMask;
@@ -2342,7 +2335,7 @@ __m128i libdivide_s32_do_vector(__m128i numers, const struct libdivide_s32_t *de
             q = _mm_add_epi32(q, _mm_sub_epi32(_mm_xor_si128(numers, sign), sign));
         }
         // q >>= shift
-        q = _mm_sra_epi32(q, libdivide_u32_to_m128i(more & LIBDIVIDE_32_SHIFT_MASK));
+        q = _mm_srai_epi32(q, more & LIBDIVIDE_32_SHIFT_MASK);
         q = _mm_add_epi32(q, _mm_srli_epi32(q, 31)); // q += (q < 0)
         return q;
     }
@@ -2353,7 +2346,7 @@ __m128i libdivide_s32_do_vector_alg0(__m128i numers, const struct libdivide_s32_
     uint32_t mask = (1U << shift) - 1;
     __m128i roundToZeroTweak = _mm_set1_epi32(mask);
     __m128i q = _mm_add_epi32(numers, _mm_and_si128(_mm_srai_epi32(numers, 31), roundToZeroTweak));
-    return _mm_sra_epi32(q, libdivide_u32_to_m128i(shift));
+    return _mm_srai_epi32(q, shift);
 }
 
 __m128i libdivide_s32_do_vector_alg1(__m128i numers, const struct libdivide_s32_t *denom) {
@@ -2361,13 +2354,13 @@ __m128i libdivide_s32_do_vector_alg1(__m128i numers, const struct libdivide_s32_
     uint32_t mask = (1U << shift) - 1;
     __m128i roundToZeroTweak = _mm_set1_epi32(mask);
     __m128i q = _mm_add_epi32(numers, _mm_and_si128(_mm_srai_epi32(numers, 31), roundToZeroTweak));
-    return _mm_sub_epi32(_mm_setzero_si128(), _mm_sra_epi32(q, libdivide_u32_to_m128i(shift)));
+    return _mm_sub_epi32(_mm_setzero_si128(), _mm_srai_epi32(q, shift));
 }
 
 __m128i libdivide_s32_do_vector_alg2(__m128i numers, const struct libdivide_s32_t *denom) {
     __m128i q = libdivide_mullhi_s32_flat_vector(numers, _mm_set1_epi32(denom->magic));
     q = _mm_add_epi32(q, numers);
-    q = _mm_sra_epi32(q, libdivide_u32_to_m128i(denom->more & LIBDIVIDE_32_SHIFT_MASK));
+    q = _mm_srai_epi32(q, denom->more & LIBDIVIDE_32_SHIFT_MASK);
     q = _mm_add_epi32(q, _mm_srli_epi32(q, 31));
     return q;
 }
@@ -2375,7 +2368,7 @@ __m128i libdivide_s32_do_vector_alg2(__m128i numers, const struct libdivide_s32_
 __m128i libdivide_s32_do_vector_alg3(__m128i numers, const struct libdivide_s32_t *denom) {
     __m128i q = libdivide_mullhi_s32_flat_vector(numers, _mm_set1_epi32(denom->magic));
     q = _mm_sub_epi32(q, numers);
-    q = _mm_sra_epi32(q, libdivide_u32_to_m128i(denom->more & LIBDIVIDE_32_SHIFT_MASK));
+    q = _mm_srai_epi32(q, denom->more & LIBDIVIDE_32_SHIFT_MASK);
     q = _mm_add_epi32(q, _mm_srli_epi32(q, 31));
     return q;
 }
@@ -2383,7 +2376,7 @@ __m128i libdivide_s32_do_vector_alg3(__m128i numers, const struct libdivide_s32_
 __m128i libdivide_s32_do_vector_alg4(__m128i numers, const struct libdivide_s32_t *denom) {
     uint8_t more = denom->more;
     __m128i q = libdivide_mullhi_s32_flat_vector(numers, _mm_set1_epi32(denom->magic));
-    q = _mm_sra_epi32(q, libdivide_u32_to_m128i(more & LIBDIVIDE_32_SHIFT_MASK));
+    q = _mm_srai_epi32(q, more & LIBDIVIDE_32_SHIFT_MASK);
     q = _mm_add_epi32(q, _mm_srli_epi32(q, 31)); // q += (q < 0)
     return q;
 }
