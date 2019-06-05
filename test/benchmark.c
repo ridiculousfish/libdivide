@@ -1,3 +1,14 @@
+// Usage: benchmark [OPTIONS]
+//
+// You can pass the benchmark program one or more of the following
+// options: u32, s32, u64, s64 to compare libdivide's speed against
+// hardware division. If benchmark is run without any options u64
+// is used as default option. benchmark tests a simple function that
+// inputs an array of random numerators and a single divisor, and
+// returns the sum of their quotients. It tests this using both
+// hardware division, and the various division approaches supported
+// by libdivide, including vector division.
+
 // Silence MSVC sprintf unsafe warnings
 #define _CRT_SECURE_NO_WARNINGS
 
@@ -1011,27 +1022,41 @@ int main(int argc, char* argv[]) {
 #if defined(LIBDIVIDE_WINDOWS)
 	QueryPerformanceFrequency(&gPerfCounterFreq);
 #endif
-    int i, u32 = 0, u64 = 0, s32 = 0, s64 = 0;
+    int u32 = 0;
+    int s32 = 0;
+    int u64 = 0;
+    int s64 = 0;
+
     if (argc == 1) {
-        /* Test all */
-        u32 = u64 = s32 = s64 = 1;
+        // By default test only u64
+        u64 = 1;
     }
     else {
-        for (i=1; i < argc; i++) {
+        for (int i = 1; i < argc; i++) {
             if (! strcmp(argv[i], "u32")) u32 = 1;
             else if (! strcmp(argv[i], "u64")) u64 = 1;
             else if (! strcmp(argv[i], "s32")) s32 = 1;
             else if (! strcmp(argv[i], "s64")) s64 = 1;
-            else printf("Unknown test '%s'\n", argv[i]), exit(0);
+            else {
+                printf("Usage: benchmark [OPTIONS]\n"
+                       "\n"
+                       "You can pass the benchmark program one or more of the following\n"
+                       "options: u32, s32, u64, s64 to compare libdivide's speed against\n"
+                       "hardware division. If benchmark is run without any options u64\n"
+                       "is used as default option. benchmark tests a simple function that\n"
+                       "inputs an array of random numerators and a single divisor, and\n"
+                       "returns the sum of their quotients. It tests this using both\n"
+                       "hardware division, and the various division approaches supported\n"
+                       "by libdivide, including vector division.\n");
+                exit(1);
+            }
         }
     }
 
-    /*
-     * Make sure that the number of iterations is not
-     * known at compile time to prevent the compiler
-     * from magically calculating results at compile
-     * time and hence falsifying the benchmark.
-     */
+    // Make sure that the number of iterations is not
+    // known at compile time to prevent the compiler
+    // from magically calculating results at compile
+    // time and hence falsifying the benchmark.
     srand((unsigned) time(NULL));
     iters += (rand() % 3) * (1 << 10);
     genIters += (rand() % 3) * (1 << 10);
