@@ -1414,8 +1414,7 @@ static inline __m512i libdivide_s64_shift_right_vector(__m512i v, int amt) {
     return _mm512_srai_epi64(v, amt);
 }
 
-// Here, b is assumed to contain one 32 bit value repeated four times.
-// If it did not, the function would not work.
+// Here, b is assumed to contain one 32-bit value repeated.
 static inline __m512i libdivide_mullhi_u32_flat_vector(__m512i a, __m512i b) {
     __m512i hi_product_0Z2Z = _mm512_srli_epi64(_mm512_mul_epu32(a, b), 32);
     __m512i a1X3X = _mm512_srli_epi64(a, 32);
@@ -1424,7 +1423,7 @@ static inline __m512i libdivide_mullhi_u32_flat_vector(__m512i a, __m512i b) {
     return _mm512_or_si512(hi_product_0Z2Z, hi_product_Z1Z3);
 }
 
-// Here, y is assumed to contain one 64 bit value repeated twice.
+// Here, y is assumed to contain one 64-bit value repeated.
 // https://stackoverflow.com/a/28827013
 static inline __m512i libdivide_mullhi_u64_flat_vector(__m512i x, __m512i y) {    
     __m512i lomask = _mm512_set1_epi64(0xffffffff);
@@ -1446,7 +1445,7 @@ static inline __m512i libdivide_mullhi_u64_flat_vector(__m512i x, __m512i y) {
     return hi;
 }
 
-// y is one 64 bit value repeated twice
+// y is one 64-bit value repeated.
 static inline __m512i libdivide_mullhi_s64_flat_vector(__m512i x, __m512i y) {
     __m512i p = libdivide_mullhi_u64_flat_vector(x, y);
     __m512i t1 = _mm512_and_si512(libdivide_s64_signbits(x), y);
@@ -1456,7 +1455,7 @@ static inline __m512i libdivide_mullhi_s64_flat_vector(__m512i x, __m512i y) {
     return p;
 }
 
-// b is one 32 bit value repeated four times.
+// b is one 32-bit value repeated.
 static inline __m512i libdivide_mullhi_s32_flat_vector(__m512i a, __m512i b) {
     __m512i hi_product_0Z2Z = _mm512_srli_epi64(_mm512_mul_epi32(a, b), 32);
     __m512i a1X3X = _mm512_srli_epi64(a, 32);
@@ -1799,18 +1798,16 @@ static inline __m256i libdivide_s64_shift_right_vector(__m256i v, int amt) {
     return result;
 }
 
-// Here, b is assumed to contain one 32 bit value repeated four times.
-// If it did not, the function would not work.
+// Here, b is assumed to contain one 32-bit value repeated.
 static inline __m256i libdivide_mullhi_u32_flat_vector(__m256i a, __m256i b) {
     __m256i hi_product_0Z2Z = _mm256_srli_epi64(_mm256_mul_epu32(a, b), 32);
     __m256i a1X3X = _mm256_srli_epi64(a, 32);
     __m256i mask = _mm256_set_epi32(-1, 0, -1, 0, -1, 0, -1, 0);
     __m256i hi_product_Z1Z3 = _mm256_and_si256(_mm256_mul_epu32(a1X3X, b), mask);
-    // return hi_product_0123
     return _mm256_or_si256(hi_product_0Z2Z, hi_product_Z1Z3);
 }
 
-// Here, y is assumed to contain one 64 bit value repeated twice.
+// Here, y is assumed to contain one 64-bit value repeated.
 // https://stackoverflow.com/a/28827013
 static inline __m256i libdivide_mullhi_u64_flat_vector(__m256i x, __m256i y) {    
     __m256i lomask = _mm256_set1_epi64x(0xffffffff);
@@ -1832,7 +1829,7 @@ static inline __m256i libdivide_mullhi_u64_flat_vector(__m256i x, __m256i y) {
     return hi;
 }
 
-// y is one 64 bit value repeated twice
+// y is one 64-bit value repeated.
 static inline __m256i libdivide_mullhi_s64_flat_vector(__m256i x, __m256i y) {
     __m256i p = libdivide_mullhi_u64_flat_vector(x, y);
     __m256i t1 = _mm256_and_si256(libdivide_s64_signbits(x), y);
@@ -1842,7 +1839,7 @@ static inline __m256i libdivide_mullhi_s64_flat_vector(__m256i x, __m256i y) {
     return p;
 }
 
-// b is one 32 bit value repeated four times.
+// b is one 32-bit value repeated.
 static inline __m256i libdivide_mullhi_s32_flat_vector(__m256i a, __m256i b) {
     __m256i hi_product_0Z2Z = _mm256_srli_epi64(_mm256_mul_epi32(a, b), 32);
     __m256i a1X3X = _mm256_srli_epi64(a, 32);
@@ -2185,18 +2182,16 @@ static inline __m128i libdivide_s64_shift_right_vector(__m128i v, int amt) {
     return result;
 }
 
-// Here, b is assumed to contain one 32 bit value repeated four times.
-// If it did not, the function would not work.
+// Here, b is assumed to contain one 32-bit value repeated.
 static inline __m128i libdivide_mullhi_u32_flat_vector(__m128i a, __m128i b) {
     __m128i hi_product_0Z2Z = _mm_srli_epi64(_mm_mul_epu32(a, b), 32);
     __m128i a1X3X = _mm_srli_epi64(a, 32);
     __m128i mask = _mm_set_epi32(-1, 0, -1, 0);
     __m128i hi_product_Z1Z3 = _mm_and_si128(_mm_mul_epu32(a1X3X, b), mask);
-    // return hi_product_0123
     return _mm_or_si128(hi_product_0Z2Z, hi_product_Z1Z3);
 }
 
-// Here, y is assumed to contain one 64 bit value repeated twice.
+// Here, y is assumed to contain one 64-bit value repeated.
 // https://stackoverflow.com/a/28827013
 static inline __m128i libdivide_mullhi_u64_flat_vector(__m128i x, __m128i y) {    
     __m128i lomask = _mm_set1_epi64x(0xffffffff);
@@ -2218,7 +2213,7 @@ static inline __m128i libdivide_mullhi_u64_flat_vector(__m128i x, __m128i y) {
     return hi;
 }
 
-// y is one 64 bit value repeated twice
+// y is one 64-bit value repeated.
 static inline __m128i libdivide_mullhi_s64_flat_vector(__m128i x, __m128i y) {
     __m128i p = libdivide_mullhi_u64_flat_vector(x, y);
     __m128i t1 = _mm_and_si128(libdivide_s64_signbits(x), y);
