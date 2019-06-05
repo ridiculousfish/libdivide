@@ -1818,17 +1818,13 @@ static inline __m256i libdivide_mullhi_u64_flat_vector(__m256i x, __m256i y) {
 }
 
 // y is one 64-bit value repeated.
-// https://stackoverflow.com/a/28827013
 static inline __m256i libdivide_mullhi_s64_flat_vector(__m256i x, __m256i y) {
-    __m256i hi = libdivide_mullhi_u64_flat_vector(x, y);
-    // hi -= ((x<0) ? y : 0)  + ((y<0) ? x : 0);
-    __m256i xs = _mm256_cmpgt_epi64(_mm256_setzero_si256(), x);
-    __m256i ys = _mm256_cmpgt_epi64(_mm256_setzero_si256(), y);           
-    __m256i t1 = _mm256_and_si256(y, xs);
-    __m256i t2 = _mm256_and_si256(x, ys);
-    hi = _mm256_sub_epi64(hi, t1);
-    hi = _mm256_sub_epi64(hi, t2);
-    return hi;
+    __m256i p = libdivide_mullhi_u64_flat_vector(x, y);
+    __m256i t1 = _mm256_and_si256(libdivide_s64_signbits(x), y);
+    __m256i t2 = _mm256_and_si256(libdivide_s64_signbits(y), x);
+    p = _mm256_sub_epi64(p, t1);
+    p = _mm256_sub_epi64(p, t2);
+    return p;
 }
 
 // b is one 32-bit value repeated.
