@@ -92,30 +92,6 @@ private:
         return result;
     }
     
-    void test_unswitching(T, T, const divider<T, BRANCHFREE> &) {
-        // No unswitching in branchfree
-    }
-
-    void test_unswitching(T numer, T denom, const divider<T, BRANCHFULL> & the_divider) {
-        T expect = numer / denom;
-        T actual2 = -1;
-        switch (the_divider.get_algorithm()) {
-            case 0: actual2 = numer / unswitch<0>(the_divider); break;
-            case 1: actual2 = numer / unswitch<1>(the_divider); break;
-            case 2: actual2 = numer / unswitch<2>(the_divider); break;
-            case 3: actual2 = numer / unswitch<3>(the_divider); break;
-            case 4: actual2 = numer / unswitch<4>(the_divider); break;
-            default:
-                cout << "Unexpected algorithm" << the_divider.get_algorithm() << endl;
-                while (1) ;
-                break;
-        }
-        if (actual2 != expect) {
-            cerr << "Unswitched failure for " << testcase_name(BRANCHFULL) << ": " <<  numer << " / " << denom << " expected " << expect << " actual " << actual2 <<  " algo " << the_divider.get_algorithm() << endl;
-            exit(1);
-        }
-    }
-    
     template<int ALGO>
     void test_one(T numer, T denom, const divider<T, ALGO> & the_divider) {
         // Don't crash with INT_MIN / -1
@@ -129,7 +105,6 @@ private:
             cerr << "Failure for " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " expected " << expect << " actual " << actual1 << endl;
             exit(1);
         }
-        test_unswitching(numer, denom, the_divider);
     }
 
 #if defined(LIBDIVIDE_AVX512) || \
