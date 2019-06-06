@@ -118,6 +118,28 @@ Caveats of branchfree divider:
 * Branchfree divider cannot be ```-1```, ```0```, ```1```
 * Faster for unsigned types than for signed types
 
+# Vector division
+
+libdivide supports [SSE2](https://en.wikipedia.org/wiki/SSE2),
+[AVX2](https://en.wikipedia.org/wiki/Advanced_Vector_Extensions) and
+[AVX512](https://en.wikipedia.org/wiki/Advanced_Vector_Extensions)
+vector division on x86 and x64 CPUs. In the example below we divide the packed 32-bit
+integers inside an AVX512 vector using libdivide. libdivide supports 32-bit and 64-bit
+vector division for both signed and unsigned integers.
+
+```C++
+#include "libdivide.h"
+
+void divide(std::vector<__m512i>& vect, uint32_t divisor)
+{
+    libdivide::divider<uint32_t> fast_d(divisor);
+
+    // AVX512 vector division
+    for (auto& n : vect)
+        n /= fast_d;
+}
+```
+
 # Build instructions
 
 libdivide has one test program and two benchmark programs which can be built using cmake and
