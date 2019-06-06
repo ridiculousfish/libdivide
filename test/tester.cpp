@@ -1,4 +1,15 @@
+// Usage: tester [OPTIONS]
+//
+// You can pass the tester program one or more of the following options:
+// u32, s32, u64, s64 or run it without arguments to test all four.
+// The tester is multithreaded so it can test multiple cases simultaneously.
+// The tester will verify the correctness of libdivide via a set of
+// randomly chosen denominators, by comparing the result of libdivide's
+// division to hardware division. It may take a long time to run, but it
+// will output as soon as it finds a discrepancy.
+
 #include "libdivide.h"
+
 #include <limits.h>
 #include <limits>
 #include <stdio.h>
@@ -9,23 +20,20 @@
 #include <limits>
 #include <string.h>
 #include <string>
-
-#if defined(LIBDIVIDE_USE_SSE2)
-#include <emmintrin.h>
-#endif
+#include <sstream>
 
 #if defined(_WIN32) || defined(WIN32)
-/* Windows makes you do a lot to stop it from "helping" */
-#if !defined(NOMINMAX)
-#define NOMINMAX
-#endif
-#define WIN32_LEAN_AND_MEAN
-#define VC_EXTRALEAN
-#include <windows.h>
-#define LIBDIVIDE_WINDOWS
+    // Windows makes you do a lot to stop it from "helping"
+    #if !defined(NOMINMAX)
+        #define NOMINMAX
+    #endif
+    #define WIN32_LEAN_AND_MEAN
+    #define VC_EXTRALEAN
+    #include <windows.h>
+    #define LIBDIVIDE_WINDOWS
 #else
-/* Linux or Mac OS X or other Unix */
-#include <pthread.h>
+    // Linux or Mac OS X or other Unix
+    #include <pthread.h>
 #endif
 
 using namespace std;
@@ -124,33 +132,58 @@ private:
         test_unswitching(numer, denom, the_divider);
     }
 
-#if defined(LIBDIVIDE_USE_SSE2)
-    template<int ALGO>
-    void test_four(const T *numers, T denom, const divider<T, ALGO> & the_divider) {
-        const size_t count = 16 / sizeof(T);
-#if defined(LIBDIVIDE_VC)
-        _declspec(align(16)) T results[count];
-#else
-        T __attribute__((aligned)) results[count];
+#if defined(LIBDIVIDE_AVX512) || \
+    defined(LIBDIVIDE_AVX2) || \
+    defined(LIBDIVIDE_SSE2)   
+
+#if defined(LIBDIVIDE_AVX512)
+    #define VECTOR_TYPE __m512i
+    #define VECTOR_LOAD _mm512_loadu_si512
+#elif defined(LIBDIVIDE_AVX2)
+    #define VECTOR_TYPE __m256i
+    #define VECTOR_LOAD _mm256_loadu_si256
+#elif defined(LIBDIVIDE_SSE2)
+    #define VECTOR_TYPE __m128i
+    #define VECTOR_LOAD _mm_loadu_si128
 #endif
-        __m128i resultVector = _mm_loadu_si128((const __m128i *)numers) / the_divider;
-        *(__m128i *)results = resultVector;
-        size_t i;
-        for (i = 0; i < count; i++) {
-            T numer = numers[i];
-            T actual = results[i];
-            T expect = numer / denom;
-            if (actual != expect) {
-                cerr << "Vector failure for " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " expected " << expect << " actual " << actual << endl;
-                exit(1);
-            }
-            else {
-                //cout << "Vector success for " << numer << " / " << denom << " = " << actual << " (" << i << ")" << endl;
+
+    template<int ALGO>
+    void test_16(const T *numers, T denom, const divider<T, ALGO> & the_divider) {
+        // Align memory to 64 byte boundary for AVX512
+        char mem[16 * sizeof(T) + 64];
+        size_t offset = 64 - (size_t)&mem % 64;
+        T* results = (T*) &mem[offset];
+
+        size_t iters = 64 / sizeof(VECTOR_TYPE);
+        size_t size = sizeof(VECTOR_TYPE) / sizeof(T);
+
+        for (size_t j = 0; j < iters; j++, numers += size) {
+            VECTOR_TYPE x = VECTOR_LOAD((const VECTOR_TYPE*) numers);
+            VECTOR_TYPE resultVector = x / the_divider;
+            results = (T*) &resultVector;
+
+            for (size_t i = 0; i < size; i++) {
+                T numer = numers[i];
+                T actual = results[i];
+                T expect = numer / denom;
+                if (actual != expect) {
+                    ostringstream oss;
+                    oss << "Vector failure for: " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " expected " << expect << " actual " << actual << endl;
+                    cerr << oss.str();
+                    exit(1);
+                }
+                else {
+                    #if 0
+                        ostringstream oss;
+                        oss << "Vector success for: " << numer << " / " << denom << " = " << actual << " (" << i << ")" << endl;
+                        cout << oss.str();
+                    #endif
+                }
             }
         }
     }
 #endif
-    
+
     template<int ALGO>
     void test_many(T denom) {
         // Don't try dividing by +/- 1 with branchfree
@@ -164,22 +197,31 @@ private:
             cerr << "Failed to recover divisor for " << testcase_name(ALGO) << ": "<< denom << ", but got " << recovered << endl;
             exit(1);
         }
-        
-        size_t j;
-        for (j=0; j < 100000 / 4; j++) {
-            T numers[4] = {(T)this->next_random(), (T)this->next_random(), (T)this->next_random(), (T)this->next_random()};
-            test_one(numers[0], denom, the_divider);
-            test_one(numers[1], denom, the_divider);
-            test_one(numers[2], denom, the_divider);
-            test_one(numers[3], denom, the_divider);
-#if defined(LIBDIVIDE_USE_SSE2)
-            test_four(numers, denom, the_divider);
+
+        // Align memory to 64 byte boundary for AVX512
+        char mem[16 * sizeof(T) + 64];
+        size_t offset = 64 - (size_t)&mem % 64;
+        T* numers = (T*) &mem[offset];
+
+        for (size_t i = 0; i < 100000 / 16; i++) {
+            for (size_t j = 0; j < 16; j++) {
+                numers[j] = (T) this->next_random();
+            }
+            for (size_t j = 0; j < 16; j++) {
+                test_one(numers[j], denom, the_divider);
+            }
+
+#if defined(LIBDIVIDE_AVX512) || \
+    defined(LIBDIVIDE_AVX2) || \
+    defined(LIBDIVIDE_SSE2)   
+            test_16(numers, denom, the_divider);
 #endif
         }
         const T min = limits::min(), max = limits::max();
         const T wellKnownNumers[] = {0, max, max-1, max/2, max/2 - 1, min, min/2, min/4, 1, 2, 3, 4, 5, 6, 7, 8, 10, 36847, 50683, SHRT_MAX};
-        for (j=0; j < sizeof wellKnownNumers / sizeof *wellKnownNumers; j++) {
-            if (wellKnownNumers[j] == 0 && j != 0) continue;
+        for (size_t j =0; j < sizeof wellKnownNumers / sizeof *wellKnownNumers; j++) {
+            if (wellKnownNumers[j] == 0 && j != 0)
+                continue;
             test_one(wellKnownNumers[j], denom, the_divider);
         }
         T powerOf2Numer = (limits::max()>>1)+1;
@@ -296,14 +338,24 @@ int main(int argc, char* argv[]) {
         sRunU32 = sRunU64 = sRunS32 = sRunS64 = 1;
     }
     else {
-        int i;
-        for (i=1; i < argc; i++) {
+        for (int i = 1; i < argc; i++) {
             if (! strcmp(argv[i], "u32")) sRunU32 = 1;
             else if (! strcmp(argv[i], "u64")) sRunU64 = 1;
             else if (! strcmp(argv[i], "s32")) sRunS32 = 1;
             else if (! strcmp(argv[i], "s64")) sRunS64 = 1;
-            else printf("Unknown test '%s'\n", argv[i]), exit(0);
-        }        
+            else {
+                printf("Usage: tester [OPTIONS]\n"
+                       "\n"
+                       "You can pass the tester program one or more of the following options:\n"
+                       "u32, s32, u64, s64 or run it without arguments to test all four.\n"
+                       "The tester is multithreaded so it can test multiple cases simultaneously.\n"
+                       "The tester will verify the correctness of libdivide via a set of\n"
+                       "randomly chosen denominators, by comparing the result of libdivide's\n"
+                       "division to hardware division. It may take a long time to run, but it\n"
+                       "will output as soon as it finds a discrepancy.\n");
+                exit(1);
+            }
+        }
     }
 
 /* We could use dispatch, but we prefer to use pthreads because dispatch won't run all four tests at once on a two core machine */
@@ -333,5 +385,7 @@ int main(int argc, char* argv[]) {
         pthread_join(threads[i], &dummy);
     }
 #endif
+
+    printf("\nAll tests passed successfully!\n");
     return 0;
 }
