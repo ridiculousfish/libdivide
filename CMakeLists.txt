@@ -16,9 +16,9 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DLIBDIVIDE_ASSERTIONS_ON")
 # But you can also force a specific vector instruction
 # set using the options below.
 
-option(LIBDIVIDE_USE_SSE2   "Enable SSE2 vector instructions"   OFF)
-option(LIBDIVIDE_USE_AVX2   "Enable AVX2 vector instructions"   OFF)
-option(LIBDIVIDE_USE_AVX512 "Enable AVX512 vector instructions" OFF)
+option(LIBDIVIDE_SSE2   "Enable SSE2 vector instructions"   OFF)
+option(LIBDIVIDE_AVX2   "Enable AVX2 vector instructions"   OFF)
+option(LIBDIVIDE_AVX512 "Enable AVX512 vector instructions" OFF)
 
 # By default enable release mode ###############################
 
@@ -79,12 +79,12 @@ endif()
 
 # Check if CPU supports AVX512/AVX2/SSE2 #######################
 
-if(LIBDIVIDE_USE_AVX512)
-    add_definitions(-DLIBDIVIDE_USE_AVX512)
-elseif(LIBDIVIDE_USE_AVX2)
-    add_definitions(-DLIBDIVIDE_USE_AVX2)
-elseif(LIBDIVIDE_USE_SSE2)
-    add_definitions(-DLIBDIVIDE_USE_SSE2)
+if(LIBDIVIDE_AVX512)
+    add_definitions(-DLIBDIVIDE_AVX512)
+elseif(LIBDIVIDE_AVX2)
+    add_definitions(-DLIBDIVIDE_AVX2)
+elseif(LIBDIVIDE_SSE2)
+    add_definitions(-DLIBDIVIDE_SSE2)
 elseif(cpu_x86)
     check_cxx_source_runs("
         #include <immintrin.h>
@@ -100,7 +100,7 @@ elseif(cpu_x86)
         avx512)
 
     if(avx512)
-        add_definitions(-DLIBDIVIDE_USE_AVX512)
+        add_definitions(-DLIBDIVIDE_AVX512)
     else()
         check_cxx_source_runs("
             #include <immintrin.h>
@@ -114,7 +114,7 @@ elseif(cpu_x86)
             avx2)
 
         if(avx2)
-            add_definitions(-DLIBDIVIDE_USE_AVX2)
+            add_definitions(-DLIBDIVIDE_AVX2)
         else()
             check_cxx_source_runs("
                 #include <emmintrin.h>
@@ -128,7 +128,7 @@ elseif(cpu_x86)
                 sse2)
 
             if(sse2)
-                add_definitions(-DLIBDIVIDE_USE_SSE2)
+                add_definitions(-DLIBDIVIDE_SSE2)
             endif()
         endif()
     endif()

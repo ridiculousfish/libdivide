@@ -22,11 +22,11 @@
     #include <stdio.h>
 #endif
 
-#if defined(LIBDIVIDE_USE_AVX512)
+#if defined(LIBDIVIDE_AVX512)
     #include <immintrin.h>
-#elif defined(LIBDIVIDE_USE_AVX2)
+#elif defined(LIBDIVIDE_AVX2)
     #include <immintrin.h>
-#elif defined(LIBDIVIDE_USE_SSE2)
+#elif defined(LIBDIVIDE_SSE2)
     #include <emmintrin.h>
 #endif
 
@@ -1367,7 +1367,7 @@ int64_t libdivide_s64_do_alg4(int64_t numer, const struct libdivide_s64_t *denom
     return q;
 }
 
-#if defined(LIBDIVIDE_USE_AVX512)
+#if defined(LIBDIVIDE_AVX512)
 
 LIBDIVIDE_API __m512i libdivide_u32_do_vector(__m512i numers, const struct libdivide_u32_t *denom);
 LIBDIVIDE_API __m512i libdivide_s32_do_vector(__m512i numers, const struct libdivide_s32_t *denom);
@@ -1736,7 +1736,7 @@ __m512i libdivide_s64_branchfree_do_vector(__m512i numers, const struct libdivid
     return q;
 }
 
-#elif defined(LIBDIVIDE_USE_AVX2)
+#elif defined(LIBDIVIDE_AVX2)
 
 LIBDIVIDE_API __m256i libdivide_u32_do_vector(__m256i numers, const struct libdivide_u32_t *denom);
 LIBDIVIDE_API __m256i libdivide_s32_do_vector(__m256i numers, const struct libdivide_s32_t *denom);
@@ -2113,7 +2113,7 @@ __m256i libdivide_s64_branchfree_do_vector(__m256i numers, const struct libdivid
     return q;
 }
 
-#elif defined(LIBDIVIDE_USE_SSE2)
+#elif defined(LIBDIVIDE_SSE2)
 
 LIBDIVIDE_API __m128i libdivide_u32_do_vector(__m128i numers, const struct libdivide_u32_t *denom);
 LIBDIVIDE_API __m128i libdivide_s32_do_vector(__m128i numers, const struct libdivide_s32_t *denom);
@@ -2517,9 +2517,9 @@ namespace libdivide_internal {
 
 #if defined(__GNUC__) && \
     __GNUC__ >= 6 && \
-    (defined(LIBDIVIDE_USE_AVX512) || \
-     defined(LIBDIVIDE_USE_AVX2) || \
-     defined(LIBDIVIDE_USE_SSE2))
+    (defined(LIBDIVIDE_AVX512) || \
+     defined(LIBDIVIDE_AVX2) || \
+     defined(LIBDIVIDE_SSE2))
     // Using vector functions as template arguments causes many
     // -Wignored-attributes compiler warnings with GCC 9.
     // These warnings can safely be turned off.
@@ -2528,13 +2528,13 @@ namespace libdivide_internal {
 #endif
 
 
-#if defined(LIBDIVIDE_USE_AVX512)
+#if defined(LIBDIVIDE_AVX512)
     #define MAYBE_VECTOR(X) X
     #define MAYBE_VECTOR_PARAM(X) __m512i vector_func(__m512i, const X *)
-#elif defined(LIBDIVIDE_USE_AVX2)
+#elif defined(LIBDIVIDE_AVX2)
     #define MAYBE_VECTOR(X) X
     #define MAYBE_VECTOR_PARAM(X) __m256i vector_func(__m256i, const X *)
-#elif defined(LIBDIVIDE_USE_SSE2)
+#elif defined(LIBDIVIDE_SSE2)
     #define MAYBE_VECTOR(X) X
     #define MAYBE_VECTOR_PARAM(X) __m128i vector_func(__m128i, const X *)
 #else
@@ -2602,15 +2602,15 @@ struct base {
         return do_func(val, &denom);
     }
 
-#if defined(LIBDIVIDE_USE_AVX512)
+#if defined(LIBDIVIDE_AVX512)
     __m512i perform_divide_vector(__m512i val) const {
         return vector_func(val, &denom);
     }
-#elif defined(LIBDIVIDE_USE_AVX2)
+#elif defined(LIBDIVIDE_AVX2)
     __m256i perform_divide_vector(__m256i val) const {
         return vector_func(val, &denom);
     }
-#elif defined(LIBDIVIDE_USE_SSE2)
+#elif defined(LIBDIVIDE_SSE2)
     __m128i perform_divide_vector(__m128i val) const {
         return vector_func(val, &denom);
     }
@@ -2625,13 +2625,13 @@ struct base {
 uint32_t libdivide_u32_crash(uint32_t, const libdivide_u32_t *) { exit(-1); }
 uint64_t libdivide_u64_crash(uint64_t, const libdivide_u64_t *) { exit(-1); }
 
-#if defined(LIBDIVIDE_USE_AVX512)
+#if defined(LIBDIVIDE_AVX512)
     __m512i libdivide_u32_crash_vector(__m512i, const libdivide_u32_t *) { exit(-1); }
     __m512i libdivide_u64_crash_vector(__m512i, const libdivide_u64_t *) { exit(-1); }
-#elif defined(LIBDIVIDE_USE_AVX2)
+#elif defined(LIBDIVIDE_AVX2)
     __m256i libdivide_u32_crash_vector(__m256i, const libdivide_u32_t *) { exit(-1); }
     __m256i libdivide_u64_crash_vector(__m256i, const libdivide_u64_t *) { exit(-1); }
-#elif defined(LIBDIVIDE_USE_SSE2)
+#elif defined(LIBDIVIDE_SSE2)
     __m128i libdivide_u32_crash_vector(__m128i, const libdivide_u32_t *) { exit(-1); }
     __m128i libdivide_u64_crash_vector(__m128i, const libdivide_u64_t *) { exit(-1); }
 #endif
@@ -2673,9 +2673,9 @@ template<> struct dispatcher<uint64_t, ALGORITHM4> { CRASH_DIVIDER(uint64_t, u64
 
 #if defined(__GNUC__) && \
     __GNUC__ >= 6 && \
-    (defined(LIBDIVIDE_USE_AVX512) || \
-     defined(LIBDIVIDE_USE_AVX2) || \
-     defined(LIBDIVIDE_USE_SSE2))
+    (defined(LIBDIVIDE_AVX512) || \
+     defined(LIBDIVIDE_AVX2) || \
+     defined(LIBDIVIDE_SSE2))
     #pragma GCC diagnostic pop
 #endif
 
@@ -2736,21 +2736,21 @@ public:
         return libdivide_internal::recover(&div.denom);
     }
 
-#if defined(LIBDIVIDE_USE_AVX512)
+#if defined(LIBDIVIDE_AVX512)
     // Treats the vector as either 8 or 16 packed values (depending on the
     // size), and divides each of them by the divisor,
     // returning the packed quotients.
     __m512i perform_divide_vector(__m512i val) const {
         return div.perform_divide_vector(val);
     }
-#elif defined(LIBDIVIDE_USE_AVX2)
+#elif defined(LIBDIVIDE_AVX2)
     // Treats the vector as either 4 or 8 packed values (depending on the
     // size), and divides each of them by the divisor,
     // returning the packed quotients.
     __m256i perform_divide_vector(__m256i val) const {
         return div.perform_divide_vector(val);
     }
-#elif defined(LIBDIVIDE_USE_SSE2)
+#elif defined(LIBDIVIDE_SSE2)
     // Treats the vector as either 2 or 4 packed values (depending on the
     // size), and divides each of them by the divisor,
     // returning the packed quotients.
@@ -2804,7 +2804,7 @@ T operator/=(T& numer, const divider<T, ALGO>& denom) {
     return numer;
 }
 
-#if defined(LIBDIVIDE_USE_AVX512)
+#if defined(LIBDIVIDE_AVX512)
     // Overload of the / operator for vector division
     template<typename T, int ALGO>
     __m512i operator/(__m512i numer, const divider<T, ALGO>& denom) {
@@ -2817,7 +2817,7 @@ T operator/=(T& numer, const divider<T, ALGO>& denom) {
         numer = denom.perform_divide_vector(numer);
         return numer;
     }
-#elif defined(LIBDIVIDE_USE_AVX2)
+#elif defined(LIBDIVIDE_AVX2)
     // Overload of the / operator for vector division
     template<typename T, int ALGO>
     __m256i operator/(__m256i numer, const divider<T, ALGO>& denom) {
@@ -2830,7 +2830,7 @@ T operator/=(T& numer, const divider<T, ALGO>& denom) {
         numer = denom.perform_divide_vector(numer);
         return numer;
     }
-#elif defined(LIBDIVIDE_USE_SSE2)
+#elif defined(LIBDIVIDE_SSE2)
     // Overload of the / operator for vector division
     template<typename T, int ALGO>
     __m128i operator/(__m128i numer, const divider<T, ALGO>& denom) {

@@ -132,17 +132,17 @@ private:
         test_unswitching(numer, denom, the_divider);
     }
 
-#if defined(LIBDIVIDE_USE_AVX512) || \
-    defined(LIBDIVIDE_USE_AVX2) || \
-    defined(LIBDIVIDE_USE_SSE2)   
+#if defined(LIBDIVIDE_AVX512) || \
+    defined(LIBDIVIDE_AVX2) || \
+    defined(LIBDIVIDE_SSE2)   
 
-#if defined(LIBDIVIDE_USE_AVX512)
+#if defined(LIBDIVIDE_AVX512)
     #define VECTOR_TYPE __m512i
     #define VECTOR_LOAD _mm512_loadu_si512
-#elif defined(LIBDIVIDE_USE_AVX2)
+#elif defined(LIBDIVIDE_AVX2)
     #define VECTOR_TYPE __m256i
     #define VECTOR_LOAD _mm256_loadu_si256
-#elif defined(LIBDIVIDE_USE_SSE2)
+#elif defined(LIBDIVIDE_SSE2)
     #define VECTOR_TYPE __m128i
     #define VECTOR_LOAD _mm_loadu_si128
 #endif
@@ -211,9 +211,9 @@ private:
                 test_one(numers[j], denom, the_divider);
             }
 
-#if defined(LIBDIVIDE_USE_AVX512) || \
-    defined(LIBDIVIDE_USE_AVX2) || \
-    defined(LIBDIVIDE_USE_SSE2)   
+#if defined(LIBDIVIDE_AVX512) || \
+    defined(LIBDIVIDE_AVX2) || \
+    defined(LIBDIVIDE_SSE2)   
             test_16(numers, denom, the_divider);
 #endif
         }

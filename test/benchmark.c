@@ -28,19 +28,19 @@
     #define NOINLINE
 #endif
 
-#if defined(LIBDIVIDE_USE_AVX512)
+#if defined(LIBDIVIDE_AVX512)
     #define VECTOR_TYPE __m512i
     #define SETZERO_SI _mm512_setzero_si512
     #define LOAD_SI _mm512_load_si512
     #define ADD_EPI64 _mm512_add_epi64
     #define ADD_EPI32 _mm512_add_epi32
-#elif defined(LIBDIVIDE_USE_AVX2)
+#elif defined(LIBDIVIDE_AVX2)
     #define VECTOR_TYPE __m256i
     #define SETZERO_SI _mm256_setzero_si256
     #define LOAD_SI _mm256_load_si256
     #define ADD_EPI64 _mm256_add_epi64
     #define ADD_EPI32 _mm256_add_epi32
-#elif defined(LIBDIVIDE_USE_SSE2)
+#elif defined(LIBDIVIDE_SSE2)
     #define VECTOR_TYPE __m128i
     #define SETZERO_SI _mm_setzero_si128
     #define LOAD_SI _mm_load_si128
@@ -158,9 +158,9 @@ NOINLINE static uint64_t mine_u32_branchfree(struct FunctionParams_t *params) {
     return sum;
 }
 
-#if defined(LIBDIVIDE_USE_AVX512) || \
-    defined(LIBDIVIDE_USE_AVX2) || \
-    defined(LIBDIVIDE_USE_SSE2)
+#if defined(LIBDIVIDE_AVX512) || \
+    defined(LIBDIVIDE_AVX2) || \
+    defined(LIBDIVIDE_SSE2)
 
 NOINLINE static uint64_t mine_u32_vector(struct FunctionParams_t *params) {
     size_t count = sizeof(VECTOR_TYPE) / sizeof(uint32_t);
@@ -302,9 +302,9 @@ NOINLINE static uint64_t mine_s32_branchfree(struct FunctionParams_t *params) {
     return sum;
 }
 
-#if defined(LIBDIVIDE_USE_AVX512) || \
-    defined(LIBDIVIDE_USE_AVX2) || \
-    defined(LIBDIVIDE_USE_SSE2)
+#if defined(LIBDIVIDE_AVX512) || \
+    defined(LIBDIVIDE_AVX2) || \
+    defined(LIBDIVIDE_SSE2)
 
 NOINLINE static uint64_t mine_s32_vector(struct FunctionParams_t *params) {
     size_t count = sizeof(VECTOR_TYPE) / sizeof(int32_t);
@@ -496,9 +496,9 @@ NOINLINE static uint64_t mine_u64_unswitched(struct FunctionParams_t *params) {
     return sum;
 }
 
-#if defined(LIBDIVIDE_USE_AVX512) || \
-    defined(LIBDIVIDE_USE_AVX2) || \
-    defined(LIBDIVIDE_USE_SSE2)
+#if defined(LIBDIVIDE_AVX512) || \
+    defined(LIBDIVIDE_AVX2) || \
+    defined(LIBDIVIDE_SSE2)
 
 NOINLINE static uint64_t mine_u64_vector_unswitched(struct FunctionParams_t *params) {
     size_t count = sizeof(VECTOR_TYPE) / sizeof(uint64_t);
@@ -610,9 +610,9 @@ NOINLINE static uint64_t mine_s64_branchfree(struct FunctionParams_t *params) {
     return sum;
 }
 
-#if defined(LIBDIVIDE_USE_AVX512) || \
-    defined(LIBDIVIDE_USE_AVX2) || \
-    defined(LIBDIVIDE_USE_SSE2)
+#if defined(LIBDIVIDE_AVX512) || \
+    defined(LIBDIVIDE_AVX2) || \
+    defined(LIBDIVIDE_SSE2)
 
 NOINLINE static uint64_t mine_s64_vector(struct FunctionParams_t *params) {
     const struct libdivide_s64_t denom = *(struct libdivide_s64_t *)params->denomPtr;
@@ -758,9 +758,9 @@ NOINLINE static uint64_t mine_s64_generate(struct FunctionParams_t *params) {
 }
 
 /* Stub functions for when we have no AVX512/AVX2/SSE2 */
-#if !defined(LIBDIVIDE_USE_AVX512) && \
-    !defined(LIBDIVIDE_USE_AVX2) && \
-    !defined(LIBDIVIDE_USE_SSE2)
+#if !defined(LIBDIVIDE_AVX512) && \
+    !defined(LIBDIVIDE_AVX2) && \
+    !defined(LIBDIVIDE_SSE2)
     
 NOINLINE static uint64_t mine_u32_vector(struct FunctionParams_t *params) { return mine_u32(params); }
 NOINLINE static uint64_t mine_u32_vector_unswitched(struct FunctionParams_t *params) { return mine_u32_unswitched(params); }
@@ -814,9 +814,9 @@ NOINLINE struct TestResult test_one(TestFunc_t mine, TestFunc_t mine_branchfree,
         tresult = time_function(mine, params); my_times[iter] = tresult.time; CHECK(tresult.result, expected);
         tresult = time_function(mine_branchfree, params); my_times_branchfree[iter] = tresult.time; CHECK(tresult.result, expected);
         tresult = time_function(mine_unswitched, params); my_times_unswitched[iter] = tresult.time; CHECK(tresult.result, expected);
-#if defined(LIBDIVIDE_USE_AVX512) || \
-    defined(LIBDIVIDE_USE_AVX2) || \
-    defined(LIBDIVIDE_USE_SSE2)
+#if defined(LIBDIVIDE_AVX512) || \
+    defined(LIBDIVIDE_AVX2) || \
+    defined(LIBDIVIDE_SSE2)
         tresult = time_function(mine_vector, params); my_times_vector[iter] = tresult.time; CHECK(tresult.result, expected);
         tresult = time_function(mine_vector_branchfree, params); my_times_vector_branchfree[iter] = tresult.time; CHECK(tresult.result, expected);
         tresult = time_function(mine_vector_unswitched, params); my_times_vector_unswitched[iter] = tresult.time; CHECK(tresult.result, expected);
