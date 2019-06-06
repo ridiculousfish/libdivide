@@ -27,21 +27,21 @@ make -j
 sudo make install
 ```
 
-# Tester binary
+# Tester program
 
-You can pass the **tester** binary one or more of the following arguments: ```u32```,
+You can pass the **tester** program one or more of the following arguments: ```u32```,
 ```s32```, ```u64```, ```s64``` to test the four cases (signed, unsigned, 32-bit, or 64-bit), or
 run it with no arguments to test all four. The tester is multithreaded so it can test multiple
 cases simultaneously. The tester will verify the correctness of libdivide via a set of randomly
 chosen denominators, by comparing the result of libdivide's division to hardware division. It
 may take a long time to run, but it will output as soon as it finds a discrepancy.
 
-# Benchmark binary
+# Benchmark program
 
-You can pass the **benchmark** binary one or more of the following arguments: ```u32```,
+You can pass the **benchmark** program one or more of the following arguments: ```u32```,
 ```s32```, ```u64```, ```s64``` to compare libdivide's speed against hardware division.
 **benchmark** tests a simple function that inputs an array of random numerators and a single
-divisor, and returns the sum of their quotients.  It tests this using both hardware division, and
+divisor, and returns the sum of their quotients. It tests this using both hardware division, and
 the various division approaches supported by libdivide, including vector division.
 
 It will output data like this:
@@ -58,7 +58,7 @@ It will output data like this:
 ```
 
 It will keep going as long as you let it, so it's best to stop it when you are happy with the
-denominators tested.  These columns have the following significance.  All times are in
+denominators tested. These columns have the following significance. All times are in
 nanoseconds, lower is better.
 
 ```bash
