@@ -249,7 +249,7 @@ static inline int32_t libdivide_mullhi_s32(int32_t x, int32_t y) {
     return (int32_t)(rl >> 32);
 }
 
-static uint64_t libdivide_mullhi_u64(uint64_t x, uint64_t y) {
+static inline uint64_t libdivide_mullhi_u64(uint64_t x, uint64_t y) {
 #if defined(LIBDIVIDE_VC) && \
     defined(LIBDIVIDE_X86_64)
     return __umulh(x, y);
@@ -342,7 +342,7 @@ static inline int32_t libdivide_count_leading_zeros64(uint64_t val) {
 // libdivide_64_div_32_to_32: divides a 64-bit uint {u1, u0} by a 32-bit
 // uint {v}. The result must fit in 32 bits.
 // Returns the quotient directly and the remainder in *r
-static uint32_t libdivide_64_div_32_to_32(uint32_t u1, uint32_t u0, uint32_t v, uint32_t *r) {
+static inline uint32_t libdivide_64_div_32_to_32(uint32_t u1, uint32_t u0, uint32_t v, uint32_t *r) {
 #if (defined(LIBDIVIDE_i386) || defined(LIBDIVIDE_X86_64)) && \
      defined(LIBDIVIDE_GCC_STYLE_ASM)
     uint32_t result;
@@ -919,11 +919,11 @@ static inline struct libdivide_s32_t libdivide_internal_s32_gen(int32_t d, int b
     return result;
 }
 
-LIBDIVIDE_API struct libdivide_s32_t libdivide_s32_gen(int32_t d) {
+struct libdivide_s32_t libdivide_s32_gen(int32_t d) {
     return libdivide_internal_s32_gen(d, 0);
 }
 
-LIBDIVIDE_API struct libdivide_s32_branchfree_t libdivide_s32_branchfree_gen(int32_t d) {
+struct libdivide_s32_branchfree_t libdivide_s32_branchfree_gen(int32_t d) {
     if (d == 1) {
         LIBDIVIDE_ERROR("branchfree divider must be != 1");
     }
