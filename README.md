@@ -47,13 +47,13 @@ the various division approaches supported by libdivide, including vector divisio
 It will output data like this:
 
 ```bash
-#  system  scalar  scl_bf  scl_us  vector  vec_bf  vec_us   gener  algo
-1   5.453   0.654   0.570   0.223   0.565   0.603   0.235   1.282     0
-2   5.453   1.045   0.570   0.496   0.568   0.603   0.511  11.215     1
-3   5.453   1.534   0.570   0.570   0.587   0.603   0.570  11.887     2
-4   5.409   0.654   0.570   0.223   0.565   0.603   0.235   1.282     0
-5   5.409   1.045   0.570   0.496   0.568   0.603   0.509  11.215     1
-6   5.409   1.534   0.570   0.570   0.587   0.603   0.570  11.887     2
+ #   system  scalar  scl_bf  vector  vec_bf   gener   algo
+ 1   9.684   0.792   0.783   0.426   0.426    1.346   0
+ 2   9.078   0.781   1.609   0.426   1.529    1.346   0
+ 3   9.078   1.355   1.609   1.334   1.531   29.045   1
+ 4   9.076   0.787   1.609   0.426   1.529    1.346   0
+ 5   9.074   1.349   1.609   1.334   1.531   29.045   1
+ 6   9.078   1.349   1.609   1.334   1.531   29.045   1
 ...
 ```
 
@@ -66,10 +66,8 @@ nanoseconds, lower is better.
 system:  Hardware divide time
 scalar:  libdivide time, using scalar functions
 scl_bf:  libdivide time, using branchfree scalar functions
-scl_us:  libdivide time, using scalar unswitching functions
 vector:  libdivide time, using vector functions
 vec_bf:  libdivide time, using branchfree vector functions
-vec_us:  libdivide time, using vector unswitching
  gener:  Time taken to generate the divider struct
   algo:  The algorithm used. See libdivide_*_get_algorithm
 ```
@@ -170,34 +168,6 @@ Caveats of branchfree divider:
 
 * Branchfree divider cannot be ```-1```, ```0```, ```1```
 * Faster for unsigned types than for signed types
-
-# Unswitching
-
-We mentioned in the "Branchfull vs branchfree" section that the default branchfull
-libdivide divider uses branches. It is possible to get rid of the branches and the
-preliminary checks when using the default branchfull divider using a technique
-called unswitching. **Unswitching** moves out of the body of the loop the
-preliminary algorithm check so that the computation inside the loop is branchfree.
-
-```C++
-#include "libdivide.h"
-
-using namespace libdivide;
-
-void divide(std::vector<int64_t>& vect, int64_t divisor)
-{
-    divider<int64_t> fast_d(divisor);
-
-    switch (fast_d.get_algorithm())
-    {
-        case 0: for (auto& n : vect) n /= unswitch<0>(fast_d); break;
-        case 1: for (auto& n : vect) n /= unswitch<1>(fast_d); break;
-        case 2: for (auto& n : vect) n /= unswitch<2>(fast_d); break;
-        case 3: for (auto& n : vect) n /= unswitch<3>(fast_d); break;
-        case 4: for (auto& n : vect) n /= unswitch<4>(fast_d); break;
-    }
-}
-```
 
 For more information please visit the [API documentation](https://libdivide.com/documentation.html) on libdivide's website.
 
