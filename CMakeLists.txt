@@ -9,6 +9,17 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DLIBDIVIDE_ASSERTIONS_ON")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DLIBDIVIDE_ASSERTIONS_ON")
 
+# Build options ################################################
+
+# By default we automatically enable the widest vector
+# instruction set supported by your x86/x64 CPU.
+# But you can also force a specific vector instruction
+# set using the options below.
+
+option(LIBDIVIDE_USE_SSE2   "Enable SSE2 vector instructions"   OFF)
+option(LIBDIVIDE_USE_AVX2   "Enable AVX2 vector instructions"   OFF)
+option(LIBDIVIDE_USE_AVX512 "Enable AVX512 vector instructions" OFF)
+
 # By default enable release mode ###############################
 
 string(TOUPPER "${CMAKE_BUILD_TYPE}" BUILD_TYPE)
@@ -32,7 +43,7 @@ check_cxx_source_runs("
     }"
     cpu_x86)
 
-# Check -march=native compiler flag ############################
+# -march=native required for AVX2/AVX512 ######################
 
 if (cpu_x86)
     cmake_push_check_state()
@@ -46,9 +57,35 @@ if (cpu_x86)
     endif()
 endif()
 
+# Disable auto vectorization ##################################
+
+# We disable auto vectorization in order to prevent the
+# compiler from vectorizing our scalar benchmarks
+# which would make the benchmark results less useful.
+
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    check_cxx_compiler_flag("-fno-vectorize" fno_vectorize)
+    if(fno_vectorize)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-vectorize")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-vectorize")
+    endif()
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    check_cxx_compiler_flag("-fno-tree-vectorize" fno_tree_vectorize)
+    if(fno_tree_vectorize)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-tree-vectorize")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-tree-vectorize")
+    endif()
+endif()
+
 # Check if CPU supports AVX512/AVX2/SSE2 #######################
 
-if(cpu_x86)
+if(LIBDIVIDE_USE_AVX512)
+    add_definitions(-DLIBDIVIDE_USE_AVX512)
+elseif(LIBDIVIDE_USE_AVX2)
+    add_definitions(-DLIBDIVIDE_USE_AVX2)
+elseif(LIBDIVIDE_USE_SSE2)
+    add_definitions(-DLIBDIVIDE_USE_SSE2)
+elseif(cpu_x86)
     check_cxx_source_runs("
         #include <immintrin.h>
         int main()
@@ -110,22 +147,6 @@ target_include_directories(benchmark PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(primes_benchmark PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 
 target_link_libraries(tester Threads::Threads)
-
-# Disable auto vectorization for benchmark #####################
-
-if(avx512 OR avx2 OR sse2)
-    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        check_cxx_compiler_flag("-fno-vectorize" fno_vectorize)
-        if(fno_vectorize)
-            target_compile_options(benchmark PRIVATE "-fno-vectorize")
-        endif()
-    elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-        check_cxx_compiler_flag("-fno-tree-vectorize" fno_tree_vectorize)
-        if(fno_tree_vectorize)
-            target_compile_options(benchmark PRIVATE "-fno-tree-vectorize")
-        endif()
-    endif()
-endif()
 
 # Enable testing ###############################################
 
