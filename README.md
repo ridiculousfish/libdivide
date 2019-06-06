@@ -140,6 +140,12 @@ void divide(std::vector<__m512i>& vect, uint32_t divisor)
 }
 ```
 
+Note that you need to define one of macros below in order to enable vector division:
+
+* ```LIBDIVIDE_SSE2```
+* ```LIBDIVIDE_AVX2```
+* ```LIBDIVIDE_AVX512```
+
 # Build instructions
 
 libdivide has one test program and two benchmark programs which can be built using cmake and
