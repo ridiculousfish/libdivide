@@ -5,7 +5,7 @@
 benchmark
 primes
 tester
-/build
+/build*
 /.vscode
 CMakeCache.txt
 CMakeFiles
