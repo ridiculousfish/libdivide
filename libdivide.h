@@ -653,6 +653,12 @@ uint32_t libdivide_u32_do(uint32_t numer, const struct libdivide_u32_t *denom) {
     }
 }
 
+uint32_t libdivide_u32_branchfree_do(uint32_t numer, const struct libdivide_u32_branchfree_t *denom) {
+    uint32_t q = libdivide_mullhi_u32(denom->magic, numer);
+    uint32_t t = ((numer - q) >> 1) + q;
+    return t >> denom->more;
+}
+
 uint32_t libdivide_u32_recover(const struct libdivide_u32_t *denom) {
     uint8_t more = denom->more;
     uint8_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
@@ -694,12 +700,6 @@ uint32_t libdivide_u32_recover(const struct libdivide_u32_t *denom) {
 uint32_t libdivide_u32_branchfree_recover(const struct libdivide_u32_branchfree_t *denom) {
     struct libdivide_u32_t denom_u32 = {denom->magic, (uint8_t)(denom->more | LIBDIVIDE_ADD_MARKER)};
     return libdivide_u32_recover(&denom_u32);
-}
-
-uint32_t libdivide_u32_branchfree_do(uint32_t numer, const struct libdivide_u32_branchfree_t *denom) {
-    uint32_t q = libdivide_mullhi_u32(denom->magic, numer);
-    uint32_t t = ((numer - q) >> 1) + q;
-    return t >> denom->more;
 }
 
 /////////// UINT64
@@ -791,6 +791,12 @@ uint64_t libdivide_u64_do(uint64_t numer, const struct libdivide_u64_t *denom) {
     }
 }
 
+uint64_t libdivide_u64_branchfree_do(uint64_t numer, const struct libdivide_u64_branchfree_t *denom) {
+    uint64_t q = libdivide_mullhi_u64(denom->magic, numer);
+    uint64_t t = ((numer - q) >> 1) + q;
+    return t >> denom->more;
+}
+
 uint64_t libdivide_u64_recover(const struct libdivide_u64_t *denom) {
     uint8_t more = denom->more;
     uint8_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
@@ -844,12 +850,6 @@ uint64_t libdivide_u64_recover(const struct libdivide_u64_t *denom) {
 uint64_t libdivide_u64_branchfree_recover(const struct libdivide_u64_branchfree_t *denom) {
     struct libdivide_u64_t denom_u64 = {denom->magic, (uint8_t)(denom->more | LIBDIVIDE_ADD_MARKER)};
     return libdivide_u64_recover(&denom_u64);
-}
-
-uint64_t libdivide_u64_branchfree_do(uint64_t numer, const struct libdivide_u64_branchfree_t *denom) {
-    uint64_t q = libdivide_mullhi_u64(denom->magic, numer);
-    uint64_t t = ((numer - q) >> 1) + q;
-    return t >> denom->more;
 }
 
 /////////// SINT32
@@ -1222,6 +1222,15 @@ static inline __m512i libdivide_mullhi_u32_flat_vector(__m512i a, __m512i b) {
     return _mm512_or_si512(hi_product_0Z2Z, hi_product_Z1Z3);
 }
 
+// b is one 32-bit value repeated.
+static inline __m512i libdivide_mullhi_s32_flat_vector(__m512i a, __m512i b) {
+    __m512i hi_product_0Z2Z = _mm512_srli_epi64(_mm512_mul_epi32(a, b), 32);
+    __m512i a1X3X = _mm512_srli_epi64(a, 32);
+    __m512i mask = _mm512_set_epi32(-1, 0, -1, 0, -1, 0, -1, 0, -1, 0, -1, 0, -1, 0, -1, 0);
+    __m512i hi_product_Z1Z3 = _mm512_and_si512(_mm512_mul_epi32(a1X3X, b), mask);
+    return _mm512_or_si512(hi_product_0Z2Z, hi_product_Z1Z3);
+}
+
 // Here, y is assumed to contain one 64-bit value repeated.
 // https://stackoverflow.com/a/28827013
 static inline __m512i libdivide_mullhi_u64_flat_vector(__m512i x, __m512i y) {    
@@ -1252,15 +1261,6 @@ static inline __m512i libdivide_mullhi_s64_flat_vector(__m512i x, __m512i y) {
     p = _mm512_sub_epi64(p, t1);
     p = _mm512_sub_epi64(p, t2);
     return p;
-}
-
-// b is one 32-bit value repeated.
-static inline __m512i libdivide_mullhi_s32_flat_vector(__m512i a, __m512i b) {
-    __m512i hi_product_0Z2Z = _mm512_srli_epi64(_mm512_mul_epi32(a, b), 32);
-    __m512i a1X3X = _mm512_srli_epi64(a, 32);
-    __m512i mask = _mm512_set_epi32(-1, 0, -1, 0, -1, 0, -1, 0, -1, 0, -1, 0, -1, 0, -1, 0);
-    __m512i hi_product_Z1Z3 = _mm512_and_si512(_mm512_mul_epi32(a1X3X, b), mask);
-    return _mm512_or_si512(hi_product_0Z2Z, hi_product_Z1Z3);
 }
 
 ////////// UINT32
@@ -1468,6 +1468,15 @@ static inline __m256i libdivide_mullhi_u32_flat_vector(__m256i a, __m256i b) {
     return _mm256_or_si256(hi_product_0Z2Z, hi_product_Z1Z3);
 }
 
+// b is one 32-bit value repeated.
+static inline __m256i libdivide_mullhi_s32_flat_vector(__m256i a, __m256i b) {
+    __m256i hi_product_0Z2Z = _mm256_srli_epi64(_mm256_mul_epi32(a, b), 32);
+    __m256i a1X3X = _mm256_srli_epi64(a, 32);
+    __m256i mask = _mm256_set_epi32(-1, 0, -1, 0, -1, 0, -1, 0);
+    __m256i hi_product_Z1Z3 = _mm256_and_si256(_mm256_mul_epi32(a1X3X, b), mask);
+    return _mm256_or_si256(hi_product_0Z2Z, hi_product_Z1Z3);
+}
+
 // Here, y is assumed to contain one 64-bit value repeated.
 // https://stackoverflow.com/a/28827013
 static inline __m256i libdivide_mullhi_u64_flat_vector(__m256i x, __m256i y) {    
@@ -1498,15 +1507,6 @@ static inline __m256i libdivide_mullhi_s64_flat_vector(__m256i x, __m256i y) {
     p = _mm256_sub_epi64(p, t1);
     p = _mm256_sub_epi64(p, t2);
     return p;
-}
-
-// b is one 32-bit value repeated.
-static inline __m256i libdivide_mullhi_s32_flat_vector(__m256i a, __m256i b) {
-    __m256i hi_product_0Z2Z = _mm256_srli_epi64(_mm256_mul_epi32(a, b), 32);
-    __m256i a1X3X = _mm256_srli_epi64(a, 32);
-    __m256i mask = _mm256_set_epi32(-1, 0, -1, 0, -1, 0, -1, 0);
-    __m256i hi_product_Z1Z3 = _mm256_and_si256(_mm256_mul_epi32(a1X3X, b), mask);
-    return _mm256_or_si256(hi_product_0Z2Z, hi_product_Z1Z3);
 }
 
 ////////// UINT32
@@ -1714,6 +1714,19 @@ static inline __m128i libdivide_mullhi_u32_flat_vector(__m128i a, __m128i b) {
     return _mm_or_si128(hi_product_0Z2Z, hi_product_Z1Z3);
 }
 
+// SSE2 does not have a signed multiplication instruction, but we can convert
+// unsigned to signed pretty efficiently. Again, b is just a 32 bit value
+// repeated four times.
+static inline __m128i libdivide_mullhi_s32_flat_vector(__m128i a, __m128i b) {
+    __m128i p = libdivide_mullhi_u32_flat_vector(a, b);
+    // t1 = (a >> 31) & y, arithmetic shift
+    __m128i t1 = _mm_and_si128(_mm_srai_epi32(a, 31), b);
+    __m128i t2 = _mm_and_si128(_mm_srai_epi32(b, 31), a);
+    p = _mm_sub_epi32(p, t1);
+    p = _mm_sub_epi32(p, t2);
+    return p;
+}
+
 // Here, y is assumed to contain one 64-bit value repeated.
 // https://stackoverflow.com/a/28827013
 static inline __m128i libdivide_mullhi_u64_flat_vector(__m128i x, __m128i y) {    
@@ -1743,19 +1756,6 @@ static inline __m128i libdivide_mullhi_s64_flat_vector(__m128i x, __m128i y) {
     __m128i t2 = _mm_and_si128(libdivide_s64_signbits(y), x);
     p = _mm_sub_epi64(p, t1);
     p = _mm_sub_epi64(p, t2);
-    return p;
-}
-
-// SSE2 does not have a signed multiplication instruction, but we can convert
-// unsigned to signed pretty efficiently. Again, b is just a 32 bit value
-// repeated four times.
-static inline __m128i libdivide_mullhi_s32_flat_vector(__m128i a, __m128i b) {
-    __m128i p = libdivide_mullhi_u32_flat_vector(a, b);
-    // t1 = (a >> 31) & y, arithmetic shift
-    __m128i t1 = _mm_and_si128(_mm_srai_epi32(a, 31), b);
-    __m128i t2 = _mm_and_si128(_mm_srai_epi32(b, 31), a);
-    p = _mm_sub_epi32(p, t1);
-    p = _mm_sub_epi32(p, t2);
     return p;
 }
 
