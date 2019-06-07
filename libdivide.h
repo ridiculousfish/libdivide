@@ -2138,7 +2138,7 @@ T operator/(T numer, const divider<T, ALGO>& denom) {
 template<typename T, int ALGO>
 T& operator/=(T& numer, const divider<T, ALGO>& denom) {
     numer = denom.perform_divide(numer);
-    return &numer;
+    return numer;
 }
 
 #if defined(LIBDIVIDE_AVX512)
@@ -2152,7 +2152,7 @@ T& operator/=(T& numer, const divider<T, ALGO>& denom) {
     template<typename T, int ALGO>
     __m512i& operator/=(__m512i& numer, const divider<T, ALGO>& denom) {
         numer = denom.perform_divide_vector(numer);
-        return &numer;
+        return numer;
     }
 #elif defined(LIBDIVIDE_AVX2)
     // Overload of the / operator for vector division
@@ -2165,7 +2165,7 @@ T& operator/=(T& numer, const divider<T, ALGO>& denom) {
     template<typename T, int ALGO>
     __m256i& operator/=(__m256i& numer, const divider<T, ALGO>& denom) {
         numer = denom.perform_divide_vector(numer);
-        return &numer;
+        return numer;
     }
 #elif defined(LIBDIVIDE_SSE2)
     // Overload of the / operator for vector division
@@ -2178,7 +2178,7 @@ T& operator/=(T& numer, const divider<T, ALGO>& denom) {
     template<typename T, int ALGO>
     __m128i& operator/=(__m128i& numer, const divider<T, ALGO>& denom) {
         numer = denom.perform_divide_vector(numer);
-        return &numer;
+        return numer;
     }
 #endif
 
