@@ -173,6 +173,7 @@ struct libdivide_s64_t {
 struct libdivide_u32_branchfree_t {
     uint32_t magic;
     uint8_t more;
+    uint8_t correct_one;
 };
 
 struct libdivide_s32_branchfree_t {
@@ -183,6 +184,7 @@ struct libdivide_s32_branchfree_t {
 struct libdivide_u64_branchfree_t {
     uint64_t magic;
     uint8_t more;
+    uint8_t correct_one;
 };
 
 struct libdivide_s64_branchfree_t {
@@ -627,10 +629,11 @@ struct libdivide_u32_t libdivide_u32_gen(uint32_t d) {
 
 struct libdivide_u32_branchfree_t libdivide_u32_branchfree_gen(uint32_t d) {
     if (d == 1) {
-        LIBDIVIDE_ERROR("branchfree divider must be != 1");
+        struct libdivide_u32_branchfree_t ret = {~0u, 0, 1};
+        return ret;
     }
     struct libdivide_u32_t tmp = libdivide_internal_u32_gen(d, 1);
-    struct libdivide_u32_branchfree_t ret = {tmp.magic, (uint8_t)(tmp.more & LIBDIVIDE_32_SHIFT_MASK)};
+    struct libdivide_u32_branchfree_t ret = {tmp.magic, (uint8_t)(tmp.more & LIBDIVIDE_32_SHIFT_MASK), 0};
     return ret;
 }
 
@@ -655,7 +658,7 @@ uint32_t libdivide_u32_do(uint32_t numer, const struct libdivide_u32_t *denom) {
 
 uint32_t libdivide_u32_branchfree_do(uint32_t numer, const struct libdivide_u32_branchfree_t *denom) {
     uint32_t q = libdivide_mullhi_u32(denom->magic, numer);
-    uint32_t t = ((numer - q) >> 1) + q;
+    uint32_t t = ((numer - q) >> 1) + (q + denom->correct_one);
     return t >> denom->more;
 }
 
@@ -698,6 +701,8 @@ uint32_t libdivide_u32_recover(const struct libdivide_u32_t *denom) {
 }
 
 uint32_t libdivide_u32_branchfree_recover(const struct libdivide_u32_branchfree_t *denom) {
+    if (denom->correct_one)
+        return 1;
     struct libdivide_u32_t denom_u32 = {denom->magic, (uint8_t)(denom->more | LIBDIVIDE_ADD_MARKER)};
     return libdivide_u32_recover(&denom_u32);
 }
@@ -765,10 +770,11 @@ struct libdivide_u64_t libdivide_u64_gen(uint64_t d) {
 
 struct libdivide_u64_branchfree_t libdivide_u64_branchfree_gen(uint64_t d) {
     if (d == 1) {
-        LIBDIVIDE_ERROR("branchfree divider must be != 1");
+        struct libdivide_u64_branchfree_t ret = {~0ull, 0, 1};
+        return ret;
     }
     struct libdivide_u64_t tmp = libdivide_internal_u64_gen(d, 1);
-    struct libdivide_u64_branchfree_t ret = {tmp.magic, (uint8_t)(tmp.more & LIBDIVIDE_64_SHIFT_MASK)};
+    struct libdivide_u64_branchfree_t ret = {tmp.magic, (uint8_t)(tmp.more & LIBDIVIDE_64_SHIFT_MASK), 0};
     return ret;
 }
 
@@ -793,7 +799,7 @@ uint64_t libdivide_u64_do(uint64_t numer, const struct libdivide_u64_t *denom) {
 
 uint64_t libdivide_u64_branchfree_do(uint64_t numer, const struct libdivide_u64_branchfree_t *denom) {
     uint64_t q = libdivide_mullhi_u64(denom->magic, numer);
-    uint64_t t = ((numer - q) >> 1) + q;
+    uint64_t t = ((numer - q) >> 1) + (q + denom->correct_one);
     return t >> denom->more;
 }
 
@@ -848,6 +854,8 @@ uint64_t libdivide_u64_recover(const struct libdivide_u64_t *denom) {
 }
 
 uint64_t libdivide_u64_branchfree_recover(const struct libdivide_u64_branchfree_t *denom) {
+    if (denom->correct_one)
+        return 1;
     struct libdivide_u64_t denom_u64 = {denom->magic, (uint8_t)(denom->more | LIBDIVIDE_ADD_MARKER)};
     return libdivide_u64_recover(&denom_u64);
 }
