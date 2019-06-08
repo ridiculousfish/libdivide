@@ -62,13 +62,13 @@ NOINLINE size_t sum_dividers(N numerator, const T& dividers)
     return sum;
 }
 
-struct sum_dividers_result_t {
+struct result_t {
     double duration;
-    size_t result;
+    size_t sum;
 };
 
 template<typename T, typename P>
-NOINLINE sum_dividers_result_t benchmark_sum_dividers(const P& dividers, size_t iters) {
+NOINLINE result_t benchmark_sum_dividers(const P& dividers, size_t iters) {
     using namespace std::chrono;
     high_resolution_clock::time_point t1 = high_resolution_clock::now();
     size_t sum = 0;
@@ -81,7 +81,7 @@ NOINLINE sum_dividers_result_t benchmark_sum_dividers(const P& dividers, size_t 
 
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
     duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
-    return sum_dividers_result_t{time_span.count(), sum};
+    return result_t{time_span.count(), sum};
 }
 
 enum {
@@ -99,14 +99,14 @@ enum {
 typedef unsigned int tasks_t;
 
 template<typename T>
-void  measure_times(tasks_t tasks, size_t max, size_t iters) {
+void  benchmark(tasks_t tasks, size_t max, size_t iters) {
     bool test_system = !! (tasks & TEST_SYSTEM);
     bool test_branchfull = !! (tasks & TEST_BRANCHFULL);
     bool test_branchfree = !! (tasks & TEST_BRANCHFREE);
     
-    sum_dividers_result_t sys = {0, 0};
-    sum_dividers_result_t branchfull = {0, 0};
-    sum_dividers_result_t branchfree = {0, 0};
+    result_t sys = {0, 0};
+    result_t branchfull = {0, 0};
+    result_t branchfree = {0, 0};
 
     if (test_system) {
         using divider_type = T;
@@ -129,12 +129,12 @@ void  measure_times(tasks_t tasks, size_t max, size_t iters) {
         std::cout << '.' << std::endl;
     }
 
-    if (test_system && test_branchfull && branchfull.result != sys.result) {
-        std::cerr << "Disagreement in branchfull path for type " << typeid(T).name() << ": libdivide says " << branchfull.result << " but system says " << sys.result << std::endl;
+    if (test_system && test_branchfull && branchfull.sum != sys.sum) {
+        std::cerr << "Disagreement in branchfull path for type " << typeid(T).name() << ": libdivide says " << branchfull.sum << " but system says " << sys.sum << std::endl;
         std::exit(1);
     }
-    if (test_system && test_branchfree && branchfree.result != sys.result) {
-        std::cerr << "Disagreement in branchfree path for type " << typeid(T).name() << ": libdivide says " << branchfree.result << " but system says " << sys.result << std::endl;
+    if (test_system && test_branchfree && branchfree.sum != sys.sum) {
+        std::cerr << "Disagreement in branchfree path for type " << typeid(T).name() << ": libdivide says " << branchfree.sum << " but system says " << sys.sum << std::endl;
         std::exit(1);
     }
 
@@ -197,22 +197,22 @@ int main(int argc, const char *argv[]) {
 
     if (tasks & TEST_U32) {
         std::cout << "----- u32 -----" << std::endl;
-        measure_times<uint32_t>(tasks, max_divider, iters);
+        benchmark<uint32_t>(tasks, max_divider, iters);
     }
     
     if (tasks & TEST_S32) {
         std::cout << "----- s32 -----" << std::endl;
-        measure_times<int32_t>(tasks, max_divider, iters);
+        benchmark<int32_t>(tasks, max_divider, iters);
     }
     
     if (tasks & TEST_U64) {
         std::cout << "----- u64 -----" << std::endl;
-        measure_times<uint64_t>(tasks, max_divider, iters);
+        benchmark<uint64_t>(tasks, max_divider, iters);
     }
 
     if (tasks & TEST_S64) {
         std::cout << "----- s64 -----" << std::endl;
-        measure_times<int64_t>(tasks, max_divider, iters);
+        benchmark<int64_t>(tasks, max_divider, iters);
     }
 
     std::cout << "All tests passed successfully!" << std::endl;
