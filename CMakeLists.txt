@@ -140,11 +140,11 @@ find_package(Threads REQUIRED QUIET)
 
 add_executable(tester test/tester.cpp)
 add_executable(benchmark test/benchmark.c)
-add_executable(primes_benchmark test/primes_benchmark.cpp)
+add_executable(benchmark_branchfree test/benchmark_branchfree.cpp)
 
 target_include_directories(tester PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(benchmark PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-target_include_directories(primes_benchmark PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(benchmark_branchfree PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 
 target_link_libraries(tester Threads::Threads)
 
@@ -152,7 +152,7 @@ target_link_libraries(tester Threads::Threads)
 
 enable_testing()
 add_test(tester tester)
-add_test(primes_benchmark primes_benchmark)
+add_test(benchmark_branchfree benchmark_branchfree)
 
 # By default install to /usr/local/install #####################
 
