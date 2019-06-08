@@ -140,7 +140,7 @@ void divide(std::vector<__m512i>& vect, uint32_t divisor)
 }
 ```
 
-Note that you need to define one of macros below in order to enable vector division:
+Note that you need to define one of macros below to enable vector division:
 
 * ```LIBDIVIDE_SSE2```
 * ```LIBDIVIDE_AVX2```
