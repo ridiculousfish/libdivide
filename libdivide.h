@@ -173,7 +173,7 @@ struct libdivide_s64_t {
 struct libdivide_u32_branchfree_t {
     uint32_t magic;
     uint8_t more;
-    uint8_t correct_one;
+    uint8_t one;
 };
 
 struct libdivide_s32_branchfree_t {
@@ -184,7 +184,7 @@ struct libdivide_s32_branchfree_t {
 struct libdivide_u64_branchfree_t {
     uint64_t magic;
     uint8_t more;
-    uint8_t correct_one;
+    uint8_t one;
 };
 
 struct libdivide_s64_branchfree_t {
@@ -658,7 +658,7 @@ uint32_t libdivide_u32_do(uint32_t numer, const struct libdivide_u32_t *denom) {
 
 uint32_t libdivide_u32_branchfree_do(uint32_t numer, const struct libdivide_u32_branchfree_t *denom) {
     uint32_t q = libdivide_mullhi_u32(denom->magic, numer);
-    uint32_t t = ((numer - q) >> 1) + (q + denom->correct_one);
+    uint32_t t = ((numer - q) >> 1) + q + (denom->one & !!numer);
     return t >> denom->more;
 }
 
@@ -701,7 +701,7 @@ uint32_t libdivide_u32_recover(const struct libdivide_u32_t *denom) {
 }
 
 uint32_t libdivide_u32_branchfree_recover(const struct libdivide_u32_branchfree_t *denom) {
-    if (denom->correct_one)
+    if (denom->one)
         return 1;
     struct libdivide_u32_t denom_u32 = {denom->magic, (uint8_t)(denom->more | LIBDIVIDE_ADD_MARKER)};
     return libdivide_u32_recover(&denom_u32);
@@ -799,7 +799,7 @@ uint64_t libdivide_u64_do(uint64_t numer, const struct libdivide_u64_t *denom) {
 
 uint64_t libdivide_u64_branchfree_do(uint64_t numer, const struct libdivide_u64_branchfree_t *denom) {
     uint64_t q = libdivide_mullhi_u64(denom->magic, numer);
-    uint64_t t = ((numer - q) >> 1) + (q + denom->correct_one);
+    uint64_t t = ((numer - q) >> 1) + q + (denom->one & !!numer);
     return t >> denom->more;
 }
 
@@ -854,7 +854,7 @@ uint64_t libdivide_u64_recover(const struct libdivide_u64_t *denom) {
 }
 
 uint64_t libdivide_u64_branchfree_recover(const struct libdivide_u64_branchfree_t *denom) {
-    if (denom->correct_one)
+    if (denom->one)
         return 1;
     struct libdivide_u64_t denom_u64 = {denom->magic, (uint8_t)(denom->more | LIBDIVIDE_ADD_MARKER)};
     return libdivide_u64_recover(&denom_u64);

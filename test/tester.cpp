@@ -162,7 +162,7 @@ private:
     template<int ALGO>
     void test_many(T denom) {
         // Don't try dividing by +/- 1 with branchfree signed
-        if (ALGO == BRANCHFREE && std::is_signed<T>::value && (denom == 1 || (limits::is_signed && denom == T(-1)))) {
+        if (ALGO == BRANCHFREE && (denom == 1 || (limits::is_signed && denom == T(-1)))) {
             return;
         }
 
