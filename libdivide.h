@@ -1961,7 +1961,6 @@ namespace libdivide_internal {
     #pragma GCC diagnostic ignored "-Wignored-attributes"
 #endif
 
-
 #if defined(LIBDIVIDE_AVX512)
     #define MAYBE_VECTOR(X) X
     #define MAYBE_VECTOR_PARAM(X) __m512i vector_func(__m512i, const X *)

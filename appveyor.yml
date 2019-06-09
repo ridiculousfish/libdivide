@@ -27,4 +27,4 @@ build_script:
 test_script:
   - cd Release
   - tester.exe
-  - primes_benchmark.exe
+  - benchmark_branchfree.exe
