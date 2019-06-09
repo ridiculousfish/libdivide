@@ -13,6 +13,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include "libdivide.h"
+#include "../fastmod/include/fastmod.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -104,6 +105,7 @@ struct FunctionParams_t {
     const void *denomPtr; // a pointer to e.g. libdivide_u32_t
     const void *denomBranchfreePtr; // a pointer to e.g. libdivide_u32_t from branchfree
     const void *data; // a pointer to the data to be divided
+    uint32_t denomCount;
 };
 
 struct time_result {
@@ -137,23 +139,23 @@ static struct time_result time_function(uint64_t (*func)(struct FunctionParams_t
 // U32
  
 NOINLINE static uint64_t mine_u32(struct FunctionParams_t *params) {
-    const struct libdivide_u32_t denom = *(struct libdivide_u32_t *)params->denomPtr;
+    const struct libdivide_u32_t* denom = (struct libdivide_u32_t *)params->denomPtr;
     const uint32_t *data = (const uint32_t *)params->data;
     uint32_t sum = 0;
     for (size_t iter = 0; iter < iters; iter++) {
         uint32_t numer = data[iter];
-        sum += libdivide_u32_do(numer, &denom);
+        sum += libdivide_u32_do(numer, denom + (iter & (params->denomCount - 1)));
     }
     return sum;
 }
 
 NOINLINE static uint64_t mine_u32_branchfree(struct FunctionParams_t *params) {
-    const struct libdivide_u32_branchfree_t denom = *(struct libdivide_u32_branchfree_t *)params->denomBranchfreePtr;
+    const struct libdivide_u32_branchfree_t* denom = (struct libdivide_u32_branchfree_t *)params->denomBranchfreePtr;
     const uint32_t *data = (const uint32_t *)params->data;
     uint32_t sum = 0;
     for (size_t iter = 0; iter < iters; iter++) {
         uint32_t numer = data[iter];
-        sum += libdivide_u32_branchfree_do(numer, &denom);
+        sum += libdivide_u32_branchfree_do(numer, denom + (iter & (params->denomCount - 1)));
     }
     return sum;
 }
@@ -164,12 +166,12 @@ NOINLINE static uint64_t mine_u32_branchfree(struct FunctionParams_t *params) {
 
 NOINLINE static uint64_t mine_u32_vector(struct FunctionParams_t *params) {
     size_t count = sizeof(VECTOR_TYPE) / sizeof(uint32_t);
-    const struct libdivide_u32_t denom = *(struct libdivide_u32_t *)params->denomPtr;
+    const struct libdivide_u32_t* denom = (struct libdivide_u32_t *)params->denomPtr;
     const uint32_t *data = (const uint32_t *)params->data;
     VECTOR_TYPE sumX4 = SETZERO_SI();
         for (size_t iter = 0; iter < iters; iter += count) {
         VECTOR_TYPE numers = LOAD_SI((const VECTOR_TYPE*)(data + iter));
-        sumX4 = ADD_EPI32(sumX4, libdivide_u32_do_vector(numers, &denom));
+        sumX4 = ADD_EPI32(sumX4, libdivide_u32_do_vector(numers, denom + (iter & (params->denomCount - 1))));
     }
     const uint32_t *comps = (const uint32_t *)&sumX4;
     uint32_t sum = 0;
@@ -181,12 +183,12 @@ NOINLINE static uint64_t mine_u32_vector(struct FunctionParams_t *params) {
 
 NOINLINE static uint64_t mine_u32_vector_branchfree(struct FunctionParams_t *params) {
     size_t count = sizeof(VECTOR_TYPE) / sizeof(uint32_t);
-    const struct libdivide_u32_branchfree_t denom = *(struct libdivide_u32_branchfree_t *)params->denomBranchfreePtr;
+    const struct libdivide_u32_branchfree_t* denom = (struct libdivide_u32_branchfree_t *)params->denomBranchfreePtr;
     const uint32_t *data = (const uint32_t *)params->data;
     VECTOR_TYPE sumX4 = SETZERO_SI();
     for (size_t iter = 0; iter < iters; iter += count) {
         VECTOR_TYPE numers = LOAD_SI((const VECTOR_TYPE*)(data + iter));
-        sumX4 = ADD_EPI32(sumX4, libdivide_u32_branchfree_do_vector(numers, &denom));
+        sumX4 = ADD_EPI32(sumX4, libdivide_u32_branchfree_do_vector(numers, denom + (iter & (params->denomCount - 1))));
     }
     const uint32_t *comps = (const uint32_t *)&sumX4;
     uint32_t sum = 0;
@@ -201,11 +203,11 @@ NOINLINE static uint64_t mine_u32_vector_branchfree(struct FunctionParams_t *par
 
 NOINLINE static uint64_t his_u32(struct FunctionParams_t *params) {
     const uint32_t *data = (const uint32_t *)params->data;
-    const uint32_t d = *(uint32_t *)params->d;
+    const uint32_t* d = (uint32_t *)params->d;
     uint32_t sum = 0;
     for (size_t iter= 0; iter < iters; iter++) {
         uint32_t numer = data[iter];
-        sum += numer / d;
+        sum += numer / *(d + (iter & (params->denomCount - 1)));
     }
     return sum;
 }
@@ -214,7 +216,7 @@ NOINLINE static uint64_t mine_u32_generate(struct FunctionParams_t *params) {
     uint32_t *dPtr = (uint32_t *)params->d;
     struct libdivide_u32_t *denomPtr = (struct libdivide_u32_t *)params->denomPtr;
     for (size_t iter= 0; iter < genIters; iter++) {
-        *denomPtr = libdivide_u32_gen(*dPtr);
+        *denomPtr = libdivide_u32_gen(*(dPtr + (iter & (params->denomCount - 1))));
     }
     return *dPtr;
 }
@@ -222,23 +224,23 @@ NOINLINE static uint64_t mine_u32_generate(struct FunctionParams_t *params) {
 // S32
  
 NOINLINE static uint64_t mine_s32(struct FunctionParams_t *params) {
-    const struct libdivide_s32_t denom = *(struct libdivide_s32_t *)params->denomPtr;
+    const struct libdivide_s32_t* denom = (struct libdivide_s32_t *)params->denomPtr;
     const int32_t *data = (const int32_t *)params->data;
     int32_t sum = 0;
     for (size_t iter= 0; iter < iters; iter++) {
         int32_t numer = data[iter];
-        sum += libdivide_s32_do(numer, &denom);
+        sum += libdivide_s32_do(numer, denom + (iter & (params->denomCount - 1)));
     }
     return sum;
 }
 
 NOINLINE static uint64_t mine_s32_branchfree(struct FunctionParams_t *params) {
-    const struct libdivide_s32_branchfree_t denom = *(struct libdivide_s32_branchfree_t *)params->denomBranchfreePtr;
+    const struct libdivide_s32_branchfree_t* denom = (struct libdivide_s32_branchfree_t *)params->denomBranchfreePtr;
     const int32_t *data = (const int32_t *)params->data;
     int32_t sum = 0;
     for (size_t iter= 0; iter < iters; iter++) {
         int32_t numer = data[iter];
-        sum += libdivide_s32_branchfree_do(numer, &denom);
+        sum += libdivide_s32_branchfree_do(numer, denom + (iter & (params->denomCount - 1)));
     }
     return sum;
 }
@@ -250,11 +252,11 @@ NOINLINE static uint64_t mine_s32_branchfree(struct FunctionParams_t *params) {
 NOINLINE static uint64_t mine_s32_vector(struct FunctionParams_t *params) {
     size_t count = sizeof(VECTOR_TYPE) / sizeof(int32_t);
     VECTOR_TYPE sumX4 = SETZERO_SI();
-    const struct libdivide_s32_t denom = *(struct libdivide_s32_t *)params->denomPtr;
+    const struct libdivide_s32_t* denom = (struct libdivide_s32_t *)params->denomPtr;
     const int32_t *data = (const int32_t *)params->data;
     for (size_t iter = 0; iter < iters; iter += count) {
         VECTOR_TYPE numers = LOAD_SI((const VECTOR_TYPE*)(data + iter));
-        sumX4 = ADD_EPI32(sumX4, libdivide_s32_do_vector(numers, &denom));
+        sumX4 = ADD_EPI32(sumX4, libdivide_s32_do_vector(numers, denom + (iter & (params->denomCount - 1))));
     }
     const int32_t *comps = (const int32_t *)&sumX4;
     int32_t sum = 0;
@@ -267,11 +269,11 @@ NOINLINE static uint64_t mine_s32_vector(struct FunctionParams_t *params) {
 NOINLINE static uint64_t mine_s32_vector_branchfree(struct FunctionParams_t *params) {
     size_t count = sizeof(VECTOR_TYPE) / sizeof(int32_t);
     VECTOR_TYPE sumX4 = SETZERO_SI();
-    const struct libdivide_s32_branchfree_t denom = *(struct libdivide_s32_branchfree_t *)params->denomBranchfreePtr;
+    const struct libdivide_s32_branchfree_t* denom = (struct libdivide_s32_branchfree_t *)params->denomBranchfreePtr;
     const int32_t *data = (const int32_t *)params->data;
     for (size_t iter = 0; iter < iters; iter += count) {
         VECTOR_TYPE numers = LOAD_SI((const VECTOR_TYPE*)(data + iter));
-        sumX4 = ADD_EPI32(sumX4, libdivide_s32_branchfree_do_vector(numers, &denom));
+        sumX4 = ADD_EPI32(sumX4, libdivide_s32_branchfree_do_vector(numers, denom + (iter & (params->denomCount - 1))));
     }
     const int32_t *comps = (const int32_t *)&sumX4;
     int32_t sum = 0;
@@ -285,11 +287,11 @@ NOINLINE static uint64_t mine_s32_vector_branchfree(struct FunctionParams_t *par
 
 NOINLINE static uint64_t his_s32(struct FunctionParams_t *params) {
     int32_t sum = 0;
-    const int32_t d = *(int32_t *)params->d;
+    const int32_t* d = (int32_t *)params->d;
     const int32_t *data = (const int32_t *)params->data;
     for (size_t iter= 0; iter < iters; iter++) {
         int32_t numer = data[iter];
-        sum += numer / d;
+        sum += numer / *(d + (iter & (params->denomCount - 1)));
     }
     return sum;
 }
@@ -306,23 +308,23 @@ NOINLINE static uint64_t mine_s32_generate(struct FunctionParams_t *params) {
 // U64
 
 NOINLINE static uint64_t mine_u64(struct FunctionParams_t *params) {
-    const struct libdivide_u64_t denom = *(struct libdivide_u64_t *)params->denomPtr;
+    const struct libdivide_u64_t* denom = (struct libdivide_u64_t *)params->denomPtr;
     const uint64_t *data = (const uint64_t *)params->data;
     uint64_t sum = 0;
     for (size_t iter= 0; iter < iters; iter++) {
         uint64_t numer = data[iter];
-        sum += libdivide_u64_do(numer, &denom);
+        sum += libdivide_u64_do(numer, denom + (iter & (params->denomCount - 1)));
     }
     return sum;
 }
 
 NOINLINE static uint64_t mine_u64_branchfree(struct FunctionParams_t *params) {
-    const struct libdivide_u64_branchfree_t denom = *(struct libdivide_u64_branchfree_t *)params->denomBranchfreePtr;
+    const struct libdivide_u64_branchfree_t* denom = (struct libdivide_u64_branchfree_t *)params->denomBranchfreePtr;
     const uint64_t *data = (const uint64_t *)params->data;
     uint64_t sum = 0;
     for (size_t iter= 0; iter < iters; iter++) {
         uint64_t numer = data[iter];
-        sum += libdivide_u64_branchfree_do(numer, &denom);
+        sum += libdivide_u64_branchfree_do(numer, denom + (iter & (params->denomCount - 1)));
     }
     return sum;
 }
@@ -334,11 +336,11 @@ NOINLINE static uint64_t mine_u64_branchfree(struct FunctionParams_t *params) {
 NOINLINE static uint64_t mine_u64_vector(struct FunctionParams_t *params) {
     size_t count = sizeof(VECTOR_TYPE) / sizeof(uint64_t);
     VECTOR_TYPE sumX2 = SETZERO_SI();
-    const struct libdivide_u64_t denom = *(struct libdivide_u64_t *)params->denomPtr;
+    const struct libdivide_u64_t* denom = (struct libdivide_u64_t *)params->denomPtr;
     const uint64_t *data = (const uint64_t *)params->data;
     for (size_t iter = 0; iter < iters; iter += count) {
         VECTOR_TYPE numers = LOAD_SI((const VECTOR_TYPE*)(data + iter));
-        sumX2 = ADD_EPI64(sumX2, libdivide_u64_do_vector(numers, &denom));
+        sumX2 = ADD_EPI64(sumX2, libdivide_u64_do_vector(numers, denom + (iter & (params->denomCount - 1))));
     }
     const uint64_t *comps = (const uint64_t *)&sumX2;
     uint64_t sum = 0;
@@ -351,11 +353,11 @@ NOINLINE static uint64_t mine_u64_vector(struct FunctionParams_t *params) {
 NOINLINE static uint64_t mine_u64_vector_branchfree(struct FunctionParams_t *params) {
     size_t count = sizeof(VECTOR_TYPE) / sizeof(uint64_t);
     VECTOR_TYPE sumX2 = SETZERO_SI();
-    const struct libdivide_u64_branchfree_t denom = *(struct libdivide_u64_branchfree_t *)params->denomBranchfreePtr;
+    const struct libdivide_u64_branchfree_t* denom = (struct libdivide_u64_branchfree_t *)params->denomBranchfreePtr;
     const uint64_t *data = (const uint64_t *)params->data;
     for (size_t iter = 0; iter < iters; iter += count) {
         VECTOR_TYPE numers = LOAD_SI((const VECTOR_TYPE*)(data + iter));
-        sumX2 = ADD_EPI64(sumX2, libdivide_u64_branchfree_do_vector(numers, &denom));
+        sumX2 = ADD_EPI64(sumX2, libdivide_u64_branchfree_do_vector(numers, denom + (iter & (params->denomCount - 1))));
     }
     const uint64_t *comps = (const uint64_t *)&sumX2;
     uint64_t sum = 0;
@@ -369,11 +371,11 @@ NOINLINE static uint64_t mine_u64_vector_branchfree(struct FunctionParams_t *par
 
 NOINLINE static uint64_t his_u64(struct FunctionParams_t *params) {
     uint64_t sum = 0;
-    const uint64_t d = *(uint64_t *)params->d;
+    const uint64_t* d = (uint64_t *)params->d;
     const uint64_t *data = (const uint64_t *)params->data;
     for (size_t iter= 0; iter < iters; iter++) {
         uint64_t numer = data[iter];
-        sum += numer / d;
+        sum += numer / *(d + (iter & (params->denomCount - 1)));
     }
     return sum;
 }
@@ -388,23 +390,23 @@ NOINLINE static uint64_t mine_u64_generate(struct FunctionParams_t *params) {
 }
 
 NOINLINE static uint64_t mine_s64(struct FunctionParams_t *params) {
-    const struct libdivide_s64_t denom = *(struct libdivide_s64_t *)params->denomPtr;
+    const struct libdivide_s64_t* denom = (struct libdivide_s64_t *)params->denomPtr;
     const int64_t *data = (const int64_t *)params->data;
     int64_t sum = 0;
     for (size_t iter= 0; iter < iters; iter++) {
         int64_t numer = data[iter];
-        sum += libdivide_s64_do(numer, &denom);
+        sum += libdivide_s64_do(numer, denom + (iter & (params->denomCount - 1)));
     }
     return sum;
 }
 
 NOINLINE static uint64_t mine_s64_branchfree(struct FunctionParams_t *params) {
-    const struct libdivide_s64_branchfree_t denom = *(struct libdivide_s64_branchfree_t *)params->denomBranchfreePtr;
+    const struct libdivide_s64_branchfree_t* denom = (struct libdivide_s64_branchfree_t *)params->denomBranchfreePtr;
     const int64_t *data = (const int64_t *)params->data;
     int64_t sum = 0;
     for (size_t iter= 0; iter < iters; iter++) {
         int64_t numer = data[iter];
-        sum += libdivide_s64_branchfree_do(numer, &denom);
+        sum += libdivide_s64_branchfree_do(numer, denom + (iter & (params->denomCount - 1)));
     }
     return sum;
 }
@@ -414,14 +416,14 @@ NOINLINE static uint64_t mine_s64_branchfree(struct FunctionParams_t *params) {
     defined(LIBDIVIDE_SSE2)
 
 NOINLINE static uint64_t mine_s64_vector(struct FunctionParams_t *params) {
-    const struct libdivide_s64_t denom = *(struct libdivide_s64_t *)params->denomPtr;
+    const struct libdivide_s64_t* denom = (struct libdivide_s64_t *)params->denomPtr;
     const int64_t *data = (const int64_t *)params->data;
     size_t count = sizeof(VECTOR_TYPE) / sizeof(int64_t);
     
     VECTOR_TYPE sumX2 = SETZERO_SI();
     for (size_t iter = 0; iter < iters; iter += count) {
         VECTOR_TYPE numers = LOAD_SI((const VECTOR_TYPE*)(data + iter));
-        sumX2 = ADD_EPI64(sumX2, libdivide_s64_do_vector(numers, &denom));
+        sumX2 = ADD_EPI64(sumX2, libdivide_s64_do_vector(numers, denom + (iter & (params->denomCount - 1))));
     }
     const int64_t *comps = (const int64_t *)&sumX2;
     int64_t sum = 0;
@@ -432,14 +434,14 @@ NOINLINE static uint64_t mine_s64_vector(struct FunctionParams_t *params) {
 }
 
 NOINLINE static uint64_t mine_s64_vector_branchfree(struct FunctionParams_t *params) {
-    const struct libdivide_s64_branchfree_t denom = *(struct libdivide_s64_branchfree_t *)params->denomBranchfreePtr;
+    const struct libdivide_s64_branchfree_t* denom = (struct libdivide_s64_branchfree_t *)params->denomBranchfreePtr;
     const int64_t *data = (const int64_t *)params->data;
     size_t count = sizeof(VECTOR_TYPE) / sizeof(int64_t);
     
     VECTOR_TYPE sumX2 = SETZERO_SI();
     for (size_t iter = 0; iter < iters; iter += count) {
         VECTOR_TYPE numers = LOAD_SI((const VECTOR_TYPE*)(data + iter));
-        sumX2 = ADD_EPI64(sumX2, libdivide_s64_branchfree_do_vector(numers, &denom));
+        sumX2 = ADD_EPI64(sumX2, libdivide_s64_branchfree_do_vector(numers, denom + (iter & (params->denomCount - 1))));
     }
     const int64_t *comps = (const int64_t *)&sumX2;
     int64_t sum = 0;
@@ -453,11 +455,11 @@ NOINLINE static uint64_t mine_s64_vector_branchfree(struct FunctionParams_t *par
 
 NOINLINE static uint64_t his_s64(struct FunctionParams_t *params) {
     const int64_t *data = (const int64_t *)params->data;
-    const int64_t d = *(int64_t *)params->d;
+    const int64_t* d = (int64_t *)params->d;
     int64_t sum = 0;
     for (size_t iter= 0; iter < iters; iter++) {
         int64_t numer = data[iter];
-        sum += numer / d;
+        sum += numer / *(d + (iter & (params->denomCount - 1)));
     }
     return sum;
 }
@@ -507,7 +509,13 @@ static uint64_t find_min(const uint64_t *vals, size_t cnt) {
 }
  
 typedef uint64_t (*TestFunc_t)(struct FunctionParams_t *params);
- 
+
+void check(uint64_t actual, uint64_t expected, int line)
+{
+    if (actual != expected)
+        printf("Failure on line %d\n", line);
+}
+
 NOINLINE struct TestResult test_one(TestFunc_t mine, 
                                     TestFunc_t mine_branchfree, 
                                     TestFunc_t mine_vector,
@@ -519,7 +527,7 @@ NOINLINE struct TestResult test_one(TestFunc_t mine,
     struct TestResult result;
     memset(&result, 0, sizeof result);
     
-#define CHECK(actual, expected) do { if (1 && actual != expected) printf("Failure on line %lu\n", (unsigned long)__LINE__); } while (0)
+#define CHECK(actual, expected) do { check(actual, expected, __LINE__); } while (0)
     
     uint64_t my_times[TEST_COUNT], my_times_branchfree[TEST_COUNT], my_times_vector[TEST_COUNT], my_times_vector_branchfree[TEST_COUNT], his_times[TEST_COUNT], gen_times[TEST_COUNT];
     struct time_result tresult;
@@ -562,23 +570,29 @@ int libdivide_u32_get_algorithm(const struct libdivide_u32_t *denom) {
 }
 
 NOINLINE struct TestResult test_one_u32(uint32_t d, const uint32_t *data) {
-    int no_branchfree = (d == 1);
-    struct libdivide_u32_t div_struct = libdivide_u32_gen(d);
-    struct libdivide_u32_branchfree_t div_struct_bf = libdivide_u32_branchfree_gen(no_branchfree ? 2 : d);
+    struct libdivide_u32_t div_struct[8];
+    struct libdivide_u32_branchfree_t div_struct_bf[8];
     struct FunctionParams_t params;
-    params.d = &d;
+    uint32_t da[8];
+    params.d = &da;
     params.denomPtr = &div_struct;
     params.denomBranchfreePtr = &div_struct_bf;
     params.data = data;
+    params.denomCount = 8;
+    for (int i = 0; i < 8; i++) {
+        div_struct[i] = libdivide_u32_gen(d);
+        div_struct_bf[i] = libdivide_u32_branchfree_gen(d);
+        da[i] = d;
+    }
         
     struct TestResult result = test_one(mine_u32,
-                                        no_branchfree ? mine_u32 : mine_u32_branchfree,
+                                        mine_u32_branchfree,
                                         mine_u32_vector,
-                                        no_branchfree ? mine_u32_vector : mine_u32_vector_branchfree,
+                                        mine_u32_vector_branchfree,
                                         his_u32,
                                         mine_u32_generate,
                                         &params);
-    result.algo = libdivide_u32_get_algorithm(&div_struct);
+    result.algo = libdivide_u32_get_algorithm(&div_struct[0]);
     return result;
 }
 
@@ -593,23 +607,29 @@ int libdivide_s32_get_algorithm(const struct libdivide_s32_t *denom) {
 }
 
 NOINLINE struct TestResult test_one_s32(int32_t d, const int32_t *data) {
-    int no_branchfree = (d == 1 || d == -1);
-    struct libdivide_s32_t div_struct = libdivide_s32_gen(d);
-    struct libdivide_s32_branchfree_t div_struct_bf = libdivide_s32_branchfree_gen(no_branchfree ? 2 : d);
+    struct libdivide_s32_t div_struct[8];
+    struct libdivide_s32_branchfree_t div_struct_bf[8];
     struct FunctionParams_t params;
-    params.d = &d;
+    int32_t da[8];
+    params.d = &da;
     params.denomPtr = &div_struct;
     params.denomBranchfreePtr = &div_struct_bf;
     params.data = data;
+    params.denomCount = 8;
+    for (int i = 0; i < 8; i++) {
+        div_struct[i] = libdivide_s32_gen(d);
+        div_struct_bf[i] = libdivide_s32_branchfree_gen(d);
+        da[i] = d;
+    }
     
     struct TestResult result = test_one(mine_s32,
-                                        no_branchfree ? mine_s32 : mine_s32_branchfree,
+                                        mine_s32_branchfree,
                                         mine_s32_vector,
-                                        no_branchfree ? mine_s32_vector : mine_s32_vector_branchfree,
+                                        mine_s32_vector_branchfree,
                                         his_s32,
                                         mine_s32_generate,
                                         &params);
-    result.algo = libdivide_s32_get_algorithm(&div_struct);
+    result.algo = libdivide_s32_get_algorithm(&div_struct[0]);
     return result;
 }
 
@@ -624,23 +644,29 @@ int libdivide_u64_get_algorithm(const struct libdivide_u64_t *denom) {
 }
 
 NOINLINE struct TestResult test_one_u64(uint64_t d, const uint64_t *data) {
-    int no_branchfree = (d == 1);
-    struct libdivide_u64_t div_struct = libdivide_u64_gen(d);
-    struct libdivide_u64_branchfree_t div_struct_bf = libdivide_u64_branchfree_gen(no_branchfree ? 2 : d);
+    struct libdivide_u64_t div_struct[8];
+    struct libdivide_u64_branchfree_t div_struct_bf[8];
     struct FunctionParams_t params;
-    params.d = &d;
+    uint64_t da[8];
+    params.d = &da;
     params.denomPtr = &div_struct;
     params.denomBranchfreePtr = &div_struct_bf;
     params.data = data;
+    params.denomCount = 8;
+    for (int i = 0; i < 8; i++) {
+        div_struct[i] = libdivide_u64_gen(d);
+        div_struct_bf[i] = libdivide_u64_branchfree_gen(d);
+        da[i] = d;
+    }
     
     struct TestResult result = test_one(mine_u64,
-                                        no_branchfree ? mine_u64 : mine_u64_branchfree,
+                                        mine_u64_branchfree,
                                         mine_u64_vector,
-                                        no_branchfree ? mine_u64_vector : mine_u64_vector_branchfree,
+                                        mine_u64_vector_branchfree,
                                         his_u64,
                                         mine_u64_generate,
                                         &params);
-    result.algo = libdivide_u64_get_algorithm(&div_struct);
+    result.algo = libdivide_u64_get_algorithm(&div_struct[0]);
     return result;
 }
 
@@ -655,22 +681,28 @@ int libdivide_s64_get_algorithm(const struct libdivide_s64_t *denom) {
 }
 
 NOINLINE struct TestResult test_one_s64(int64_t d, const int64_t *data) {
-    int no_branchfree = (d == 1 || d == -1);
-    struct libdivide_s64_t div_struct = libdivide_s64_gen(d);
-    struct libdivide_s64_branchfree_t div_struct_bf = libdivide_s64_branchfree_gen(no_branchfree ? 2 : d);
+    struct libdivide_s64_t div_struct[8];
+    struct libdivide_s64_branchfree_t div_struct_bf[8];
     struct FunctionParams_t params;
-    params.d = &d;
+    int64_t da[8];
+    params.d = &da;
     params.denomPtr = &div_struct;
-    params.denomBranchfreePtr = no_branchfree ? (void *)&div_struct : (void *)&div_struct_bf;
+    params.denomBranchfreePtr = (void *)&div_struct_bf;
     params.data = data;
+    params.denomCount = 8;
+    for (int i = 0; i < 8; i++) {
+        div_struct[i] = libdivide_s64_gen(d);
+        div_struct_bf[i] = libdivide_s64_branchfree_gen(d);
+        da[i] = d;
+    }
     
     struct TestResult result = test_one(mine_s64, 
-                                        no_branchfree ? mine_s64 : mine_s64_branchfree, 
+                                        mine_s64_branchfree, 
                                         mine_s64_vector, 
                                         mine_s64_vector_branchfree, 
                                         his_s64, 
                                         mine_s64_generate, &params);
-    result.algo = libdivide_s64_get_algorithm(&div_struct);
+    result.algo = libdivide_s64_get_algorithm(&div_struct[0]);
     return result;
 }
 

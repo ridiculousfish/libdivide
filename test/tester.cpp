@@ -184,7 +184,7 @@ private:
 #if defined(LIBDIVIDE_AVX512) || \
     defined(LIBDIVIDE_AVX2) || \
     defined(LIBDIVIDE_SSE2)   
-            test_16(numers, denom, the_divider);
+            //test_16(numers, denom, the_divider);
 #endif
         }
         const T min = limits::min(), max = limits::max();
