@@ -658,8 +658,8 @@ uint32_t libdivide_u32_do(uint32_t numer, const struct libdivide_u32_t *denom) {
 
 uint32_t libdivide_u32_branchfree_do(uint32_t numer, const struct libdivide_u32_branchfree_t *denom) {
     uint32_t q = libdivide_mullhi_u32(denom->magic, numer);
-    uint32_t t = ((numer - q) >> 1) + q;
-    return (t >> denom->more) + (numer & denom->one);
+    uint32_t t = ((numer - q) >> 1) + q + (numer & denom->one);
+    return t >> denom->more;
 }
 
 uint32_t libdivide_u32_recover(const struct libdivide_u32_t *denom) {
@@ -799,8 +799,8 @@ uint64_t libdivide_u64_do(uint64_t numer, const struct libdivide_u64_t *denom) {
 
 uint64_t libdivide_u64_branchfree_do(uint64_t numer, const struct libdivide_u64_branchfree_t *denom) {
     uint64_t q = libdivide_mullhi_u64(denom->magic, numer);
-    uint64_t t = ((numer - q) >> 1) + q;
-    return (t >> denom->more) + (numer & denom->one);
+    uint64_t t = ((numer - q) >> 1) + q + (numer & denom->one);
+    return t >> denom->more;
 }
 
 uint64_t libdivide_u64_recover(const struct libdivide_u64_t *denom) {
