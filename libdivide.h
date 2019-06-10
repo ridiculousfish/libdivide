@@ -30,6 +30,14 @@
     #include <emmintrin.h>
 #endif
 
+#if defined(_MSC_VER)
+    #include <intrin.h>
+    // disable warning C4146: unary minus operator applied
+    // to unsigned type, result still unsigned
+    #pragma warning(disable: 4146)
+    #define LIBDIVIDE_VC
+#endif
+
 #if !defined(__has_builtin)
     #define __has_builtin(x) 0
 #endif
@@ -54,26 +62,6 @@
     #define LIBDIVIDE_FUNCTION __FUNCTION__
 #else
     #define LIBDIVIDE_FUNCTION __func__
-#endif
-
-#if defined(_MSC_VER)
-    #include <intrin.h>
-    // disable warning C4146: unary minus operator applied
-    // to unsigned type, result still unsigned
-    #pragma warning(disable: 4146)
-    #define LIBDIVIDE_VC
-
-    // _udiv128() is available in Visual Studio 2019
-    // or later on the x64 CPU architecture
-    #if defined(LIBDIVIDE_X86_64) && _MSC_VER >= 1920
-        #if !defined(__has_include)
-            #include <immintrin.h>
-            #define LIBDIVIDE_VC_UDIV128
-        #elif __has_include(<immintrin.h>)
-            #include <immintrin.h>
-            #define LIBDIVIDE_VC_UDIV128
-        #endif
-    #endif
 #endif
 
 #define LIBDIVIDE_ERROR(msg) \
@@ -365,19 +353,14 @@ static inline uint32_t libdivide_64_div_32_to_32(uint32_t u1, uint32_t u0, uint3
 // uint {v}. The result must fit in 64 bits.
 // Returns the quotient directly and the remainder in *r
 static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v, uint64_t *r) {
-#if defined(LIBDIVIDE_VC_UDIV128)
-    return _udiv128(u1, u0, v, r);
-
-#elif defined(LIBDIVIDE_X86_64) && \
-      defined(LIBDIVIDE_GCC_STYLE_ASM)
-
+#if defined(LIBDIVIDE_X86_64) && \
+    defined(LIBDIVIDE_GCC_STYLE_ASM)
     uint64_t result;
     __asm__("divq %[v]"
             : "=a"(result), "=d"(*r)
             : [v] "r"(v), "a"(u0), "d"(u1)
             );
     return result;
-
 #elif defined(HAS_INT128_T)
     __uint128_t n = ((__uint128_t)u1 << 64) | u0;
     uint64_t result = (uint64_t)(n / v);
