@@ -5,7 +5,7 @@
 benchmark
 primes
 tester
-/build*
+/build!(.rs)
 /.vscode
 CMakeCache.txt
 CMakeFiles
@@ -14,3 +14,12 @@ Makefile
 cmake_install.cmake
 install_manifest.txt
 CTestTestfile.cmake
+
+
+#Added by cargo
+#
+#already existing elements are commented out
+
+/target
+**/*.rs.bk
+Cargo.lock
