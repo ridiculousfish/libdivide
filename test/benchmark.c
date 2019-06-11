@@ -224,7 +224,7 @@ NOINLINE static uint64_t mine_u32_generate(struct FunctionParams_t *params) {
 NOINLINE static uint64_t mine_s32(struct FunctionParams_t *params) {
     const struct libdivide_s32_t denom = *(struct libdivide_s32_t *)params->denomPtr;
     const int32_t *data = (const int32_t *)params->data;
-    int32_t sum = 0;
+    uint32_t sum = 0;
     for (size_t iter= 0; iter < iters; iter++) {
         int32_t numer = data[iter];
         sum += libdivide_s32_do(numer, &denom);
@@ -235,7 +235,7 @@ NOINLINE static uint64_t mine_s32(struct FunctionParams_t *params) {
 NOINLINE static uint64_t mine_s32_branchfree(struct FunctionParams_t *params) {
     const struct libdivide_s32_branchfree_t denom = *(struct libdivide_s32_branchfree_t *)params->denomBranchfreePtr;
     const int32_t *data = (const int32_t *)params->data;
-    int32_t sum = 0;
+    uint32_t sum = 0;
     for (size_t iter= 0; iter < iters; iter++) {
         int32_t numer = data[iter];
         sum += libdivide_s32_branchfree_do(numer, &denom);
@@ -257,7 +257,7 @@ NOINLINE static uint64_t mine_s32_vector(struct FunctionParams_t *params) {
         sumX4 = ADD_EPI32(sumX4, libdivide_s32_do_vector(numers, &denom));
     }
     const int32_t *comps = (const int32_t *)&sumX4;
-    int32_t sum = 0;
+    uint32_t sum = 0;
     for (size_t i = 0; i < count; i++) {
         sum += comps[i];
     }
@@ -274,7 +274,7 @@ NOINLINE static uint64_t mine_s32_vector_branchfree(struct FunctionParams_t *par
         sumX4 = ADD_EPI32(sumX4, libdivide_s32_branchfree_do_vector(numers, &denom));
     }
     const int32_t *comps = (const int32_t *)&sumX4;
-    int32_t sum = 0;
+    uint32_t sum = 0;
     for (size_t i = 0; i < count; i++) {
         sum += comps[i];
     }
@@ -284,7 +284,7 @@ NOINLINE static uint64_t mine_s32_vector_branchfree(struct FunctionParams_t *par
 #endif
 
 NOINLINE static uint64_t his_s32(struct FunctionParams_t *params) {
-    int32_t sum = 0;
+    uint32_t sum = 0;
     const int32_t d = *(int32_t *)params->d;
     const int32_t *data = (const int32_t *)params->data;
     for (size_t iter= 0; iter < iters; iter++) {
@@ -390,7 +390,7 @@ NOINLINE static uint64_t mine_u64_generate(struct FunctionParams_t *params) {
 NOINLINE static uint64_t mine_s64(struct FunctionParams_t *params) {
     const struct libdivide_s64_t denom = *(struct libdivide_s64_t *)params->denomPtr;
     const int64_t *data = (const int64_t *)params->data;
-    int64_t sum = 0;
+    uint64_t sum = 0;
     for (size_t iter= 0; iter < iters; iter++) {
         int64_t numer = data[iter];
         sum += libdivide_s64_do(numer, &denom);
@@ -401,7 +401,7 @@ NOINLINE static uint64_t mine_s64(struct FunctionParams_t *params) {
 NOINLINE static uint64_t mine_s64_branchfree(struct FunctionParams_t *params) {
     const struct libdivide_s64_branchfree_t denom = *(struct libdivide_s64_branchfree_t *)params->denomBranchfreePtr;
     const int64_t *data = (const int64_t *)params->data;
-    int64_t sum = 0;
+    uint64_t sum = 0;
     for (size_t iter= 0; iter < iters; iter++) {
         int64_t numer = data[iter];
         sum += libdivide_s64_branchfree_do(numer, &denom);
@@ -424,7 +424,7 @@ NOINLINE static uint64_t mine_s64_vector(struct FunctionParams_t *params) {
         sumX2 = ADD_EPI64(sumX2, libdivide_s64_do_vector(numers, &denom));
     }
     const int64_t *comps = (const int64_t *)&sumX2;
-    int64_t sum = 0;
+    uint64_t sum = 0;
     for (size_t i = 0; i < count; i++) {
         sum += comps[i];
     }
@@ -442,7 +442,7 @@ NOINLINE static uint64_t mine_s64_vector_branchfree(struct FunctionParams_t *par
         sumX2 = ADD_EPI64(sumX2, libdivide_s64_branchfree_do_vector(numers, &denom));
     }
     const int64_t *comps = (const int64_t *)&sumX2;
-    int64_t sum = 0;
+    uint64_t sum = 0;
     for (size_t i = 0; i < count; i++) {
         sum += comps[i];
     }
@@ -454,7 +454,7 @@ NOINLINE static uint64_t mine_s64_vector_branchfree(struct FunctionParams_t *par
 NOINLINE static uint64_t his_s64(struct FunctionParams_t *params) {
     const int64_t *data = (const int64_t *)params->data;
     const int64_t d = *(int64_t *)params->d;
-    int64_t sum = 0;
+    uint64_t sum = 0;
     for (size_t iter= 0; iter < iters; iter++) {
         int64_t numer = data[iter];
         sum += numer / d;
