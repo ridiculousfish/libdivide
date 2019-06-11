@@ -1319,17 +1319,16 @@ __m512i libdivide_s32_do_vector(__m512i numers, const struct libdivide_s32_t *de
         // q = numer + ((numer >> 31) & roundToZeroTweak);
         __m512i q = _mm512_add_epi32(numers, _mm512_and_si512(_mm512_srai_epi32(numers, 31), roundToZeroTweak));
         q = _mm512_srai_epi32(q, shift);
-        // set all bits of shift mask = to the sign bit of more
-        __m512i shiftMask = _mm512_set1_epi32((int32_t)((int8_t)more >> 7));
-        // q = (q ^ shiftMask) - shiftMask;
-        q = _mm512_sub_epi32(_mm512_xor_si512(q, shiftMask), shiftMask);
+        __m512i sign = _mm512_set1_epi32((int8_t)more >> 7);
+        // q = (q ^ sign) - sign;
+        q = _mm512_sub_epi32(_mm512_xor_si512(q, sign), sign);
         return q;
     }
     else {
         __m512i q = libdivide_mullhi_s32_vector(numers, _mm512_set1_epi32(denom->magic));
         if (more & LIBDIVIDE_ADD_MARKER) {
              // must be arithmetic shift
-            __m512i sign = _mm512_set1_epi32((int32_t)(int8_t)more >> 7);
+            __m512i sign = _mm512_set1_epi32((int8_t)more >> 7);
              // q += ((numer ^ sign) - sign);
             q = _mm512_add_epi32(q, _mm512_sub_epi32(_mm512_xor_si512(numers, sign), sign));
         }
@@ -1345,7 +1344,7 @@ __m512i libdivide_s32_branchfree_do_vector(__m512i numers, const struct libdivid
     uint8_t more = denom->more;
     uint8_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
      // must be arithmetic shift
-    __m512i sign = _mm512_set1_epi32((int32_t)(int8_t)more >> 7);
+    __m512i sign = _mm512_set1_epi32((int8_t)more >> 7);
     __m512i q = libdivide_mullhi_s32_vector(numers, _mm512_set1_epi32(magic));
     q = _mm512_add_epi32(q, numers); // q += numers
 
@@ -1373,16 +1372,16 @@ __m512i libdivide_s64_do_vector(__m512i numers, const struct libdivide_s64_t *de
         // q = numer + ((numer >> 63) & roundToZeroTweak);
         __m512i q = _mm512_add_epi64(numers, _mm512_and_si512(libdivide_s64_signbits(numers), roundToZeroTweak));
         q = libdivide_s64_shift_right_vector(q, shift);
-        __m512i shiftMask = _mm512_set1_epi32((int32_t)((int8_t)more >> 7));
-         // q = (q ^ shiftMask) - shiftMask;
-        q = _mm512_sub_epi64(_mm512_xor_si512(q, shiftMask), shiftMask);
+        __m512i sign = _mm512_set1_epi32((int8_t)more >> 7);
+         // q = (q ^ sign) - sign;
+        q = _mm512_sub_epi64(_mm512_xor_si512(q, sign), sign);
         return q;
     }
     else {
         __m512i q = libdivide_mullhi_s64_vector(numers, _mm512_set1_epi64(magic));
         if (more & LIBDIVIDE_ADD_MARKER) {
             // must be arithmetic shift
-            __m512i sign = _mm512_set1_epi32((int32_t)((int8_t)more >> 7));
+            __m512i sign = _mm512_set1_epi32((int8_t)more >> 7);
             // q += ((numer ^ sign) - sign);
             q = _mm512_add_epi64(q, _mm512_sub_epi64(_mm512_xor_si512(numers, sign), sign));
         }
@@ -1398,7 +1397,7 @@ __m512i libdivide_s64_branchfree_do_vector(__m512i numers, const struct libdivid
     uint8_t more = denom->more;
     uint8_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
     // must be arithmetic shift
-    __m512i sign = _mm512_set1_epi32((int32_t)(int8_t)more >> 7);
+    __m512i sign = _mm512_set1_epi32((int8_t)more >> 7);
 
      // libdivide_mullhi_s64(numers, magic);
     __m512i q = libdivide_mullhi_s64_vector(numers, _mm512_set1_epi64(magic));
@@ -1565,17 +1564,16 @@ __m256i libdivide_s32_do_vector(__m256i numers, const struct libdivide_s32_t *de
         // q = numer + ((numer >> 31) & roundToZeroTweak);
         __m256i q = _mm256_add_epi32(numers, _mm256_and_si256(_mm256_srai_epi32(numers, 31), roundToZeroTweak));
         q = _mm256_srai_epi32(q, shift);
-        // set all bits of shift mask = to the sign bit of more
-        __m256i shiftMask = _mm256_set1_epi32((int32_t)((int8_t)more >> 7));
-        // q = (q ^ shiftMask) - shiftMask;
-        q = _mm256_sub_epi32(_mm256_xor_si256(q, shiftMask), shiftMask);
+        __m256i sign = _mm256_set1_epi32((int8_t)more >> 7);
+        // q = (q ^ sign) - sign;
+        q = _mm256_sub_epi32(_mm256_xor_si256(q, sign), sign);
         return q;
     }
     else {
         __m256i q = libdivide_mullhi_s32_vector(numers, _mm256_set1_epi32(denom->magic));
         if (more & LIBDIVIDE_ADD_MARKER) {
              // must be arithmetic shift
-            __m256i sign = _mm256_set1_epi32((int32_t)(int8_t)more >> 7);
+            __m256i sign = _mm256_set1_epi32((int8_t)more >> 7);
              // q += ((numer ^ sign) - sign);
             q = _mm256_add_epi32(q, _mm256_sub_epi32(_mm256_xor_si256(numers, sign), sign));
         }
@@ -1591,7 +1589,7 @@ __m256i libdivide_s32_branchfree_do_vector(__m256i numers, const struct libdivid
     uint8_t more = denom->more;
     uint8_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
      // must be arithmetic shift
-    __m256i sign = _mm256_set1_epi32((int32_t)(int8_t)more >> 7);
+    __m256i sign = _mm256_set1_epi32((int8_t)more >> 7);
     __m256i q = libdivide_mullhi_s32_vector(numers, _mm256_set1_epi32(magic));
     q = _mm256_add_epi32(q, numers); // q += numers
 
@@ -1619,16 +1617,16 @@ __m256i libdivide_s64_do_vector(__m256i numers, const struct libdivide_s64_t *de
         // q = numer + ((numer >> 63) & roundToZeroTweak);
         __m256i q = _mm256_add_epi64(numers, _mm256_and_si256(libdivide_s64_signbits(numers), roundToZeroTweak));
         q = libdivide_s64_shift_right_vector(q, shift);
-        __m256i shiftMask = _mm256_set1_epi32((int32_t)((int8_t)more >> 7));
-         // q = (q ^ shiftMask) - shiftMask;
-        q = _mm256_sub_epi64(_mm256_xor_si256(q, shiftMask), shiftMask);
+        __m256i sign = _mm256_set1_epi32((int8_t)more >> 7);
+         // q = (q ^ sign) - sign;
+        q = _mm256_sub_epi64(_mm256_xor_si256(q, sign), sign);
         return q;
     }
     else {
         __m256i q = libdivide_mullhi_s64_vector(numers, _mm256_set1_epi64x(magic));
         if (more & LIBDIVIDE_ADD_MARKER) {
             // must be arithmetic shift
-            __m256i sign = _mm256_set1_epi32((int32_t)((int8_t)more >> 7));
+            __m256i sign = _mm256_set1_epi32((int8_t)more >> 7);
             // q += ((numer ^ sign) - sign);
             q = _mm256_add_epi64(q, _mm256_sub_epi64(_mm256_xor_si256(numers, sign), sign));
         }
@@ -1644,7 +1642,7 @@ __m256i libdivide_s64_branchfree_do_vector(__m256i numers, const struct libdivid
     uint8_t more = denom->more;
     uint8_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
     // must be arithmetic shift
-    __m256i sign = _mm256_set1_epi32((int32_t)(int8_t)more >> 7);
+    __m256i sign = _mm256_set1_epi32((int8_t)more >> 7);
 
      // libdivide_mullhi_s64(numers, magic);
     __m256i q = libdivide_mullhi_s64_vector(numers, _mm256_set1_epi64x(magic));
@@ -1815,17 +1813,16 @@ __m128i libdivide_s32_do_vector(__m128i numers, const struct libdivide_s32_t *de
         // q = numer + ((numer >> 31) & roundToZeroTweak);
         __m128i q = _mm_add_epi32(numers, _mm_and_si128(_mm_srai_epi32(numers, 31), roundToZeroTweak));
         q = _mm_srai_epi32(q, shift);
-        // set all bits of shift mask = to the sign bit of more
-        __m128i shiftMask = _mm_set1_epi32((int32_t)((int8_t)more >> 7));
-        // q = (q ^ shiftMask) - shiftMask;
-        q = _mm_sub_epi32(_mm_xor_si128(q, shiftMask), shiftMask);
+        __m128i sign = _mm_set1_epi32((int8_t)more >> 7);
+        // q = (q ^ sign) - sign;
+        q = _mm_sub_epi32(_mm_xor_si128(q, sign), sign);
         return q;
     }
     else {
         __m128i q = libdivide_mullhi_s32_vector(numers, _mm_set1_epi32(denom->magic));
         if (more & LIBDIVIDE_ADD_MARKER) {
              // must be arithmetic shift
-            __m128i sign = _mm_set1_epi32((int32_t)(int8_t)more >> 7);
+            __m128i sign = _mm_set1_epi32((int8_t)more >> 7);
              // q += ((numer ^ sign) - sign);
             q = _mm_add_epi32(q, _mm_sub_epi32(_mm_xor_si128(numers, sign), sign));
         }
@@ -1841,7 +1838,7 @@ __m128i libdivide_s32_branchfree_do_vector(__m128i numers, const struct libdivid
     uint8_t more = denom->more;
     uint8_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
      // must be arithmetic shift
-    __m128i sign = _mm_set1_epi32((int32_t)(int8_t)more >> 7);
+    __m128i sign = _mm_set1_epi32((int8_t)more >> 7);
     __m128i q = libdivide_mullhi_s32_vector(numers, _mm_set1_epi32(magic));
     q = _mm_add_epi32(q, numers); // q += numers
 
@@ -1869,16 +1866,16 @@ __m128i libdivide_s64_do_vector(__m128i numers, const struct libdivide_s64_t *de
         // q = numer + ((numer >> 63) & roundToZeroTweak);
         __m128i q = _mm_add_epi64(numers, _mm_and_si128(libdivide_s64_signbits(numers), roundToZeroTweak));
         q = libdivide_s64_shift_right_vector(q, shift);
-        __m128i shiftMask = _mm_set1_epi32((int32_t)((int8_t)more >> 7));
-         // q = (q ^ shiftMask) - shiftMask;
-        q = _mm_sub_epi64(_mm_xor_si128(q, shiftMask), shiftMask);
+        __m128i sign = _mm_set1_epi32((int8_t)more >> 7);
+         // q = (q ^ sign) - sign;
+        q = _mm_sub_epi64(_mm_xor_si128(q, sign), sign);
         return q;
     }
     else {
         __m128i q = libdivide_mullhi_s64_vector(numers, _mm_set1_epi64x(magic));
         if (more & LIBDIVIDE_ADD_MARKER) {
             // must be arithmetic shift
-            __m128i sign = _mm_set1_epi32((int32_t)((int8_t)more >> 7));
+            __m128i sign = _mm_set1_epi32((int8_t)more >> 7);
             // q += ((numer ^ sign) - sign);
             q = _mm_add_epi64(q, _mm_sub_epi64(_mm_xor_si128(numers, sign), sign));
         }
@@ -1894,7 +1891,7 @@ __m128i libdivide_s64_branchfree_do_vector(__m128i numers, const struct libdivid
     uint8_t more = denom->more;
     uint8_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
     // must be arithmetic shift
-    __m128i sign = _mm_set1_epi32((int32_t)(int8_t)more >> 7);
+    __m128i sign = _mm_set1_epi32((int8_t)more >> 7);
 
      // libdivide_mullhi_s64(numers, magic);
     __m128i q = libdivide_mullhi_s64_vector(numers, _mm_set1_epi64x(magic));
