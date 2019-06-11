@@ -560,7 +560,7 @@ static inline struct libdivide_u32_t libdivide_internal_u32_gen(uint32_t d, int 
     uint32_t floor_log_2_d = 31 - libdivide_count_leading_zeros32(d);
     if ((d & (d - 1)) == 0) {
         // Power of 2
-        if (! branchfree) {
+        if (!branchfree) {
             result.magic = 0;
             result.more = (uint8_t)(floor_log_2_d | LIBDIVIDE_U32_SHIFT_PATH);
         } else {
@@ -696,7 +696,7 @@ static inline struct libdivide_u64_t libdivide_internal_u64_gen(uint64_t d, int 
     uint32_t floor_log_2_d = 63 - libdivide_count_leading_zeros64(d);
     if ((d & (d - 1)) == 0) {
         // Power of 2
-        if (! branchfree) {
+        if (!branchfree) {
             result.magic = 0;
             result.more = floor_log_2_d | LIBDIVIDE_U64_SHIFT_PATH;
         } else {
@@ -927,7 +927,7 @@ int32_t libdivide_s32_do(int32_t numer, const struct libdivide_s32_t *denom) {
         uint32_t mask = (1U << shift) - 1;
         uint32_t uq = numer + ((numer >> 31) & mask);
         int32_t q = (int32_t)uq;
-        q = q >> shift;
+        q >>= shift;
         q = (q ^ sign) - sign;
         return q;
     } else {
@@ -1102,7 +1102,7 @@ int64_t libdivide_s64_do(int64_t numer, const struct libdivide_s64_t *denom) {
         uint64_t mask = (1ULL << shift) - 1;
         uint64_t uq = numer + ((numer >> 63) & mask);
         int64_t q = (int64_t)uq;
-        q = q >> shift;
+        q >>= shift;
         // must be arithmetic shift and then sign-extend
         int64_t sign = (int8_t)more >> 7;
         q = (q ^ sign) - sign;
