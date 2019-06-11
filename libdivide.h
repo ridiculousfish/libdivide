@@ -920,9 +920,10 @@ struct libdivide_s32_branchfree_t libdivide_s32_branchfree_gen(int32_t d) {
 
 int32_t libdivide_s32_do(int32_t numer, const struct libdivide_s32_t *denom) {
     uint8_t more = denom->more;
+    uint8_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
+
     if (more & LIBDIVIDE_S32_SHIFT_PATH) {
         uint32_t sign = (int8_t)more >> 7;
-        uint8_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
         uint32_t mask = (1U << shift) - 1;
         uint32_t uq = numer + ((numer >> 31) & mask);
         int32_t q = (int32_t)uq;
@@ -934,11 +935,12 @@ int32_t libdivide_s32_do(int32_t numer, const struct libdivide_s32_t *denom) {
         if (more & LIBDIVIDE_ADD_MARKER) {
             // must be arithmetic shift and then sign extend
             int32_t sign = (int8_t)more >> 7;
-            // q += (more < 0 ? -numer : numer), casts to avoid UB
+            // q += (more < 0 ? -numer : numer)
+            // cast required to avoid UB
             uq += ((uint32_t)numer ^ sign) - sign;
         }
         int32_t q = (int32_t)uq;
-        q >>= more & LIBDIVIDE_32_SHIFT_MASK;
+        q >>= shift;
         q += (q < 0);
         return q;
     }
@@ -962,7 +964,6 @@ int32_t libdivide_s32_branchfree_do(int32_t numer, const struct libdivide_s32_br
 
     // Now arithmetic right shift
     q >>= shift;
-
     // Negate if needed
     q = (q ^ sign) - sign;
 
@@ -1094,26 +1095,29 @@ struct libdivide_s64_branchfree_t libdivide_s64_branchfree_gen(int64_t d) {
 
 int64_t libdivide_s64_do(int64_t numer, const struct libdivide_s64_t *denom) {
     uint8_t more = denom->more;
+    uint8_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
     int64_t magic = denom->magic;
-    if (magic == 0) { //shift path
-        uint32_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
+
+    if (magic == 0) { // shift path
         uint64_t mask = (1ULL << shift) - 1;
         uint64_t uq = numer + ((numer >> 63) & mask);
         int64_t q = (int64_t)uq;
         q = q >> shift;
         // must be arithmetic shift and then sign-extend
-        int64_t shiftMask = (int8_t)more >> 7;
-        q = (q ^ shiftMask) - shiftMask;
+        int64_t sign = (int8_t)more >> 7;
+        q = (q ^ sign) - sign;
         return q;
     } else {
         uint64_t uq = (uint64_t)libdivide_mullhi_s64(magic, numer);
         if (more & LIBDIVIDE_ADD_MARKER) {
             // must be arithmetic shift and then sign extend
             int64_t sign = (int8_t)more >> 7;
+            // q += (more < 0 ? -numer : numer)
+            // cast required to avoid UB
             uq += ((uint64_t)numer ^ sign) - sign;
         }
         int64_t q = (int64_t)uq;
-        q >>= more & LIBDIVIDE_64_SHIFT_MASK;
+        q >>= shift;
         q += (q < 0);
         return q;
     }
@@ -1121,7 +1125,7 @@ int64_t libdivide_s64_do(int64_t numer, const struct libdivide_s64_t *denom) {
 
 int64_t libdivide_s64_branchfree_do(int64_t numer, const struct libdivide_s64_branchfree_t *denom) {
     uint8_t more = denom->more;
-    uint32_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
+    uint8_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
     // must be arithmetic shift and then sign extend
     int64_t sign = (int8_t)more >> 7;
     int64_t magic = denom->magic;
@@ -1131,15 +1135,15 @@ int64_t libdivide_s64_branchfree_do(int64_t numer, const struct libdivide_s64_br
     // If q is non-negative, we have nothing to do.
     // If q is negative, we want to add either (2**shift)-1 if d is a power of
     // 2, or (2**shift) if it is not a power of 2.
-    uint32_t is_power_of_2 = (magic == 0);
+    uint64_t is_power_of_2 = (magic == 0);
     uint64_t q_sign = (uint64_t)(q >> 63);
     q += q_sign & ((1ULL << shift) - is_power_of_2);
 
     // Arithmetic right shift
     q >>= shift;
-
     // Negate if needed
     q = (q ^ sign) - sign;
+
     return q;
 }
 
