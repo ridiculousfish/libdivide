@@ -1220,7 +1220,7 @@ static inline __m512i libdivide_mullhi_s32_vector(__m512i a, __m512i b) {
 
 // Here, y is assumed to contain one 64-bit value repeated.
 // https://stackoverflow.com/a/28827013
-static inline __m512i libdivide_mullhi_u64_vector(__m512i x, __m512i y) {    
+static inline __m512i libdivide_mullhi_u64_vector(__m512i x, __m512i y) {
     __m512i lomask = _mm512_set1_epi64(0xffffffff);
     __m512i xh = _mm512_shuffle_epi32(x, (_MM_PERM_ENUM) 0xB1);
     __m512i yh = _mm512_shuffle_epi32(y, (_MM_PERM_ENUM) 0xB1);
@@ -1465,7 +1465,7 @@ static inline __m256i libdivide_mullhi_s32_vector(__m256i a, __m256i b) {
 
 // Here, y is assumed to contain one 64-bit value repeated.
 // https://stackoverflow.com/a/28827013
-static inline __m256i libdivide_mullhi_u64_vector(__m256i x, __m256i y) {    
+static inline __m256i libdivide_mullhi_u64_vector(__m256i x, __m256i y) {
     __m256i lomask = _mm256_set1_epi64x(0xffffffff);
     __m256i xh = _mm256_shuffle_epi32(x, 0xB1);        // x0l, x0h, x1l, x1h
     __m256i yh = _mm256_shuffle_epi32(y, 0xB1);        // y0l, y0h, y1l, y1h
@@ -1714,7 +1714,7 @@ static inline __m128i libdivide_mullhi_s32_vector(__m128i a, __m128i b) {
 
 // Here, y is assumed to contain one 64-bit value repeated.
 // https://stackoverflow.com/a/28827013
-static inline __m128i libdivide_mullhi_u64_vector(__m128i x, __m128i y) {    
+static inline __m128i libdivide_mullhi_u64_vector(__m128i x, __m128i y) {
     __m128i lomask = _mm_set1_epi64x(0xffffffff);
     __m128i xh = _mm_shuffle_epi32(x, 0xB1);        // x0l, x0h, x1l, x1h
     __m128i yh = _mm_shuffle_epi32(y, 0xB1);        // y0l, y0h, y1l, y1h
