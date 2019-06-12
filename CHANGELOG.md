@@ -2,12 +2,13 @@
 
 This is a list of notable changes to libdivide.
 
-## [2.0](https://github.com/ridiculousfish/libdivide/releases/tag/v2.0) - 2019-06-11
+## [2.0](https://github.com/ridiculousfish/libdivide/releases/tag/v2.0) - 2019-06-12
 * BREAKING
   * Removed unswitch functionality ([#46](https://github.com/ridiculousfish/libdivide/issues/46))
   * Renamed macro ```LIBDIVIDE_USE_SSE2``` to ```LIBDIVIDE_SSE2```
 * BUG FIXES
   * Remove ```_udiv128()``` as not yet supported by clang-cl and icl compilers
+  * Fix C++ linker issue caused by anonymous namespace ([#54](https://github.com/ridiculousfish/libdivide/pull/54))
 * ENHANCEMENT
   * Add AVX2 vector division
   * Add AVX512 vector division
