@@ -900,12 +900,6 @@ struct libdivide_s32_t libdivide_s32_gen(int32_t d) {
 }
 
 struct libdivide_s32_branchfree_t libdivide_s32_branchfree_gen(int32_t d) {
-    if (d == 1) {
-        LIBDIVIDE_ERROR("branchfree divider must be != 1");
-    }
-    if (d == -1) {
-        LIBDIVIDE_ERROR("branchfree divider must be != -1");
-    }
     struct libdivide_s32_t tmp = libdivide_internal_s32_gen(d, 1);
     struct libdivide_s32_branchfree_t result = {tmp.magic, tmp.more};
     return result;
@@ -1075,12 +1069,6 @@ struct libdivide_s64_t libdivide_s64_gen(int64_t d) {
 }
 
 struct libdivide_s64_branchfree_t libdivide_s64_branchfree_gen(int64_t d) {
-    if (d == 1) {
-        LIBDIVIDE_ERROR("branchfree divider must be != 1");
-    }
-    if (d == -1) {
-        LIBDIVIDE_ERROR("branchfree divider must be != -1");
-    }
     struct libdivide_s64_t tmp = libdivide_internal_s64_gen(d, 1);
     struct libdivide_s64_branchfree_t ret = {tmp.magic, tmp.more};
     return ret;
