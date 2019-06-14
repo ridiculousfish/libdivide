@@ -74,7 +74,7 @@ NOINLINE result_t benchmark_sum_dividers(const P& dividers, size_t iters) {
     size_t sum = 0;
 
     for (; iters > 0; iters--) {
-        // branchfree dividers current don't support +-1
+        // Unsigned branchfree divider cannot be 1
         T numerator = std::max((T) 2, (T) iters);
         sum += sum_dividers(numerator, dividers);
     }
