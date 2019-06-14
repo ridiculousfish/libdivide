@@ -10,20 +10,17 @@
 
 #include "libdivide.h"
 
-#include <limits.h>
-#include <limits>
-#include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <iostream>
 #include <typeinfo>
 #include <limits>
+#include <random>
 #include <string.h>
 #include <string>
 #include <sstream>
 
 #if defined(_WIN32) || defined(WIN32)
-    // Windows makes you do a lot to stop it from "helping"
     #if !defined(NOMINMAX)
         #define NOMINMAX
     #endif
@@ -39,51 +36,51 @@
 using namespace std;
 using namespace libdivide;
 
-#define SEED 2147483563
-
-class DivideTest_PRNG {
-public:
-    DivideTest_PRNG() : seed(SEED) { }
-        
-protected:
-    uint32_t seed;
-    uint32_t next_random(void) {
-        seed = seed * 1664525 + 1013904223U;
-        return seed;
-    }
-    
-};
-
 template<typename T>
-class DivideTest : private DivideTest_PRNG {
-
+class DivideTest
+{
 private:
-    
+    using UT = typename std::make_unsigned<T>::type;
+    using limits = std::numeric_limits<T>;
     std::string name;
-    
-    typedef std::numeric_limits<T> limits;
-    
-    uint32_t base_random(void) {
-        return this->next_random();
+    std::random_device randomDevice;
+    std::mt19937 randGen;
+    std::uniform_int_distribution<UT> randDist;
+    UT rand_val = 1;
+
+    // This random function slowly increases the random number
+    // until there is an integer overflow, if this happens
+    // the random number is reset to 0 and we restart at the
+    // beginning. We do this to ensure that we get many test
+    // cases of varying bit length.
+    T get_random() {
+        UT old = rand_val;
+        UT r = randDist(randGen);
+        rand_val = rand_val * (r % 2 + 1) + r % 128;
+
+        // Reset upon integer overflow
+        if (rand_val < old) {
+            rand_val = r % 128;
+        }
+
+        // The algorithm above generates mostly positive numbers.
+        // Hence convert 50% of all values to negative. 
+        if (limits::is_signed) {
+            if (r % 2)
+                return -(T) rand_val;
+        }
+
+        return (T) rand_val;
     }
 
-    T random_denominator(void) {
-        T result;
-        if (sizeof(T) == 4) {
-            do {
-                result = base_random();
-            } while (result == 0);
-            return result;
+    T random_denominator() {
+        T denom = get_random();
+        while (denom == 0) {
+            denom = get_random();
         }
-        else {
-            do {
-                uint32_t little = base_random(), big = base_random();
-                result = (T)(little + ((uint64_t)big << 32));
-            } while (result == 0);
-        }
-        return result;
+        return denom;
     }
-    
+
     std::string testcase_name(int algo) const {
         std::string result = this->name;
         if (algo == BRANCHFREE) {
@@ -91,16 +88,20 @@ private:
         }
         return result;
     }
-    
+
     template<int ALGO>
-    void test_one(T numer, T denom, const divider<T, ALGO> & the_divider) {
+    void test_one(T numer, T denom, const divider<T, ALGO>& the_divider) {
         // Don't crash with INT_MIN / -1
-        if (limits::is_signed && numer == limits::min() && denom == T(-1)) {
+        // INT_MIN / -1 is undefined behavior in C/C++
+        if (limits::is_signed && 
+            numer == limits::min() && 
+            denom == T(-1)) {
             return;
         }
-        
+
         T expect = numer / denom;
         T actual1 = numer / the_divider;
+
         if (actual1 != expect) {
             cerr << "Failure for " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " expected " << expect << " actual " << actual1 << endl;
             exit(1);
@@ -175,89 +176,126 @@ private:
             exit(1);
         }
 
+        T min = limits::min();
+        T max = limits::max();
+
+        T edgeCases[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+                          10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+                          20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+                          30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
+                          40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
+                          123, 1233, 36847, 506831, 3000003, 70000007,
+                          max, max-1, max-2, max-3, max-4, max-5, max-3213, max-2453242, max-432234231,
+                          min, min+1, min+2, min+3, min+4, min+5, min+3213, min+2453242, min+432234231,
+                          max/2, max/2+1, max/2-1, max/3, max/3+1, max/3-1, max/4, max/4+1, max/4-1,
+                          min/2, min/2+1, min/2-1, min/3, min/3+1, min/3-1, min/4, max/4+1, min/4-1 };
+
+        for (size_t i = 0; i < sizeof(edgeCases) / sizeof(*edgeCases); i++) {
+            test_one(edgeCases[i], denom, the_divider);
+        }
+
+        // test numerators < 2^16
+        for (int i = 0; i < (1 << 16); i++) {
+            test_one(i, denom, the_divider);
+
+            if (limits::is_signed) {
+                test_one(-i, denom, the_divider);
+            }
+        }
+
+        // test power of 2 numerators: 2^i-1, 2^i, 2^i+1
+        for (int i = 1; i < limits::digits; i++) {
+            for (int j = -1; j <= 1; j++) {
+                T numerator = ((T)1 << i) + j;
+                test_one(numerator, denom, the_divider);
+
+                if (limits::is_signed) {
+                    test_one(-numerator, denom, the_divider);
+                }
+            }
+        }
+
+        // test all bits set:
+        // 11111111, 11111110, 11111100, ...
+        for (UT bits = (UT) ~0ull; bits != 0; bits <<= 1) {
+            test_one((T) bits, denom, the_divider);
+        }
+
         // Align memory to 64 byte boundary for AVX512
         char mem[16 * sizeof(T) + 64];
         size_t offset = 64 - (size_t)&mem % 64;
         T* numers = (T*) &mem[offset];
 
-        for (size_t i = 0; i < 100000 / 16; i++) {
+        // test random numerators
+        for (size_t i = 0; i < 10000; i += 16) {
             for (size_t j = 0; j < 16; j++) {
-                numers[j] = (T) this->next_random();
+                numers[j] = get_random();
             }
             for (size_t j = 0; j < 16; j++) {
                 test_one(numers[j], denom, the_divider);
             }
-
 #if defined(LIBDIVIDE_AVX512) || \
     defined(LIBDIVIDE_AVX2) || \
     defined(LIBDIVIDE_SSE2)   
             test_16(numers, denom, the_divider);
 #endif
         }
-        const T min = limits::min(), max = limits::max();
-        const T wellKnownNumers[] = {0, max, max-1, max/2, max/2 - 1, min, min/2, min/4, 1, 2, 3, 4, 5, 6, 7, 8, 10, 36847, 50683, SHRT_MAX};
-        for (size_t j =0; j < sizeof wellKnownNumers / sizeof *wellKnownNumers; j++) {
-            if (wellKnownNumers[j] == 0 && j != 0)
-                continue;
-            test_one(wellKnownNumers[j], denom, the_divider);
-        }
-        T powerOf2Numer = (limits::max()>>1)+1;
-        while (powerOf2Numer != 0) {
-            test_one(powerOf2Numer, denom, the_divider);
-            powerOf2Numer /= 2;
-        }
     }
-    
+
 public:
-    
-    DivideTest(const std::string &n) : name(n) { }
-    
+    DivideTest(const std::string &n) :
+        name(n),
+        randGen(randomDevice()),
+        randDist(1, limits::max())
+    { }
+
     void run(void) {
         // Test small values
-        for (T denom = 1; denom < 257; denom++) {
-            // powers of 2 get tested later
-            if ((denom & (denom - 1)) == 0) continue;
+        for (T denom = 1; denom < 1024; denom++) {
             test_many<BRANCHFULL>(denom);
             test_many<BRANCHFREE>(denom);
+
             if (limits::is_signed) {
                 test_many<BRANCHFULL>(-denom);
                 test_many<BRANCHFREE>(-denom);
             }
         }
-        
-        
-        /* Test key values */
-        const T keyValues[] = {T((1<<15)+1), T((1<<31)+1), T((1LL<<63)+1)};
-        for (size_t i=0; i < sizeof keyValues / sizeof *keyValues; i++) {
-            T denom = keyValues[i];
-            test_many<BRANCHFULL>(denom);
-            test_many<BRANCHFREE>(denom);
-            if (limits::is_signed) {
-                test_many<BRANCHFULL>(-denom);
-                test_many<BRANCHFREE>(-denom);
+
+        if (limits::is_signed) {
+            test_many<BRANCHFULL>(limits::min());
+            test_many<BRANCHFREE>(limits::min());
+        }
+
+        test_many<BRANCHFULL>(limits::max());
+        test_many<BRANCHFREE>(limits::max());
+
+        // test power of 2 denoms: 2^i-1, 2^i, 2^i+1
+        for (int i = 1; i < limits::digits; i++) {
+            for (int j = -1; j <= 1; j++) {
+                T denom = ((T)1 << i) + j;
+                test_many<BRANCHFULL>(denom);
+                test_many<BRANCHFREE>(denom);
+
+                if (limits::is_signed) {
+                    test_many<BRANCHFULL>(-denom);
+                    test_many<BRANCHFREE>(-denom);
+                }
             }
         }
-        
+
+        // test all bits set:
+        // 11111111, 11111110, 11111100, ...
+        for (UT bits = (UT) ~0ull; bits != 0; bits <<= 1) {
+            test_many<BRANCHFULL>((T) bits);
+            test_many<BRANCHFREE>((T) bits);
+        }
+
         // Test randomish values
         for (unsigned i=0; i < 10000; i++) {
             T denom = random_denominator();
             test_many<BRANCHFULL>(denom);
             test_many<BRANCHFREE>(denom);
-            //cout << typeid(T).name() << "\t\t" << i << " / " << 100000 << endl;
-        }
-        
-        /* Test powers of 2, both positive and negative. Careful to do no signed left shift of negative values. */
-        T posPowOf2 = (limits::max() >> 1) + 1;
-        while (posPowOf2 != 0) {
-            test_many<BRANCHFULL>(posPowOf2);
-            test_many<BRANCHFREE>(posPowOf2);
-            posPowOf2 /= 2;
-        }
-        T negPowOf2 = limits::min(); // may be 0 already
-        while (negPowOf2 != 0) {
-            test_many<BRANCHFULL>(negPowOf2);
-            test_many<BRANCHFREE>(negPowOf2);
-            negPowOf2 /= 2; // assumes truncation towards 0
+            // cout << typeid(T).name() << "\t\t" << i << " / " << denom << endl;
         }
     }
 };
@@ -272,7 +310,7 @@ static void *perform_test(void *ptr) {
     switch (idx) {
         case 0:
         {
-            if (! sRunS32) break;
+            if (!sRunS32) break;
             puts("Starting int32_t");
             DivideTest<int32_t> dt("s32");
             dt.run();
@@ -281,7 +319,7 @@ static void *perform_test(void *ptr) {
             
         case 1:
         {
-            if (! sRunU32) break;
+            if (!sRunU32) break;
             puts("Starting uint32_t");
             DivideTest<uint32_t> dt("u32");
             dt.run();
@@ -290,7 +328,7 @@ static void *perform_test(void *ptr) {
             
         case 2:
         {
-            if (! sRunS64) break;
+            if (!sRunS64) break;
             puts("Starting sint64_t");
             DivideTest<int64_t> dt("s64");
             dt.run();
@@ -299,7 +337,7 @@ static void *perform_test(void *ptr) {
             
         case 3:
         {
-            if (! sRunU64) break;
+            if (!sRunU64) break;
             puts("Starting uint64_t");
             DivideTest<uint64_t> dt("u64");
             dt.run();
@@ -316,12 +354,12 @@ int main(int argc, char* argv[]) {
     }
     else {
         for (int i = 1; i < argc; i++) {
-            if (! strcmp(argv[i], "u32")) sRunU32 = 1;
-            else if (! strcmp(argv[i], "u64")) sRunU64 = 1;
-            else if (! strcmp(argv[i], "s32")) sRunS32 = 1;
-            else if (! strcmp(argv[i], "s64")) sRunS64 = 1;
+            if (!strcmp(argv[i], "u32")) sRunU32 = 1;
+            else if (!strcmp(argv[i], "u64")) sRunU64 = 1;
+            else if (!strcmp(argv[i], "s32")) sRunS32 = 1;
+            else if (!strcmp(argv[i], "s64")) sRunS64 = 1;
             else {
-                printf("Usage: tester [OPTIONS]\n"
+                cout << "Usage: tester [OPTIONS]\n"
                        "\n"
                        "You can pass the tester program one or more of the following options:\n"
                        "u32, s32, u64, s64 or run it without arguments to test all four.\n"
@@ -329,40 +367,33 @@ int main(int argc, char* argv[]) {
                        "The tester will verify the correctness of libdivide via a set of\n"
                        "randomly chosen denominators, by comparing the result of libdivide's\n"
                        "division to hardware division. It may take a long time to run, but it\n"
-                       "will output as soon as it finds a discrepancy.\n");
+                       "will output as soon as it finds a discrepancy." << endl;
                 exit(1);
             }
         }
     }
 
-/* We could use dispatch, but we prefer to use pthreads because dispatch won't run all four tests at once on a two core machine */
-#if defined(DISPATCH_API_VERSION)
-    dispatch_apply(4, dispatch_get_global_queue(0, 0), ^(size_t x){
-        perform_test((void *)(intptr_t)x);
-    });
-#elif defined(LIBDIVIDE_WINDOWS)
+#if defined(LIBDIVIDE_WINDOWS)
 	HANDLE threadArray[4];
-	intptr_t i;
-	for (i=0; i < 4; i++) {
+	for (intptr_t i = 0; i < 4; i++) {
 		threadArray[i] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)perform_test, (void *)i, 0, NULL);
 	}
 	WaitForMultipleObjects(4, threadArray, TRUE, INFINITE);
 #else
     pthread_t threads[4];
-    intptr_t i;
-    for (i=0; i < 4; i++) {
+    for (intptr_t i = 0; i < 4; i++) {
         int err = pthread_create(&threads[i], NULL, perform_test, (void *)i);
         if (err) {
-            fprintf(stderr, "pthread_create() failed\n");
-            exit(EXIT_FAILURE);
+            cerr << "pthread_create() failed!" << endl;
+            exit(1);
         }
     }
-    for (i=0; i < 4; i++) {
+    for (intptr_t i = 0; i < 4; i++) {
         void *dummy;
         pthread_join(threads[i], &dummy);
     }
 #endif
 
-    printf("\nAll tests passed successfully!\n");
+    cout << "\nAll tests passed successfully!" << endl;
     return 0;
 }
