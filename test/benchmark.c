@@ -553,7 +553,7 @@ NOINLINE struct TestResult test_one(TestFunc_t mine,
 
 int libdivide_u32_get_algorithm(const struct libdivide_u32_t *denom) {
     uint8_t more = denom->more;
-    if (more & LIBDIVIDE_U32_SHIFT_PATH)
+    if (!denom->magic)
         return 0;
     else if (!(more & LIBDIVIDE_ADD_MARKER))
         return 1;
@@ -584,7 +584,7 @@ NOINLINE struct TestResult test_one_u32(uint32_t d, const uint32_t *data) {
 
 int libdivide_s32_get_algorithm(const struct libdivide_s32_t *denom) {
     uint8_t more = denom->more;
-    if (more & LIBDIVIDE_S32_SHIFT_PATH)
+    if (!denom->magic)
         return 0;
     else if (!(more & LIBDIVIDE_ADD_MARKER))
         return 1;
@@ -614,7 +614,7 @@ NOINLINE struct TestResult test_one_s32(int32_t d, const int32_t *data) {
 
 int libdivide_u64_get_algorithm(const struct libdivide_u64_t *denom) {
     uint8_t more = denom->more;
-    if (more & LIBDIVIDE_U64_SHIFT_PATH)
+    if (!denom->magic)
         return 0;
     else if (!(more & LIBDIVIDE_ADD_MARKER))
         return 1;
@@ -645,7 +645,7 @@ NOINLINE struct TestResult test_one_u64(uint64_t d, const uint64_t *data) {
 
 int libdivide_s64_get_algorithm(const struct libdivide_s64_t *denom) {
     uint8_t more = denom->more;
-    if (denom->magic == 0)
+    if (!denom->magic)
         return 0;
     else if (!(more & LIBDIVIDE_ADD_MARKER))
         return 1;
