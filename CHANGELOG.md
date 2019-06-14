@@ -14,9 +14,8 @@ This is a list of notable changes to libdivide.
   * Add AVX512 vector division
   * Speed up SSE2 ```libdivide_mullhi_u64_vector()```
   * Support +1 & -1 signed branchfree dividers ([4a1d5a7](https://github.com/ridiculousfish/libdivide/commit/4a1d5a7008af7f401f8f39c2f44f3dd0116a9839))
-  * Speed up unsigned branchfull power of 2 dividers
-  * ```tester.cpp```: Add help menu
-  * ```benchmark.cpp```: Add help menu
+  * Speed up unsigned branchfull power of 2 dividers ([2422199](https://github.com/ridiculousfish/libdivide/commit/24221996a082774bd486b04f329a1cdd1a80c8df))
+  * ```tester.cpp```: Add more test cases
   * ```benchmark.cpp```: Prevent compilers from optmizing too much 
 * BUILD
   * Automatically detect SSE2/AVX2/AVX512
