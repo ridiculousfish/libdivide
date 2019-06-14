@@ -29,34 +29,34 @@ private:
     using UT = typename std::make_unsigned<T>::type;
     using limits = std::numeric_limits<T>;
     std::string name;
-    std::random_device randomDevice;
-    std::mt19937 randGen;
-    std::uniform_int_distribution<UT> randDist;
-    UT rand_val = 1;
+    uint32_t seed = 0;
+    UT rand_n = 0;
 
     // This random function slowly increases the random number
     // until there is an integer overflow, if this happens
     // the random number is reset to 0 and we restart at the
     // beginning. We do this to ensure that we get many test
-    // cases of varying bit length.
+    // cases (random integers) of varying bit length.
     T get_random() {
-        UT old = rand_val;
-        UT r = randDist(randGen);
-        rand_val = rand_val * (r % 2 + 1) + r % 128;
+        // https://en.wikipedia.org/wiki/Linear_congruential_generator
+        seed = seed * 1664525 + 1013904223;
+
+        UT old = rand_n;
+        rand_n = rand_n * (seed % 2 + 1) + rand_n % 30000001 + 3;
 
         // Reset upon integer overflow
-        if (rand_val < old) {
-            rand_val = r % 128;
+        if (rand_n < old) {
+            rand_n = seed % 19;
         }
 
         // The algorithm above generates mostly positive numbers.
         // Hence convert 50% of all values to negative. 
         if (limits::is_signed) {
-            if (r % 2)
-                return -(T) rand_val;
+            if (seed % 2)
+                return -(T) rand_n;
         }
 
-        return (T) rand_val;
+        return (T) rand_n;
     }
 
     T random_denominator() {
@@ -230,10 +230,14 @@ private:
 
 public:
     DivideTest(const std::string &n) :
-        name(n),
-        randGen(randomDevice()),
-        randDist(1, limits::max())
-    { }
+        name(n)
+    {
+        std::random_device randomDevice;
+        std::mt19937 randGen(randomDevice());
+        std::uniform_int_distribution<uint32_t> randDist(1, numeric_limits<uint32_t>::max());
+        seed = randDist(randGen);
+        rand_n = (UT) randDist(randGen);
+    }
 
     void run(void) {
         // Test small values
