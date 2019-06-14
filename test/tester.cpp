@@ -302,7 +302,8 @@ void run_test(int idx) {
         case 0:
         {
             if (!sRunS32) break;
-            puts("Starting int32_t");
+            std::string msg = "Testing int32_t\n"; 
+            cout << msg << flush;
             DivideTest<int32_t> dt("s32");
             dt.run();
             break;
@@ -310,7 +311,8 @@ void run_test(int idx) {
         case 1:
         {
             if (!sRunU32) break;
-            puts("Starting uint32_t");
+            std::string msg = "Testing uint32_t\n"; 
+            cout << msg << flush;
             DivideTest<uint32_t> dt("u32");
             dt.run();
             break;
@@ -318,7 +320,8 @@ void run_test(int idx) {
         case 2:
         {
             if (!sRunS64) break;
-            puts("Starting sint64_t");
+            std::string msg = "Testing int64_t\n"; 
+            cout << msg << flush;
             DivideTest<int64_t> dt("s64");
             dt.run();
             break;
@@ -326,7 +329,8 @@ void run_test(int idx) {
         case 3:
         {
             if (!sRunU64) break;
-            puts("Starting uint64_t");
+            std::string msg = "Testing uint64_t\n"; 
+            cout << msg << flush;
             DivideTest<uint64_t> dt("u64");
             dt.run();
             break;
