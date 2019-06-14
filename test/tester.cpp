@@ -10,28 +10,14 @@
 
 #include "libdivide.h"
 
-#include <stdlib.h>
-#include <time.h>
+#include <cstdlib>
+#include <future>
 #include <iostream>
-#include <typeinfo>
 #include <limits>
 #include <random>
 #include <string.h>
 #include <string>
 #include <sstream>
-
-#if defined(_WIN32) || defined(WIN32)
-    #if !defined(NOMINMAX)
-        #define NOMINMAX
-    #endif
-    #define WIN32_LEAN_AND_MEAN
-    #define VC_EXTRALEAN
-    #include <windows.h>
-    #define LIBDIVIDE_WINDOWS
-#else
-    // Linux or Mac OS X or other Unix
-    #include <pthread.h>
-#endif
 
 using namespace std;
 using namespace libdivide;
@@ -100,10 +86,10 @@ private:
         }
 
         T expect = numer / denom;
-        T actual1 = numer / the_divider;
+        T actual = numer / the_divider;
 
-        if (actual1 != expect) {
-            cerr << "Failure for " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " expected " << expect << " actual " << actual1 << endl;
+        if (actual != expect) {
+            cerr << "Failure for " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " expected " << expect << " actual " << actual << endl;
             exit(1);
         }
     }
@@ -295,7 +281,6 @@ public:
             T denom = random_denominator();
             test_many<BRANCHFULL>(denom);
             test_many<BRANCHFREE>(denom);
-            // cout << typeid(T).name() << "\t\t" << i << " / " << denom << endl;
         }
     }
 };
@@ -305,8 +290,7 @@ int sRunU32 = 0;
 int sRunS64 = 0;
 int sRunU64 = 0;
 
-static void *perform_test(void *ptr) {
-    intptr_t idx = (intptr_t)ptr;
+void run_test(int idx) {
     switch (idx) {
         case 0:
         {
@@ -314,37 +298,33 @@ static void *perform_test(void *ptr) {
             puts("Starting int32_t");
             DivideTest<int32_t> dt("s32");
             dt.run();
-        }
             break;
-            
+        }   
         case 1:
         {
             if (!sRunU32) break;
             puts("Starting uint32_t");
             DivideTest<uint32_t> dt("u32");
             dt.run();
-        }
             break;
-            
+        }
         case 2:
         {
             if (!sRunS64) break;
             puts("Starting sint64_t");
             DivideTest<int64_t> dt("s64");
             dt.run();
-        }
             break;
-            
+        }
         case 3:
         {
             if (!sRunU64) break;
             puts("Starting uint64_t");
             DivideTest<uint64_t> dt("u64");
             dt.run();
-        }
             break;
+        }
     }
-    return 0;
 }
 
 int main(int argc, char* argv[]) {
@@ -373,26 +353,18 @@ int main(int argc, char* argv[]) {
         }
     }
 
-#if defined(LIBDIVIDE_WINDOWS)
-	HANDLE threadArray[4];
-	for (intptr_t i = 0; i < 4; i++) {
-		threadArray[i] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)perform_test, (void *)i, 0, NULL);
-	}
-	WaitForMultipleObjects(4, threadArray, TRUE, INFINITE);
-#else
-    pthread_t threads[4];
-    for (intptr_t i = 0; i < 4; i++) {
-        int err = pthread_create(&threads[i], NULL, perform_test, (void *)i);
-        if (err) {
-            cerr << "pthread_create() failed!" << endl;
-            exit(1);
-        }
+    vector<future<void>> futures;
+    futures.reserve(4);
+
+    // Start 4 threads
+    for (int test_id = 0; test_id < 4; test_id++) {
+        futures.emplace_back(async(launch::async, run_test, test_id));
     }
-    for (intptr_t i = 0; i < 4; i++) {
-        void *dummy;
-        pthread_join(threads[i], &dummy);
+
+    // Wait until threads finish
+    for (auto &f : futures) {
+        f.get();
     }
-#endif
 
     cout << "\nAll tests passed successfully!" << endl;
     return 0;
