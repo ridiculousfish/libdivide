@@ -115,7 +115,7 @@ uint64_t divide(uint64_t x, std::vector<branchfree_t>& vect)
 
 Caveats of branchfree divider:
 
-* Branchfree divider cannot be ```-1```, ```0```, ```1```
+* Unsigned branchfree divider cannot be ```1```
 * Faster for unsigned types than for signed types
 
 # Vector division
