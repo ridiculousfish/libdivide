@@ -180,8 +180,11 @@ private:
             test_one(edgeCases[i], denom, the_divider);
         }
 
-        // test numerators < 2^16
-        for (int i = 0; i < (1 << 16); i++) {
+        // balance signed & unsigned testing
+        int small_stop = (limits::is_signed) ? 1 << 15 : 1 << 16;
+
+        // test small numerators < 2^16
+        for (int i = 0; i < small_stop; i++) {
             test_one(i, denom, the_divider);
 
             if (limits::is_signed) {
