@@ -2,7 +2,7 @@
 
 This is a list of notable changes to libdivide.
 
-## [2.0](https://github.com/ridiculousfish/libdivide/releases/tag/v2.0) - 2019-06-12
+## [2.0](https://github.com/ridiculousfish/libdivide/releases/tag/v2.0) - 2019-06-14
 * BREAKING
   * Removed unswitch functionality ([#46](https://github.com/ridiculousfish/libdivide/issues/46))
   * Renamed macro ```LIBDIVIDE_USE_SSE2``` to ```LIBDIVIDE_SSE2```
@@ -13,6 +13,8 @@ This is a list of notable changes to libdivide.
   * Add AVX2 vector division
   * Add AVX512 vector division
   * Speed up SSE2 ```libdivide_mullhi_u64_vector()```
+  * Support +1 & -1 signed branchfree dividers ([4a1d5a7](https://github.com/ridiculousfish/libdivide/commit/4a1d5a7008af7f401f8f39c2f44f3dd0116a9839))
+  * Speed up unsigned branchfull power of 2 dividers
   * ```tester.cpp```: Add help menu
   * ```benchmark.cpp```: Add help menu
   * ```benchmark.cpp```: Prevent compilers from optmizing too much 
