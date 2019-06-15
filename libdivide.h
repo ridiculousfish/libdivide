@@ -987,7 +987,7 @@ int32_t libdivide_s32_branchfree_do(int32_t numer, const struct libdivide_s32_br
     // 2, or (2**shift) if it is not a power of 2
     uint32_t is_power_of_2 = (magic == 0);
     uint32_t q_sign = (uint32_t)(q >> 31);
-    q += q_sign & ((1 << shift) - is_power_of_2);
+    q += q_sign & ((1U << shift) - is_power_of_2);
 
     // Now arithmetic right shift
     q >>= shift;
@@ -1020,7 +1020,7 @@ int32_t libdivide_s32_recover(const struct libdivide_s32_t *denom) {
 
         // Handle the power of 2 case (including branchfree)
         if (denom->magic == 0) {
-            int32_t result = 1 << shift;
+            int32_t result = 1U << shift;
             return negative_divisor ? -result : result;
         }
 
@@ -1371,7 +1371,7 @@ __m512i libdivide_s32_branchfree_do_vector(__m512i numers, const struct libdivid
     // a power of 2, or (2**shift) if it is not a power of 2
     uint32_t is_power_of_2 = (magic == 0);
     __m512i q_sign = _mm512_srai_epi32(q, 31); // q_sign = q >> 31
-    __m512i mask = _mm512_set1_epi32((1 << shift) - is_power_of_2);
+    __m512i mask = _mm512_set1_epi32((1U << shift) - is_power_of_2);
     q = _mm512_add_epi32(q, _mm512_and_si512(q_sign, mask)); // q = q + (q_sign & mask)
     q = _mm512_srai_epi32(q, shift); // q >>= shift
     q = _mm512_sub_epi32(_mm512_xor_si512(q, sign), sign); // q = (q ^ sign) - sign
@@ -1614,7 +1614,7 @@ __m256i libdivide_s32_branchfree_do_vector(__m256i numers, const struct libdivid
     // a power of 2, or (2**shift) if it is not a power of 2
     uint32_t is_power_of_2 = (magic == 0);
     __m256i q_sign = _mm256_srai_epi32(q, 31); // q_sign = q >> 31
-    __m256i mask = _mm256_set1_epi32((1 << shift) - is_power_of_2);
+    __m256i mask = _mm256_set1_epi32((1U << shift) - is_power_of_2);
     q = _mm256_add_epi32(q, _mm256_and_si256(q_sign, mask)); // q = q + (q_sign & mask)
     q = _mm256_srai_epi32(q, shift); // q >>= shift
     q = _mm256_sub_epi32(_mm256_xor_si256(q, sign), sign); // q = (q ^ sign) - sign
@@ -1861,7 +1861,7 @@ __m128i libdivide_s32_branchfree_do_vector(__m128i numers, const struct libdivid
     // a power of 2, or (2**shift) if it is not a power of 2
     uint32_t is_power_of_2 = (magic == 0);
     __m128i q_sign = _mm_srai_epi32(q, 31); // q_sign = q >> 31
-    __m128i mask = _mm_set1_epi32((1 << shift) - is_power_of_2);
+    __m128i mask = _mm_set1_epi32((1U << shift) - is_power_of_2);
     q = _mm_add_epi32(q, _mm_and_si128(q_sign, mask)); // q = q + (q_sign & mask)
     q = _mm_srai_epi32(q, shift); // q >>= shift
     q = _mm_sub_epi32(_mm_xor_si128(q, sign), sign); // q = (q ^ sign) - sign
