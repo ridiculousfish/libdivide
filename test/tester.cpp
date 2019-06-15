@@ -18,6 +18,7 @@
 #include <random>
 #include <string>
 #include <sstream>
+#include <type_traits>
 
 using namespace std;
 using namespace libdivide;
