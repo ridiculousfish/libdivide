@@ -15,7 +15,6 @@
 #include <iostream>
 #include <limits>
 #include <random>
-#include <string.h>
 #include <string>
 #include <sstream>
 
@@ -86,10 +85,12 @@ private:
         }
 
         T expect = numer / denom;
-        T actual = numer / the_divider;
+        T result = numer / the_divider;
 
-        if (actual != expect) {
-            cerr << "Failure for " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " expected " << expect << " actual " << actual << endl;
+        if (result != expect) {
+            ostringstream oss;
+            oss << "Failure for " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " expected " << expect << " got " << result << endl;
+            cerr << oss.str();
             exit(1);
         }
     }
@@ -126,18 +127,19 @@ private:
 
             for (size_t i = 0; i < size; i++) {
                 T numer = numers[i];
-                T actual = results[i];
+                T result = results[i];
                 T expect = numer / denom;
-                if (actual != expect) {
+
+                if (result != expect) {
                     ostringstream oss;
-                    oss << "Vector failure for: " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " expected " << expect << " actual " << actual << endl;
+                    oss << "Vector failure for: " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " expected " << expect << " got " << result << endl;
                     cerr << oss.str();
                     exit(1);
                 }
                 else {
                     #if 0
                         ostringstream oss;
-                        oss << "Vector success for: " << numer << " / " << denom << " = " << actual << " (" << i << ")" << endl;
+                        oss << "Vector success for: " << numer << " / " << denom << " = " << result << endl;
                         cout << oss.str();
                     #endif
                 }
@@ -158,7 +160,9 @@ private:
         const divider<T, ALGO> the_divider = divider<T, ALGO>(denom);
         T recovered = the_divider.recover_divisor(); 
         if (recovered != denom) {
-            cerr << "Failed to recover divisor for " << testcase_name(ALGO) << ": "<< denom << ", but got " << recovered << endl;
+            ostringstream oss;
+            oss << "Failed to recover divisor for " << testcase_name(ALGO) << ": "<< denom << ", but got " << recovered << endl;
+            cerr << oss.str();
             exit(1);
         }
 
@@ -181,7 +185,7 @@ private:
         }
 
         // balance signed & unsigned testing
-        int small_stop = (limits::is_signed) ? 1 << 15 : 1 << 16;
+        int small_stop = (limits::is_signed) ? 1 << 14 : 1 << 16;
 
         // test small numerators < 2^16
         for (int i = 0; i < small_stop; i++) {
@@ -242,9 +246,9 @@ public:
         rand_n = (UT) randDist(randGen);
     }
 
-    void run(void) {
+    void run() {
         // Test small values
-        for (T denom = 1; denom < 1024; denom++) {
+        for (int denom = 1; denom < 1024; denom++) {
             test_many<BRANCHFULL>(denom);
             test_many<BRANCHFREE>(denom);
 
@@ -283,8 +287,8 @@ public:
             test_many<BRANCHFREE>((T) bits);
         }
 
-        // Test randomish values
-        for (unsigned i=0; i < 10000; i++) {
+        // Test random denominators
+        for (int i = 0; i < 10000; i++) {
             T denom = random_denominator();
             test_many<BRANCHFULL>(denom);
             test_many<BRANCHFREE>(denom);
@@ -345,10 +349,12 @@ int main(int argc, char* argv[]) {
     }
     else {
         for (int i = 1; i < argc; i++) {
-            if (!strcmp(argv[i], "u32")) sRunU32 = 1;
-            else if (!strcmp(argv[i], "u64")) sRunU64 = 1;
-            else if (!strcmp(argv[i], "s32")) sRunS32 = 1;
-            else if (!strcmp(argv[i], "s64")) sRunS64 = 1;
+            string arg(argv[i]);
+
+            if (arg == "u32") sRunU32 = 1;
+            else if (arg == "u64") sRunU64 = 1;
+            else if (arg == "s32") sRunS32 = 1;
+            else if (arg == "s64") sRunS64 = 1;
             else {
                 cout << "Usage: tester [OPTIONS]\n"
                        "\n"
