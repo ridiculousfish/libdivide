@@ -162,10 +162,10 @@ sudo make install
 
 You can pass the **tester** program one or more of the following arguments: ```u32```,
 ```s32```, ```u64```, ```s64``` to test the four cases (signed, unsigned, 32-bit, or 64-bit), or
-run it with no arguments to test all four. The tester is multithreaded so it can test multiple
-cases simultaneously. The tester will verify the correctness of libdivide via a set of randomly
-chosen denominators, by comparing the result of libdivide's division to hardware division. It
-may take a long time to run, but it will output as soon as it finds a discrepancy.
+run it with no arguments to test all four. The tester will verify the correctness of libdivide
+via a set of randomly chosen numerators and denominators, by comparing the result of libdivide's
+division to hardware division. It will stop with an error message as soon as it finds a
+discrepancy.
 
 # Benchmark program
 
