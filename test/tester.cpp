@@ -89,7 +89,7 @@ private:
 
         if (result != expect) {
             ostringstream oss;
-            oss << "Failure for " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " expected " << expect << " got " << result << endl;
+            oss << "Failure for " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " = " << expect << ", but got " << result << endl;
             cerr << oss.str();
             exit(1);
         }
@@ -132,7 +132,7 @@ private:
 
                 if (result != expect) {
                     ostringstream oss;
-                    oss << "Vector failure for: " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " expected " << expect << " got " << result << endl;
+                    oss << "Vector failure for: " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " = " << expect << ", but got " << result << endl;
                     cerr << oss.str();
                     exit(1);
                 }
