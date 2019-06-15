@@ -10,6 +10,7 @@
 
 #include "libdivide.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <future>
 #include <iostream>
@@ -296,16 +297,10 @@ public:
     }
 };
 
-int sRunS32 = 0;
-int sRunU32 = 0;
-int sRunS64 = 0;
-int sRunU64 = 0;
-
 void run_test(int idx) {
     switch (idx) {
         case 0:
         {
-            if (!sRunS32) break;
             std::string msg = "Testing int32_t\n"; 
             cout << msg << flush;
             DivideTest<int32_t> dt("s32");
@@ -314,7 +309,6 @@ void run_test(int idx) {
         }   
         case 1:
         {
-            if (!sRunU32) break;
             std::string msg = "Testing uint32_t\n"; 
             cout << msg << flush;
             DivideTest<uint32_t> dt("u32");
@@ -323,7 +317,6 @@ void run_test(int idx) {
         }
         case 2:
         {
-            if (!sRunS64) break;
             std::string msg = "Testing int64_t\n"; 
             cout << msg << flush;
             DivideTest<int64_t> dt("s64");
@@ -332,7 +325,6 @@ void run_test(int idx) {
         }
         case 3:
         {
-            if (!sRunU64) break;
             std::string msg = "Testing uint64_t\n"; 
             cout << msg << flush;
             DivideTest<uint64_t> dt("u64");
@@ -343,18 +335,20 @@ void run_test(int idx) {
 }
 
 int main(int argc, char* argv[]) {
+    vector<bool> is_test(4, false);
+ 
     if (argc == 1) {
-        /* Test all */
-        sRunU32 = sRunU64 = sRunS32 = sRunS64 = 1;
+        // Test all
+        fill(is_test.begin(), is_test.end(), true);
     }
     else {
         for (int i = 1; i < argc; i++) {
             string arg(argv[i]);
 
-            if (arg == "u32") sRunU32 = 1;
-            else if (arg == "u64") sRunU64 = 1;
-            else if (arg == "s32") sRunS32 = 1;
-            else if (arg == "s64") sRunS64 = 1;
+            if (arg == "s32") is_test[0] = true;
+            else if (arg == "u32") is_test[1] = true;
+            else if (arg == "s64") is_test[2] = true;
+            else if (arg == "u64") is_test[3] = true;
             else {
                 cout << "Usage: tester [OPTIONS]\n"
                        "\n"
@@ -375,7 +369,8 @@ int main(int argc, char* argv[]) {
 
     // Start 4 threads
     for (int test_id = 0; test_id < 4; test_id++) {
-        futures.emplace_back(async(launch::async, run_test, test_id));
+        if (is_test.at(test_id))
+            futures.emplace_back(async(launch::async, run_test, test_id));
     }
 
     // Wait until threads finish
