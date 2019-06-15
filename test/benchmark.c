@@ -131,7 +131,7 @@ static struct time_result time_function(uint64_t (*func)(struct FunctionParams_t
     tresult.result = result;
     tresult.time = diff;
 #endif
-	return tresult;
+    return tresult;
 }
 
 // U32
@@ -799,8 +799,7 @@ int main(int argc, char* argv[]) {
     iters += (rand() % 3) * (1 << 10);
     genIters += (rand() % 3) * (1 << 10);
 
-    const uint32_t *data = NULL;
-    data = random_data(sizeof(uint32_t));
+    const uint32_t *data = random_data(sizeof(uint32_t));
     if (u32) test_many_u32(data);
     if (s32) test_many_s32((const int32_t *)data);
 
