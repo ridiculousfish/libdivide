@@ -753,6 +753,10 @@ static const uint32_t *random_data(unsigned sizeOfType) {
 }
 
 int main(int argc, char* argv[]) {
+    // Disable printf buffering.
+    // This is mainly required for Windows.
+    setbuf(stdout, NULL);
+
 #if defined(LIBDIVIDE_WINDOWS)
 	QueryPerformanceFrequency(&gPerfCounterFreq);
 #endif
