@@ -171,19 +171,21 @@ private:
         T min = limits::min();
         T max = limits::max();
 
-        T edgeCases[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
-                          10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-                          20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
-                          30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
-                          40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
-                          123, 1233, 36847, 506831, 3000003, 70000007,
-                          max, max-1, max-2, max-3, max-4, max-5, max-3213, max-2453242, max-432234231,
-                          min, min+1, min+2, min+3, min+4, min+5, min+3213, min+2453242, min+432234231,
-                          max/2, max/2+1, max/2-1, max/3, max/3+1, max/3-1, max/4, max/4+1, max/4-1,
-                          min/2, min/2+1, min/2-1, min/3, min/3+1, min/3-1, min/4, max/4+1, min/4-1 };
+        vector<T> edgeCases = {
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+            10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+            20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+            30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
+            40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
+            123, 1232, 36847, 506838, 3000003, 70000007,
+            max, max-1, max-2, max-3, max-4, max-5, max-3213, max-2453242, max-432234231,
+            min, min+1, min+2, min+3, min+4, min+5, min+3213, min+2453242, min+432234231,
+            max/2, max/2+1, max/2-1, max/3, max/3+1, max/3-1, max/4, max/4+1, max/4-1,
+            min/2, min/2+1, min/2-1, min/3, min/3+1, min/3-1, min/4, max/4+1, min/4-1
+        };
 
-        for (size_t i = 0; i < sizeof(edgeCases) / sizeof(*edgeCases); i++) {
-            test_one(edgeCases[i], denom, the_divider);
+        for (T numerator : edgeCases) {
+            test_one(numerator, denom, the_divider);
         }
 
         // balance signed & unsigned testing
