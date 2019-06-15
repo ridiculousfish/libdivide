@@ -7,14 +7,15 @@
 // dividers.
 //
 
+#include "libdivide.h"
+
 #include <algorithm>
 #include <iostream>
 #include <chrono>
 #include <vector>
 #include <cstring>
 #include <cstdlib>
-
-#include "libdivide.h"
+#include <typeinfo>
 
 #if defined(__GNUC__)
     #define NOINLINE __attribute__((__noinline__))
@@ -69,8 +70,7 @@ struct result_t {
 
 template<typename T, typename P>
 NOINLINE result_t benchmark_sum_dividers(const P& dividers, size_t iters) {
-    using namespace std::chrono;
-    high_resolution_clock::time_point t1 = high_resolution_clock::now();
+    auto t1 = std::chrono::system_clock::now();
     size_t sum = 0;
 
     for (; iters > 0; iters--) {
@@ -79,9 +79,9 @@ NOINLINE result_t benchmark_sum_dividers(const P& dividers, size_t iters) {
         sum += sum_dividers(numerator, dividers);
     }
 
-    high_resolution_clock::time_point t2 = high_resolution_clock::now();
-    duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
-    return result_t{time_span.count(), sum};
+    auto t2 = std::chrono::system_clock::now();
+    std::chrono::duration<double> seconds = t2 - t1;
+    return result_t{seconds.count(), sum};
 }
 
 enum {
@@ -130,11 +130,11 @@ void  benchmark(tasks_t tasks, size_t max, size_t iters) {
     }
 
     if (test_system && test_branchfull && branchfull.sum != sys.sum) {
-        std::cerr << "Disagreement in branchfull path for type " << typeid(T).name() << ": libdivide says " << branchfull.sum << " but system says " << sys.sum << std::endl;
+        std::cerr << "Error: branchfull_divider<" << typeid(T).name() << "> sum: " << branchfull.sum << ", but system sum: " << sys.sum << std::endl;
         std::exit(1);
     }
     if (test_system && test_branchfree && branchfree.sum != sys.sum) {
-        std::cerr << "Disagreement in branchfree path for type " << typeid(T).name() << ": libdivide says " << branchfree.sum << " but system says " << sys.sum << std::endl;
+        std::cerr << "Error: branchfree_divider<" << typeid(T).name() << "> sum: " << branchfree.sum << ", but system sum: " << sys.sum << std::endl;
         std::exit(1);
     }
 
