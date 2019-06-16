@@ -44,6 +44,10 @@
 
 #if defined(__SIZEOF_INT128__)
     #define HAS_INT128_T
+    // clang-cl on Windows does not yet support 128-bit division
+    #if !(defined(__clang__) && defined(LIBDIVIDE_VC))
+        #define HAS_INT128_DIV
+    #endif
 #endif
 
 #if defined(__x86_64__) || defined(_M_X64)
@@ -352,7 +356,8 @@ static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v,
             : [v] "r"(v), "a"(u0), "d"(u1)
             );
     return result;
-#elif defined(HAS_INT128_T)
+#elif defined(HAS_INT128_T) && \
+      defined(HAS_INT128_DIV)
     __uint128_t n = ((__uint128_t)u1 << 64) | u0;
     uint64_t result = (uint64_t)(n / v);
     *r = (uint64_t)(n - result * (__uint128_t)v);
@@ -449,7 +454,8 @@ static inline void libdivide_u128_shift(uint64_t *u1, uint64_t *u0, int32_t sign
 
 // Computes a 128 / 128 -> 64 bit division, with a 128 bit remainder.
 static uint64_t libdivide_128_div_128_to_64(uint64_t u_hi, uint64_t u_lo, uint64_t v_hi, uint64_t v_lo, uint64_t *r_hi, uint64_t *r_lo) {
-#if defined(HAS_INT128_T)
+#if defined(HAS_INT128_T) && \
+    defined(HAS_INT128_DIV)
     __uint128_t ufull = u_hi;
     __uint128_t vfull = v_hi;
     ufull = (ufull << 64) | u_lo;
