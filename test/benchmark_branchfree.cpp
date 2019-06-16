@@ -10,11 +10,11 @@
 #include "libdivide.h"
 
 #include <algorithm>
+#include <cstdlib>
 #include <iostream>
 #include <chrono>
 #include <vector>
-#include <cstring>
-#include <cstdlib>
+#include <string>
 #include <typeinfo>
 
 #if defined(__GNUC__)
@@ -68,8 +68,8 @@ struct result_t {
     size_t sum;
 };
 
-template<typename T, typename P>
-NOINLINE result_t benchmark_sum_dividers(const P& dividers, size_t iters) {
+template<typename T, typename D>
+NOINLINE result_t benchmark_sum_dividers(const D& dividers, size_t iters) {
     auto t1 = std::chrono::system_clock::now();
     size_t sum = 0;
 
@@ -89,20 +89,25 @@ enum {
     TEST_U64 = 1 << 1,
     TEST_S32 = 1 << 2,
     TEST_S64 = 1 << 3,
-    TEST_ALL_TYPES = (TEST_U32 | TEST_U64 | TEST_S32 | TEST_S64),
+    TEST_ALL_TYPES = (TEST_U32 | 
+                      TEST_U64 | 
+                      TEST_S32 | 
+                      TEST_S64),
     TEST_SYSTEM = 1 << 4,
     TEST_BRANCHFREE = 1 << 5,
     TEST_BRANCHFULL = 1 << 6,
-    TEST_ALL_ALGOS = (TEST_SYSTEM | TEST_BRANCHFREE | TEST_BRANCHFULL),
+    TEST_ALL_ALGOS = (TEST_SYSTEM | 
+                      TEST_BRANCHFREE | 
+                      TEST_BRANCHFULL),
 };
 
-typedef unsigned int tasks_t;
+using tasks_t = unsigned int;
 
 template<typename T>
-void  benchmark(tasks_t tasks, size_t max, size_t iters) {
-    bool test_system = !! (tasks & TEST_SYSTEM);
-    bool test_branchfull = !! (tasks & TEST_BRANCHFULL);
-    bool test_branchfree = !! (tasks & TEST_BRANCHFREE);
+void benchmark(tasks_t tasks, size_t max, size_t iters) {
+    bool test_system = !!(tasks & TEST_SYSTEM);
+    bool test_branchfull = !!(tasks & TEST_BRANCHFULL);
+    bool test_branchfree = !!(tasks & TEST_BRANCHFREE);
     
     result_t sys = {0, 0};
     result_t branchfull = {0, 0};
@@ -133,6 +138,7 @@ void  benchmark(tasks_t tasks, size_t max, size_t iters) {
         std::cerr << "Error: branchfull_divider<" << typeid(T).name() << "> sum: " << branchfull.sum << ", but system sum: " << sys.sum << std::endl;
         std::exit(1);
     }
+
     if (test_system && test_branchfree && branchfree.sum != sys.sum) {
         std::cerr << "Error: branchfree_divider<" << typeid(T).name() << "> sum: " << branchfree.sum << ", but system sum: " << sys.sum << std::endl;
         std::exit(1);
@@ -161,22 +167,22 @@ void usage() {
 int main(int argc, const char *argv[]) {
     tasks_t tasks = 0;
     
-    // parse argv
     for (int i = 1; i < argc; i++) {
-        const char * arg = argv[i];
-        if (! strcmp(arg, "u32")) {
+        std::string arg(argv[i]);
+
+        if (arg == "u32") {
             tasks |= TEST_U32;
-        } else if (! strcmp(arg, "s32")) {
+        } else if (arg == "s32") {
             tasks |= TEST_S32;
-        } else if (! strcmp(arg, "u64")) {
+        } else if (arg == "u64") {
             tasks |= TEST_U64;
-        } else if (! strcmp(arg, "s64")) {
+        } else if (arg == "s64") {
             tasks |= TEST_S64;
-        } else if (! strcmp(arg, "branchfree")) {
+        } else if (arg == "branchfree") {
             tasks |= TEST_BRANCHFREE;
-        } else if (! strcmp(arg, "branchfull")) {
+        } else if (arg == "branchfull") {
             tasks |= TEST_BRANCHFULL;
-        } else if (! strcmp(arg, "sys") || ! strcmp(arg, "system")) {
+        } else if (arg == "sys" || arg == "system") {
             tasks |= TEST_SYSTEM;
         } else {
             usage();
@@ -185,10 +191,10 @@ int main(int argc, const char *argv[]) {
     }
 
     // Set default tasks
-    if (! (tasks & TEST_ALL_TYPES)) {
+    if (!(tasks & TEST_ALL_TYPES)) {
         tasks |= TEST_ALL_TYPES;
     }
-    if (! (tasks & TEST_ALL_ALGOS)) {
+    if (!(tasks & TEST_ALL_ALGOS)) {
         tasks |= TEST_ALL_ALGOS;
     }
 
