@@ -444,7 +444,8 @@ static inline void libdivide_u128_shift(uint64_t *u1, uint64_t *u0, int32_t sign
         *u1 <<= shift;
         *u1 |= *u0 >> (64 - shift);
         *u0 <<= shift;
-    } else {
+    }
+    else if (signed_shift < 0) {
         uint32_t shift = -signed_shift;
         *u0 >>= shift;
         *u0 |= *u1 << (64 - shift);
