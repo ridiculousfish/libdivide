@@ -1299,7 +1299,7 @@ __m512i libdivide_u32_do_vector(__m512i numers, const struct libdivide_u32_t *de
     }
 }
 
-LIBDIVIDE_API __m512i libdivide_u32_branchfree_do_vector(__m512i numers, const struct libdivide_u32_branchfree_t *denom) {
+__m512i libdivide_u32_branchfree_do_vector(__m512i numers, const struct libdivide_u32_branchfree_t *denom) {
     __m512i q = libdivide_mullhi_u32_vector(numers, _mm512_set1_epi32(denom->magic));
     __m512i t = _mm512_add_epi32(_mm512_srli_epi32(_mm512_sub_epi32(numers, q), 1), q);
     return _mm512_srli_epi32(t, denom->more);
@@ -1542,7 +1542,7 @@ __m256i libdivide_u32_do_vector(__m256i numers, const struct libdivide_u32_t *de
     }
 }
 
-LIBDIVIDE_API __m256i libdivide_u32_branchfree_do_vector(__m256i numers, const struct libdivide_u32_branchfree_t *denom) {
+__m256i libdivide_u32_branchfree_do_vector(__m256i numers, const struct libdivide_u32_branchfree_t *denom) {
     __m256i q = libdivide_mullhi_u32_vector(numers, _mm256_set1_epi32(denom->magic));
     __m256i t = _mm256_add_epi32(_mm256_srli_epi32(_mm256_sub_epi32(numers, q), 1), q);
     return _mm256_srli_epi32(t, denom->more);
@@ -1789,7 +1789,7 @@ __m128i libdivide_u32_do_vector(__m128i numers, const struct libdivide_u32_t *de
     }
 }
 
-LIBDIVIDE_API __m128i libdivide_u32_branchfree_do_vector(__m128i numers, const struct libdivide_u32_branchfree_t *denom) {
+__m128i libdivide_u32_branchfree_do_vector(__m128i numers, const struct libdivide_u32_branchfree_t *denom) {
     __m128i q = libdivide_mullhi_u32_vector(numers, _mm_set1_epi32(denom->magic));
     __m128i t = _mm_add_epi32(_mm_srli_epi32(_mm_sub_epi32(numers, q), 1), q);
     return _mm_srli_epi32(t, denom->more);
