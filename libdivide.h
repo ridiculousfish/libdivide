@@ -92,45 +92,6 @@
 namespace libdivide {
 #endif
 
-// Explanation of the "more" field:
-//
-// * Bits 0-5 is the shift value (for shift path or mult path).
-// * Bit 6 is the add indicator for mult path.
-// * Bit 7 is set if the divisor is negative. We use bit 7 as the negative
-//   divisor indicator so that we can efficiently use sign extension to
-//   create a bitmask with all bits set to 1 (if the divisor is negative)
-//   or 0 (if the divisor is positive).
-//
-// u32: [0-4] shift value
-//      [5] ignored
-//      [6] add indicator
-//      magic number of 0 indicates shift path
-//
-// s32: [0-4] shift value
-//      [5] ignored
-//      [6] add indicator
-//      [7] indicates negative divisor
-//      magic number of 0 indicates shift path
-//
-// u64: [0-5] shift value
-//      [6] add indicator
-//      magic number of 0 indicates shift path
-//
-// s64: [0-5] shift value
-//      [6] add indicator
-//      [7] indicates negative divisor
-//      magic number of 0 indicates shift path
-//
-// In s32 and s64 branchfree modes, the magic number is negated according to
-// whether the divisor is negated. In branchfree strategy, it is not negated.
-
-enum {
-    LIBDIVIDE_32_SHIFT_MASK = 0x1F,
-    LIBDIVIDE_64_SHIFT_MASK = 0x3F,
-    LIBDIVIDE_ADD_MARKER = 0x40,
-    LIBDIVIDE_NEGATIVE_DIVISOR = 0x80
-};
-
 // pack divider structs to prevent compilers from padding.
 // This reduces memory usage by up to 43% when using a large
 // array of libdivide dividers and improves performance
@@ -178,6 +139,45 @@ struct libdivide_s64_branchfree_t {
 };
 
 #pragma pack(pop)
+
+// Explanation of the "more" field:
+//
+// * Bits 0-5 is the shift value (for shift path or mult path).
+// * Bit 6 is the add indicator for mult path.
+// * Bit 7 is set if the divisor is negative. We use bit 7 as the negative
+//   divisor indicator so that we can efficiently use sign extension to
+//   create a bitmask with all bits set to 1 (if the divisor is negative)
+//   or 0 (if the divisor is positive).
+//
+// u32: [0-4] shift value
+//      [5] ignored
+//      [6] add indicator
+//      magic number of 0 indicates shift path
+//
+// s32: [0-4] shift value
+//      [5] ignored
+//      [6] add indicator
+//      [7] indicates negative divisor
+//      magic number of 0 indicates shift path
+//
+// u64: [0-5] shift value
+//      [6] add indicator
+//      magic number of 0 indicates shift path
+//
+// s64: [0-5] shift value
+//      [6] add indicator
+//      [7] indicates negative divisor
+//      magic number of 0 indicates shift path
+//
+// In s32 and s64 branchfree modes, the magic number is negated according to
+// whether the divisor is negated. In branchfree strategy, it is not negated.
+
+enum {
+    LIBDIVIDE_32_SHIFT_MASK = 0x1F,
+    LIBDIVIDE_64_SHIFT_MASK = 0x3F,
+    LIBDIVIDE_ADD_MARKER = 0x40,
+    LIBDIVIDE_NEGATIVE_DIVISOR = 0x80
+};
 
 #ifndef LIBDIVIDE_API
     #ifdef __cplusplus
@@ -1936,254 +1936,145 @@ __m128i libdivide_s64_branchfree_do_vector(__m128i numers, const struct libdivid
 
 #ifdef __cplusplus
 
-// Our divider struct is templated on both a type (like uint64_t) and an
-// algorithm index. BRANCHFULL is the default algorithm, BRANCHFREE is the
-// branchfree variant.
+#if defined(LIBDIVIDE_AVX512)
+    #define LIBDIVIDE_VECTOR_TYPE __m512i
+#elif defined(LIBDIVIDE_AVX2)
+    #define LIBDIVIDE_VECTOR_TYPE __m256i
+#elif defined(LIBDIVIDE_SSE2)
+    #define LIBDIVIDE_VECTOR_TYPE __m128i
+#endif
+
+#if !defined(LIBDIVIDE_VECTOR_TYPE)
+    #define LIBDIVIDE_DIVIDE_VECTOR(ALGO)
+#else
+    #define LIBDIVIDE_DIVIDE_VECTOR(ALGO) \
+        LIBDIVIDE_VECTOR_TYPE divide(LIBDIVIDE_VECTOR_TYPE val) const { \
+            return libdivide_##ALGO##_do_vector(val, &denom); \
+        }
+#endif
+
+// The BUILD_DISPATCHER macro generates C++ methods (for the given integer
+// and algorithm types) that redirect to libdivide's C API.
+
+#define BUILD_DISPATCHER(T, ALGO) \
+    LIBDIVIDE_DIVIDE_VECTOR(ALGO) \
+    libdivide_##ALGO##_t denom; \
+    dispatcher() { } \
+    dispatcher(T n) \
+        : denom(gen(n)) \
+    { } \
+    libdivide_##ALGO##_t gen(T n) const { \
+        return libdivide_##ALGO##_gen(n); \
+    } \
+    T divide(T val) const { \
+        return libdivide_##ALGO##_do(val, &denom); \
+    } \
+    T recover() const { \
+        return libdivide_##ALGO##_recover(&denom); \
+    }
+
+// The C++ divider class is templated on both an integer type
+// (like uint64_t) and an algorithm type.
+// * BRANCHFULL is the default algorithm type.
+// * BRANCHFREE is the branchfree algorithm type.
 enum {
     BRANCHFULL,
     BRANCHFREE
 };
 
-namespace libdivide_internal {
-
-#if defined(__GNUC__) && \
-    __GNUC__ >= 6 && \
-    (defined(LIBDIVIDE_AVX512) || \
-     defined(LIBDIVIDE_AVX2) || \
-     defined(LIBDIVIDE_SSE2))
-    // Using vector functions as template arguments causes many
-    // -Wignored-attributes compiler warnings with GCC 9.
-    // These warnings can safely be turned off.
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wignored-attributes"
-#endif
-
-#if defined(LIBDIVIDE_AVX512)
-    #define MAYBE_VECTOR(X) X
-    #define MAYBE_VECTOR_PARAM(X) __m512i vector_func(__m512i, const X *)
-#elif defined(LIBDIVIDE_AVX2)
-    #define MAYBE_VECTOR(X) X
-    #define MAYBE_VECTOR_PARAM(X) __m256i vector_func(__m256i, const X *)
-#elif defined(LIBDIVIDE_SSE2)
-    #define MAYBE_VECTOR(X) X
-    #define MAYBE_VECTOR_PARAM(X) __m128i vector_func(__m128i, const X *)
-#else
-    #define MAYBE_VECTOR(X) 0
-    #define MAYBE_VECTOR_PARAM(X) int unused
-#endif
-
-// The following convenience macros are used to build a type of the base
-// divider class and give it as template arguments the C functions
-// related to the macro name and the macro type paramaters.
-
-#define BRANCHFULL_DIVIDER(INT, TYPE) \
-    typedef base<INT, \
-                 libdivide_##TYPE##_t, \
-                 libdivide_##TYPE##_gen, \
-                 libdivide_##TYPE##_do, \
-                 MAYBE_VECTOR(libdivide_##TYPE##_do_vector)>
-
-#define BRANCHFREE_DIVIDER(INT, TYPE) \
-    typedef base<INT, \
-                 libdivide_##TYPE##_branchfree_t, \
-                 libdivide_##TYPE##_branchfree_gen, \
-                 libdivide_##TYPE##_branchfree_do, \
-                 MAYBE_VECTOR(libdivide_##TYPE##_branchfree_do_vector)>
-
-// Base divider, provides storage for the actual divider.
-// @T: e.g. uint32_t
-// @DenomType: e.g. libdivide_u32_t
-// @gen_func(): e.g. libdivide_u32_gen
-// @do_func(): e.g. libdivide_u32_do
-// @MAYBE_VECTOR_PARAM: e.g. libdivide_u32_do_vector
-template<typename T,
-         typename DenomType,
-         DenomType gen_func(T),
-         T do_func(T, const DenomType *),
-         MAYBE_VECTOR_PARAM(DenomType)>
-struct base {
-    // Storage for the actual divider
-    DenomType denom;
-
-    // Constructor that takes a divisor value, and applies the gen function
-    base(T d) : denom(gen_func(d)) { }
-
-    // Default constructor to allow uninitialized uses in e.g. arrays
-    base() {}
-
-    T perform_divide(T val) const {
-        return do_func(val, &denom);
-    }
-
-#if defined(LIBDIVIDE_AVX512)
-    __m512i perform_divide_vector(__m512i val) const {
-        return vector_func(val, &denom);
-    }
-#elif defined(LIBDIVIDE_AVX2)
-    __m256i perform_divide_vector(__m256i val) const {
-        return vector_func(val, &denom);
-    }
-#elif defined(LIBDIVIDE_SSE2)
-    __m128i perform_divide_vector(__m128i val) const {
-        return vector_func(val, &denom);
-    }
-#endif
-};
-
+// The dispatcher selects a specific implementation for a given
+// type and ALGO using partial template specialization.
 template<typename T, int ALGO> struct dispatcher { };
 
-// Templated dispatch using partial specialization
-template<> struct dispatcher<int32_t, BRANCHFULL> { BRANCHFULL_DIVIDER(int32_t, s32) divider; };
-template<> struct dispatcher<int32_t, BRANCHFREE> { BRANCHFREE_DIVIDER(int32_t, s32) divider; };
-template<> struct dispatcher<uint32_t, BRANCHFULL> { BRANCHFULL_DIVIDER(uint32_t, u32) divider; };
-template<> struct dispatcher<uint32_t, BRANCHFREE> { BRANCHFREE_DIVIDER(uint32_t, u32) divider; };
-template<> struct dispatcher<int64_t, BRANCHFULL> { BRANCHFULL_DIVIDER(int64_t, s64) divider; };
-template<> struct dispatcher<int64_t, BRANCHFREE> { BRANCHFREE_DIVIDER(int64_t, s64) divider; };
-template<> struct dispatcher<uint64_t, BRANCHFULL> { BRANCHFULL_DIVIDER(uint64_t, u64) divider; };
-template<> struct dispatcher<uint64_t, BRANCHFREE> { BRANCHFREE_DIVIDER(uint64_t, u64) divider; };
-
-#if defined(__GNUC__) && \
-    __GNUC__ >= 6 && \
-    (defined(LIBDIVIDE_AVX512) || \
-     defined(LIBDIVIDE_AVX2) || \
-     defined(LIBDIVIDE_SSE2))
-    #pragma GCC diagnostic pop
-#endif
-
-// Overloads that don't depend on the algorithm
-inline int32_t  recover(const libdivide_s32_t *s) { return libdivide_s32_recover(s); }
-inline uint32_t recover(const libdivide_u32_t *s) { return libdivide_u32_recover(s); }
-inline int64_t  recover(const libdivide_s64_t *s) { return libdivide_s64_recover(s); }
-inline uint64_t recover(const libdivide_u64_t *s) { return libdivide_u64_recover(s); }
-
-inline int32_t  recover(const libdivide_s32_branchfree_t *s) { return libdivide_s32_branchfree_recover(s); }
-inline uint32_t recover(const libdivide_u32_branchfree_t *s) { return libdivide_u32_branchfree_recover(s); }
-inline int64_t  recover(const libdivide_s64_branchfree_t *s) { return libdivide_s64_branchfree_recover(s); }
-inline uint64_t recover(const libdivide_u64_branchfree_t *s) { return libdivide_u64_branchfree_recover(s); }
-
-}  // namespace libdivide_internal
+template<> struct dispatcher<int32_t, BRANCHFULL> { BUILD_DISPATCHER(int32_t, s32) };
+template<> struct dispatcher<int32_t, BRANCHFREE> { BUILD_DISPATCHER(int32_t, s32_branchfree) };
+template<> struct dispatcher<uint32_t, BRANCHFULL> { BUILD_DISPATCHER(uint32_t, u32) };
+template<> struct dispatcher<uint32_t, BRANCHFREE> { BUILD_DISPATCHER(uint32_t, u32_branchfree) };
+template<> struct dispatcher<int64_t, BRANCHFULL> { BUILD_DISPATCHER(int64_t, s64) };
+template<> struct dispatcher<int64_t, BRANCHFREE> { BUILD_DISPATCHER(int64_t, s64_branchfree) };
+template<> struct dispatcher<uint64_t, BRANCHFULL> { BUILD_DISPATCHER(uint64_t, u64) };
+template<> struct dispatcher<uint64_t, BRANCHFREE> { BUILD_DISPATCHER(uint64_t, u64_branchfree) };
 
 // This is the main divider class for use by the user (C++ API).
-// The divider itself is stored in the div variable who's
-// type is chosen by the dispatcher based on the template paramaters.
+// The actual division algorithm is selected using the dispatcher struct
+// based on the integer and algorithm template parameters.
 template<typename T, int ALGO = BRANCHFULL>
 class divider {
 private:
-    // Here's the actual divider
-    typedef typename libdivide_internal::dispatcher<T, ALGO>::divider div_t;
-    div_t div;
+    // Storage for the actual divisor
+    dispatcher<T, ALGO> div;
 
 public:
-    // Constructor that takes the divisor as a parameter
-    divider(T n) : div(n) { }
-
     // Default constructor. We leave this deliberately undefined so that
-    // creating an array of divider and then initializing them
+    // creating an array of dividers and then initializing them
     // doesn't slow us down.
     divider() { }
 
-    // Divides the parameter by the divisor, returning the quotient
-    T perform_divide(T val) const {
-        return div.perform_divide(val);
+    // Constructor that takes the divisor as a parameter
+    divider(T n) : div(n) { }
+
+    // Divides the parameter by the divisor
+    T divide(T n) const {
+        return div.divide(n);
     }
 
-    // Recovers the divisor that was used to initialize the divider
-    T recover_divisor() const {
-        return libdivide_internal::recover(&div.denom);
+    // Recovers the divisor, returns the value that was
+    // used to initialize this divider object.
+    T recover() const {
+        return div.recover();
     }
 
-#if defined(LIBDIVIDE_AVX512)
-    // Treats the vector as either 8 or 16 packed values (depending on the
-    // size), and divides each of them by the divisor,
-    // returning the packed quotients.
-    __m512i perform_divide_vector(__m512i val) const {
-        return div.perform_divide_vector(val);
+    bool operator==(const divider<T, ALGO>& other) const {
+        return div.denom.magic == other.denom.magic &&
+               div.denom.more == other.denom.more;
     }
-#elif defined(LIBDIVIDE_AVX2)
-    // Treats the vector as either 4 or 8 packed values (depending on the
-    // size), and divides each of them by the divisor,
-    // returning the packed quotients.
-    __m256i perform_divide_vector(__m256i val) const {
-        return div.perform_divide_vector(val);
+
+    bool operator!=(const divider<T, ALGO>& other) const {
+        return !(*this == other);
     }
-#elif defined(LIBDIVIDE_SSE2)
-    // Treats the vector as either 2 or 4 packed values (depending on the
-    // size), and divides each of them by the divisor,
-    // returning the packed quotients.
-    __m128i perform_divide_vector(__m128i val) const {
-        return div.perform_divide_vector(val);
+
+#if defined(LIBDIVIDE_VECTOR_TYPE)
+    // Treats the vector as packed integer values with the same type
+    // as the divider (e.g. s32, u32, s64, u64) and divides each of
+    // them by the divider, returning the packed quotients.
+    LIBDIVIDE_VECTOR_TYPE divide(LIBDIVIDE_VECTOR_TYPE n) const {
+        return div.divide(n);
     }
 #endif
-
-    bool operator==(const divider<T, ALGO>& him) const {
-        return div.denom.magic == him.div.denom.magic &&
-               div.denom.more == him.div.denom.more;
-    }
-
-    bool operator!=(const divider<T, ALGO>& him) const {
-        return !(*this == him);
-    }
 };
+
+// Overload of operator / for scalar division
+template<typename T, int ALGO>
+T operator/(T n, const divider<T, ALGO>& div) {
+    return div.divide(n);
+}
+
+// Overload of operator /= for scalar division
+template<typename T, int ALGO>
+T& operator/=(T& n, const divider<T, ALGO>& div) {
+    n = div.divide(n);
+    return n;
+}
+
+#if defined(LIBDIVIDE_VECTOR_TYPE)
+    // Overload of operator / for vector division
+    template<typename T, int ALGO>
+    LIBDIVIDE_VECTOR_TYPE operator/(LIBDIVIDE_VECTOR_TYPE n, const divider<T, ALGO>& div) {
+        return div.divide(n);
+    }
+    // Overload of operator /= for vector division
+    template<typename T, int ALGO>
+    LIBDIVIDE_VECTOR_TYPE& operator/=(LIBDIVIDE_VECTOR_TYPE& n, const divider<T, ALGO>& div) {
+        n = div.divide(n);
+        return n;
+    }
+#endif
 
 #if __cplusplus >= 201103L || \
     (defined(_MSC_VER) && _MSC_VER >= 1800)
     // libdivdie::branchfree_divider<T>
     template <typename T>
     using branchfree_divider = divider<T, BRANCHFREE>;
-#endif
-
-// Overload of the / operator for scalar division
-template<typename T, int ALGO>
-T operator/(T numer, const divider<T, ALGO>& denom) {
-    return denom.perform_divide(numer);
-}
-
-// Overload of the /= operator for scalar division
-template<typename T, int ALGO>
-T& operator/=(T& numer, const divider<T, ALGO>& denom) {
-    numer = denom.perform_divide(numer);
-    return numer;
-}
-
-#if defined(LIBDIVIDE_AVX512)
-    // Overload of the / operator for vector division
-    template<typename T, int ALGO>
-    __m512i operator/(__m512i numer, const divider<T, ALGO>& denom) {
-        return denom.perform_divide_vector(numer);
-    }
-
-    // Overload of the /= operator for vector division
-    template<typename T, int ALGO>
-    __m512i& operator/=(__m512i& numer, const divider<T, ALGO>& denom) {
-        numer = denom.perform_divide_vector(numer);
-        return numer;
-    }
-#elif defined(LIBDIVIDE_AVX2)
-    // Overload of the / operator for vector division
-    template<typename T, int ALGO>
-    __m256i operator/(__m256i numer, const divider<T, ALGO>& denom) {
-        return denom.perform_divide_vector(numer);
-    }
-
-    // Overload of the /= operator for vector division
-    template<typename T, int ALGO>
-    __m256i& operator/=(__m256i& numer, const divider<T, ALGO>& denom) {
-        numer = denom.perform_divide_vector(numer);
-        return numer;
-    }
-#elif defined(LIBDIVIDE_SSE2)
-    // Overload of the / operator for vector division
-    template<typename T, int ALGO>
-    __m128i operator/(__m128i numer, const divider<T, ALGO>& denom) {
-        return denom.perform_divide_vector(numer);
-    }
-
-    // Overload of the /= operator for vector division
-    template<typename T, int ALGO>
-    __m128i& operator/=(__m128i& numer, const divider<T, ALGO>& denom) {
-        numer = denom.perform_divide_vector(numer);
-        return numer;
-    }
 #endif
 
 } // namespace libdivide

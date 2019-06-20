@@ -160,7 +160,7 @@ private:
         }
 
         const divider<T, ALGO> the_divider = divider<T, ALGO>(denom);
-        T recovered = the_divider.recover_divisor(); 
+        T recovered = the_divider.recover(); 
         if (recovered != denom) {
             ostringstream oss;
             oss << "Failed to recover divisor for " << testcase_name(ALGO) << ": "<< denom << ", but got " << recovered << endl;
