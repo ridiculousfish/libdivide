@@ -202,12 +202,12 @@ LIBDIVIDE_API struct libdivide_u64_branchfree_t libdivide_u64_branchfree_gen(uin
 LIBDIVIDE_API int32_t  libdivide_s32_do(int32_t numer, const struct libdivide_s32_t *denom);
 LIBDIVIDE_API uint32_t libdivide_u32_do(uint32_t numer, const struct libdivide_u32_t *denom);
 LIBDIVIDE_API int64_t  libdivide_s64_do(int64_t numer, const struct libdivide_s64_t *denom);
-LIBDIVIDE_API uint64_t libdivide_u64_do(uint64_t y, const struct libdivide_u64_t *denom);
+LIBDIVIDE_API uint64_t libdivide_u64_do(uint64_t numer, const struct libdivide_u64_t *denom);
 
 LIBDIVIDE_API int32_t  libdivide_s32_branchfree_do(int32_t numer, const struct libdivide_s32_branchfree_t *denom);
 LIBDIVIDE_API uint32_t libdivide_u32_branchfree_do(uint32_t numer, const struct libdivide_u32_branchfree_t *denom);
 LIBDIVIDE_API int64_t  libdivide_s64_branchfree_do(int64_t numer, const struct libdivide_s64_branchfree_t *denom);
-LIBDIVIDE_API uint64_t libdivide_u64_branchfree_do(uint64_t y, const struct libdivide_u64_branchfree_t *denom);
+LIBDIVIDE_API uint64_t libdivide_u64_branchfree_do(uint64_t numer, const struct libdivide_u64_branchfree_t *denom);
 
 LIBDIVIDE_API int32_t  libdivide_s32_recover(const struct libdivide_s32_t *denom);
 LIBDIVIDE_API uint32_t libdivide_u32_recover(const struct libdivide_u32_t *denom);
