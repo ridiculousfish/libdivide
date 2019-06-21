@@ -10,8 +10,8 @@ libdivide allows you to replace expensive integer divsion instructions by
 a sequence of shift, add and multiply instructions that will calculate
 the integer division much faster.
 
-On current CPUs you can expect a **speedup of 5x to 10x** for 64-bit integer division
-and a speedup of 2x to 5x for 32-bit integer division when using libdivide.
+On current CPUs you can get a **speedup of up to 10x** for 64-bit integer division
+and a speedup of up to to 5x for 32-bit integer division when using libdivide.
 libdivide also supports [SSE2](https://en.wikipedia.org/wiki/SSE2),
 [AVX2](https://en.wikipedia.org/wiki/Advanced_Vector_Extensions) and
 [AVX512](https://en.wikipedia.org/wiki/Advanced_Vector_Extensions)
