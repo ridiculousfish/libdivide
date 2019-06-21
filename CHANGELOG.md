@@ -2,22 +2,28 @@
 
 This is a list of notable changes to libdivide.
 
-## [2.0](https://github.com/ridiculousfish/libdivide/releases/tag/v2.0) - 2019-06-16
+## [2.0](https://github.com/ridiculousfish/libdivide/releases/tag/v2.0) - 2019-06-21
 * BREAKING
   * Removed unswitch functionality ([#46](https://github.com/ridiculousfish/libdivide/issues/46))
   * Renamed macro ```LIBDIVIDE_USE_SSE2``` to ```LIBDIVIDE_SSE2```
+  * Renamed ```divider::recover_divisor()``` to ```divider::recover()```
 * BUG FIXES
   * Remove ```_udiv128()``` as not yet supported by clang-cl and icl compilers
   * Fix C++ linker issue caused by anonymous namespace ([#54](https://github.com/ridiculousfish/libdivide/pull/54))
   * Fix clang-cl (Windows) linker issue ([#56](https://github.com/ridiculousfish/libdivide/issues/56))
 * ENHANCEMENT
-  * Add AVX2 vector division
-  * Add AVX512 vector division
+  * Add AVX2 & AVX512 vector division
   * Speed up SSE2 ```libdivide_mullhi_u64_vector()```
   * Support +1 & -1 signed branchfree dividers ([4a1d5a7](https://github.com/ridiculousfish/libdivide/commit/4a1d5a7008af7f401f8f39c2f44f3dd0116a9839))
   * Speed up unsigned branchfull power of 2 dividers ([2422199](https://github.com/ridiculousfish/libdivide/commit/24221996a082774bd486b04f329a1cdd1a80c8df))
+  * Simplify C++ templates
+  * Simplify ```more``` bit flags of the ```libdivide_*_t``` structs
+  * Get rid of ```MAYBE_VECTOR()``` hack
+* TESTING
+  * ```tester.cpp```: Convert modern C++
   * ```tester.cpp```: Add more test cases
-  * ```benchmark.cpp```: Prevent compilers from optmizing too much 
+  * ```benchmark_branchfreee.cpp```: Convert to modern C++
+  * ```benchmark.c```: Prevent compilers from optmizing too much
 * BUILD
   * Automatically detect SSE2/AVX2/AVX512
 
