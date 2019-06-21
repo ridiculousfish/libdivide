@@ -182,45 +182,35 @@ enum {
     LIBDIVIDE_NEGATIVE_DIVISOR = 0x80
 };
 
-#ifndef LIBDIVIDE_API
-    #ifdef __cplusplus
-        // In C++, we don't want our public functions to be static, because
-        // they are arguments to templates and static functions can't do that.
-        #define LIBDIVIDE_API inline
-    #else
-        #define LIBDIVIDE_API static inline
-    #endif
-#endif
+static inline struct libdivide_s32_t libdivide_s32_gen(int32_t y);
+static inline struct libdivide_u32_t libdivide_u32_gen(uint32_t y);
+static inline struct libdivide_s64_t libdivide_s64_gen(int64_t y);
+static inline struct libdivide_u64_t libdivide_u64_gen(uint64_t y);
 
-LIBDIVIDE_API struct libdivide_s32_t libdivide_s32_gen(int32_t y);
-LIBDIVIDE_API struct libdivide_u32_t libdivide_u32_gen(uint32_t y);
-LIBDIVIDE_API struct libdivide_s64_t libdivide_s64_gen(int64_t y);
-LIBDIVIDE_API struct libdivide_u64_t libdivide_u64_gen(uint64_t y);
+static inline struct libdivide_s32_branchfree_t libdivide_s32_branchfree_gen(int32_t y);
+static inline struct libdivide_u32_branchfree_t libdivide_u32_branchfree_gen(uint32_t y);
+static inline struct libdivide_s64_branchfree_t libdivide_s64_branchfree_gen(int64_t y);
+static inline struct libdivide_u64_branchfree_t libdivide_u64_branchfree_gen(uint64_t y);
 
-LIBDIVIDE_API struct libdivide_s32_branchfree_t libdivide_s32_branchfree_gen(int32_t y);
-LIBDIVIDE_API struct libdivide_u32_branchfree_t libdivide_u32_branchfree_gen(uint32_t y);
-LIBDIVIDE_API struct libdivide_s64_branchfree_t libdivide_s64_branchfree_gen(int64_t y);
-LIBDIVIDE_API struct libdivide_u64_branchfree_t libdivide_u64_branchfree_gen(uint64_t y);
+static inline int32_t  libdivide_s32_do(int32_t numer, const struct libdivide_s32_t *denom);
+static inline uint32_t libdivide_u32_do(uint32_t numer, const struct libdivide_u32_t *denom);
+static inline int64_t  libdivide_s64_do(int64_t numer, const struct libdivide_s64_t *denom);
+static inline uint64_t libdivide_u64_do(uint64_t numer, const struct libdivide_u64_t *denom);
 
-LIBDIVIDE_API int32_t  libdivide_s32_do(int32_t numer, const struct libdivide_s32_t *denom);
-LIBDIVIDE_API uint32_t libdivide_u32_do(uint32_t numer, const struct libdivide_u32_t *denom);
-LIBDIVIDE_API int64_t  libdivide_s64_do(int64_t numer, const struct libdivide_s64_t *denom);
-LIBDIVIDE_API uint64_t libdivide_u64_do(uint64_t numer, const struct libdivide_u64_t *denom);
+static inline int32_t  libdivide_s32_branchfree_do(int32_t numer, const struct libdivide_s32_branchfree_t *denom);
+static inline uint32_t libdivide_u32_branchfree_do(uint32_t numer, const struct libdivide_u32_branchfree_t *denom);
+static inline int64_t  libdivide_s64_branchfree_do(int64_t numer, const struct libdivide_s64_branchfree_t *denom);
+static inline uint64_t libdivide_u64_branchfree_do(uint64_t numer, const struct libdivide_u64_branchfree_t *denom);
 
-LIBDIVIDE_API int32_t  libdivide_s32_branchfree_do(int32_t numer, const struct libdivide_s32_branchfree_t *denom);
-LIBDIVIDE_API uint32_t libdivide_u32_branchfree_do(uint32_t numer, const struct libdivide_u32_branchfree_t *denom);
-LIBDIVIDE_API int64_t  libdivide_s64_branchfree_do(int64_t numer, const struct libdivide_s64_branchfree_t *denom);
-LIBDIVIDE_API uint64_t libdivide_u64_branchfree_do(uint64_t numer, const struct libdivide_u64_branchfree_t *denom);
+static inline int32_t  libdivide_s32_recover(const struct libdivide_s32_t *denom);
+static inline uint32_t libdivide_u32_recover(const struct libdivide_u32_t *denom);
+static inline int64_t  libdivide_s64_recover(const struct libdivide_s64_t *denom);
+static inline uint64_t libdivide_u64_recover(const struct libdivide_u64_t *denom);
 
-LIBDIVIDE_API int32_t  libdivide_s32_recover(const struct libdivide_s32_t *denom);
-LIBDIVIDE_API uint32_t libdivide_u32_recover(const struct libdivide_u32_t *denom);
-LIBDIVIDE_API int64_t  libdivide_s64_recover(const struct libdivide_s64_t *denom);
-LIBDIVIDE_API uint64_t libdivide_u64_recover(const struct libdivide_u64_t *denom);
-
-LIBDIVIDE_API int32_t  libdivide_s32_branchfree_recover(const struct libdivide_s32_branchfree_t *denom);
-LIBDIVIDE_API uint32_t libdivide_u32_branchfree_recover(const struct libdivide_u32_branchfree_t *denom);
-LIBDIVIDE_API int64_t  libdivide_s64_branchfree_recover(const struct libdivide_s64_branchfree_t *denom);
-LIBDIVIDE_API uint64_t libdivide_u64_branchfree_recover(const struct libdivide_u64_branchfree_t *denom);
+static inline int32_t  libdivide_s32_branchfree_recover(const struct libdivide_s32_branchfree_t *denom);
+static inline uint32_t libdivide_u32_branchfree_recover(const struct libdivide_u32_branchfree_t *denom);
+static inline int64_t  libdivide_s64_branchfree_recover(const struct libdivide_s64_branchfree_t *denom);
+static inline uint64_t libdivide_u64_branchfree_recover(const struct libdivide_u64_branchfree_t *denom);
 
 //////// Internal Utility Functions
 
@@ -1210,15 +1200,15 @@ int64_t libdivide_s64_branchfree_recover(const struct libdivide_s64_branchfree_t
 
 #if defined(LIBDIVIDE_AVX512)
 
-LIBDIVIDE_API __m512i libdivide_u32_do_vector(__m512i numers, const struct libdivide_u32_t *denom);
-LIBDIVIDE_API __m512i libdivide_s32_do_vector(__m512i numers, const struct libdivide_s32_t *denom);
-LIBDIVIDE_API __m512i libdivide_u64_do_vector(__m512i numers, const struct libdivide_u64_t *denom);
-LIBDIVIDE_API __m512i libdivide_s64_do_vector(__m512i numers, const struct libdivide_s64_t *denom);
+static inline __m512i libdivide_u32_do_vector(__m512i numers, const struct libdivide_u32_t *denom);
+static inline __m512i libdivide_s32_do_vector(__m512i numers, const struct libdivide_s32_t *denom);
+static inline __m512i libdivide_u64_do_vector(__m512i numers, const struct libdivide_u64_t *denom);
+static inline __m512i libdivide_s64_do_vector(__m512i numers, const struct libdivide_s64_t *denom);
 
-LIBDIVIDE_API __m512i libdivide_u32_branchfree_do_vector(__m512i numers, const struct libdivide_u32_branchfree_t *denom);
-LIBDIVIDE_API __m512i libdivide_s32_branchfree_do_vector(__m512i numers, const struct libdivide_s32_branchfree_t *denom);
-LIBDIVIDE_API __m512i libdivide_u64_branchfree_do_vector(__m512i numers, const struct libdivide_u64_branchfree_t *denom);
-LIBDIVIDE_API __m512i libdivide_s64_branchfree_do_vector(__m512i numers, const struct libdivide_s64_branchfree_t *denom);
+static inline __m512i libdivide_u32_branchfree_do_vector(__m512i numers, const struct libdivide_u32_branchfree_t *denom);
+static inline __m512i libdivide_s32_branchfree_do_vector(__m512i numers, const struct libdivide_s32_branchfree_t *denom);
+static inline __m512i libdivide_u64_branchfree_do_vector(__m512i numers, const struct libdivide_u64_branchfree_t *denom);
+static inline __m512i libdivide_s64_branchfree_do_vector(__m512i numers, const struct libdivide_s64_branchfree_t *denom);
 
 //////// Internal Utility Functions
 
@@ -1445,15 +1435,15 @@ __m512i libdivide_s64_branchfree_do_vector(__m512i numers, const struct libdivid
 
 #elif defined(LIBDIVIDE_AVX2)
 
-LIBDIVIDE_API __m256i libdivide_u32_do_vector(__m256i numers, const struct libdivide_u32_t *denom);
-LIBDIVIDE_API __m256i libdivide_s32_do_vector(__m256i numers, const struct libdivide_s32_t *denom);
-LIBDIVIDE_API __m256i libdivide_u64_do_vector(__m256i numers, const struct libdivide_u64_t *denom);
-LIBDIVIDE_API __m256i libdivide_s64_do_vector(__m256i numers, const struct libdivide_s64_t *denom);
+static inline __m256i libdivide_u32_do_vector(__m256i numers, const struct libdivide_u32_t *denom);
+static inline __m256i libdivide_s32_do_vector(__m256i numers, const struct libdivide_s32_t *denom);
+static inline __m256i libdivide_u64_do_vector(__m256i numers, const struct libdivide_u64_t *denom);
+static inline __m256i libdivide_s64_do_vector(__m256i numers, const struct libdivide_s64_t *denom);
 
-LIBDIVIDE_API __m256i libdivide_u32_branchfree_do_vector(__m256i numers, const struct libdivide_u32_branchfree_t *denom);
-LIBDIVIDE_API __m256i libdivide_s32_branchfree_do_vector(__m256i numers, const struct libdivide_s32_branchfree_t *denom);
-LIBDIVIDE_API __m256i libdivide_u64_branchfree_do_vector(__m256i numers, const struct libdivide_u64_branchfree_t *denom);
-LIBDIVIDE_API __m256i libdivide_s64_branchfree_do_vector(__m256i numers, const struct libdivide_s64_branchfree_t *denom);
+static inline __m256i libdivide_u32_branchfree_do_vector(__m256i numers, const struct libdivide_u32_branchfree_t *denom);
+static inline __m256i libdivide_s32_branchfree_do_vector(__m256i numers, const struct libdivide_s32_branchfree_t *denom);
+static inline __m256i libdivide_u64_branchfree_do_vector(__m256i numers, const struct libdivide_u64_branchfree_t *denom);
+static inline __m256i libdivide_s64_branchfree_do_vector(__m256i numers, const struct libdivide_s64_branchfree_t *denom);
 
 //////// Internal Utility Functions
 
@@ -1688,15 +1678,15 @@ __m256i libdivide_s64_branchfree_do_vector(__m256i numers, const struct libdivid
 
 #elif defined(LIBDIVIDE_SSE2)
 
-LIBDIVIDE_API __m128i libdivide_u32_do_vector(__m128i numers, const struct libdivide_u32_t *denom);
-LIBDIVIDE_API __m128i libdivide_s32_do_vector(__m128i numers, const struct libdivide_s32_t *denom);
-LIBDIVIDE_API __m128i libdivide_u64_do_vector(__m128i numers, const struct libdivide_u64_t *denom);
-LIBDIVIDE_API __m128i libdivide_s64_do_vector(__m128i numers, const struct libdivide_s64_t *denom);
+static inline __m128i libdivide_u32_do_vector(__m128i numers, const struct libdivide_u32_t *denom);
+static inline __m128i libdivide_s32_do_vector(__m128i numers, const struct libdivide_s32_t *denom);
+static inline __m128i libdivide_u64_do_vector(__m128i numers, const struct libdivide_u64_t *denom);
+static inline __m128i libdivide_s64_do_vector(__m128i numers, const struct libdivide_s64_t *denom);
 
-LIBDIVIDE_API __m128i libdivide_u32_branchfree_do_vector(__m128i numers, const struct libdivide_u32_branchfree_t *denom);
-LIBDIVIDE_API __m128i libdivide_s32_branchfree_do_vector(__m128i numers, const struct libdivide_s32_branchfree_t *denom);
-LIBDIVIDE_API __m128i libdivide_u64_branchfree_do_vector(__m128i numers, const struct libdivide_u64_branchfree_t *denom);
-LIBDIVIDE_API __m128i libdivide_s64_branchfree_do_vector(__m128i numers, const struct libdivide_s64_branchfree_t *denom);
+static inline __m128i libdivide_u32_branchfree_do_vector(__m128i numers, const struct libdivide_u32_branchfree_t *denom);
+static inline __m128i libdivide_s32_branchfree_do_vector(__m128i numers, const struct libdivide_s32_branchfree_t *denom);
+static inline __m128i libdivide_u64_branchfree_do_vector(__m128i numers, const struct libdivide_u64_branchfree_t *denom);
+static inline __m128i libdivide_s64_branchfree_do_vector(__m128i numers, const struct libdivide_s64_branchfree_t *denom);
 
 //////// Internal Utility Functions
 
@@ -2029,8 +2019,8 @@ public:
     }
 
 #if defined(LIBDIVIDE_VECTOR_TYPE)
-    // Treats the vector as packed integer values with the same type
-    // as the divider (e.g. s32, u32, s64, u64) and divides each of
+    // Treats the vector as packed integer values with the same type as
+    // the divider (e.g. s32, u32, s64, u64) and divides each of
     // them by the divider, returning the packed quotients.
     LIBDIVIDE_VECTOR_TYPE divide(LIBDIVIDE_VECTOR_TYPE n) const {
         return div.divide(n);
