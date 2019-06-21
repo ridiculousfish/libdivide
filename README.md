@@ -195,10 +195,10 @@ nanoseconds, lower is better.
 ```bash
      #:  The divisor that is tested
 system:  Hardware divide time
-scalar:  libdivide time, using scalar functions
-scl_bf:  libdivide time, using branchfree scalar functions
-vector:  libdivide time, using vector functions
-vec_bf:  libdivide time, using branchfree vector functions
+scalar:  libdivide time, using scalar division
+scl_bf:  libdivide time, using scalar branchfree division
+vector:  libdivide time, using vector division
+vec_bf:  libdivide time, using vector branchfree division
  gener:  Time taken to generate the divider struct
   algo:  The algorithm used.
 ```
