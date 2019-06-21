@@ -1939,6 +1939,15 @@ __m128i libdivide_s64_branchfree_do_vector(__m128i numers, const struct libdivid
 
 #ifdef __cplusplus
 
+// The C++ divider class is templated on both an integer type
+// (like uint64_t) and an algorithm type.
+// * BRANCHFULL is the default algorithm type.
+// * BRANCHFREE is the branchfree algorithm type.
+enum {
+    BRANCHFULL,
+    BRANCHFREE
+};
+
 #if defined(LIBDIVIDE_AVX512)
     #define LIBDIVIDE_VECTOR_TYPE __m512i
 #elif defined(LIBDIVIDE_AVX2)
@@ -1951,72 +1960,55 @@ __m128i libdivide_s64_branchfree_do_vector(__m128i numers, const struct libdivid
     #define LIBDIVIDE_DIVIDE_VECTOR(ALGO)
 #else
     #define LIBDIVIDE_DIVIDE_VECTOR(ALGO) \
-        LIBDIVIDE_VECTOR_TYPE divide(LIBDIVIDE_VECTOR_TYPE val) const { \
-            return libdivide_##ALGO##_do_vector(val, &denom); \
+        LIBDIVIDE_VECTOR_TYPE divide(LIBDIVIDE_VECTOR_TYPE n) const { \
+            return libdivide_##ALGO##_do_vector(n, &denom); \
         }
 #endif
 
-// The BUILD_DISPATCHER macro generates C++ methods (for the given integer
+// The DISPATCHER_GEN() macro generates C++ methods (for the given integer
 // and algorithm types) that redirect to libdivide's C API.
-
-#define BUILD_DISPATCHER(T, ALGO) \
-    LIBDIVIDE_DIVIDE_VECTOR(ALGO) \
+#define DISPATCHER_GEN(T, ALGO) \
     libdivide_##ALGO##_t denom; \
     dispatcher() { } \
-    dispatcher(T n) \
-        : denom(gen(n)) \
+    dispatcher(T d) \
+        : denom(libdivide_##ALGO##_gen(d)) \
     { } \
-    libdivide_##ALGO##_t gen(T n) const { \
-        return libdivide_##ALGO##_gen(n); \
+    T divide(T n) const { \
+        return libdivide_##ALGO##_do(n, &denom); \
     } \
-    T divide(T val) const { \
-        return libdivide_##ALGO##_do(val, &denom); \
-    } \
+    LIBDIVIDE_DIVIDE_VECTOR(ALGO) \
     T recover() const { \
         return libdivide_##ALGO##_recover(&denom); \
     }
 
-// The C++ divider class is templated on both an integer type
-// (like uint64_t) and an algorithm type.
-// * BRANCHFULL is the default algorithm type.
-// * BRANCHFREE is the branchfree algorithm type.
-enum {
-    BRANCHFULL,
-    BRANCHFREE
-};
-
-// The dispatcher selects a specific implementation for a given
+// The dispatcher selects a specific division algorithm for a given
 // type and ALGO using partial template specialization.
 template<typename T, int ALGO> struct dispatcher { };
 
-template<> struct dispatcher<int32_t, BRANCHFULL> { BUILD_DISPATCHER(int32_t, s32) };
-template<> struct dispatcher<int32_t, BRANCHFREE> { BUILD_DISPATCHER(int32_t, s32_branchfree) };
-template<> struct dispatcher<uint32_t, BRANCHFULL> { BUILD_DISPATCHER(uint32_t, u32) };
-template<> struct dispatcher<uint32_t, BRANCHFREE> { BUILD_DISPATCHER(uint32_t, u32_branchfree) };
-template<> struct dispatcher<int64_t, BRANCHFULL> { BUILD_DISPATCHER(int64_t, s64) };
-template<> struct dispatcher<int64_t, BRANCHFREE> { BUILD_DISPATCHER(int64_t, s64_branchfree) };
-template<> struct dispatcher<uint64_t, BRANCHFULL> { BUILD_DISPATCHER(uint64_t, u64) };
-template<> struct dispatcher<uint64_t, BRANCHFREE> { BUILD_DISPATCHER(uint64_t, u64_branchfree) };
+template<> struct dispatcher<int32_t, BRANCHFULL> { DISPATCHER_GEN(int32_t, s32) };
+template<> struct dispatcher<int32_t, BRANCHFREE> { DISPATCHER_GEN(int32_t, s32_branchfree) };
+template<> struct dispatcher<uint32_t, BRANCHFULL> { DISPATCHER_GEN(uint32_t, u32) };
+template<> struct dispatcher<uint32_t, BRANCHFREE> { DISPATCHER_GEN(uint32_t, u32_branchfree) };
+template<> struct dispatcher<int64_t, BRANCHFULL> { DISPATCHER_GEN(int64_t, s64) };
+template<> struct dispatcher<int64_t, BRANCHFREE> { DISPATCHER_GEN(int64_t, s64_branchfree) };
+template<> struct dispatcher<uint64_t, BRANCHFULL> { DISPATCHER_GEN(uint64_t, u64) };
+template<> struct dispatcher<uint64_t, BRANCHFREE> { DISPATCHER_GEN(uint64_t, u64_branchfree) };
 
 // This is the main divider class for use by the user (C++ API).
 // The actual division algorithm is selected using the dispatcher struct
 // based on the integer and algorithm template parameters.
 template<typename T, int ALGO = BRANCHFULL>
 class divider {
-private:
-    // Storage for the actual divisor
-    dispatcher<T, ALGO> div;
-
 public:
-    // Default constructor. We leave this deliberately undefined so that
-    // creating an array of dividers and then initializing them
-    // doesn't slow us down.
+    // We leave the default constructor empty so that creating
+    // an array of dividers and then initializing them
+    // later doesn't slow us down.
     divider() { }
 
     // Constructor that takes the divisor as a parameter
-    divider(T n) : div(n) { }
+    divider(T d) : div(d) { }
 
-    // Divides the parameter by the divisor
+    // Divides n by the divisor
     T divide(T n) const {
         return div.divide(n);
     }
@@ -2044,6 +2036,9 @@ public:
         return div.divide(n);
     }
 #endif
+private:
+    // Storage for the actual divisor
+    dispatcher<T, ALGO> div;
 };
 
 // Overload of operator / for scalar division
