@@ -20,7 +20,7 @@ This is a list of notable changes to libdivide.
   * Simplify ```more``` bit flags of the ```libdivide_*_t``` structs
   * Get rid of ```MAYBE_VECTOR()``` hack
 * TESTING
-  * ```tester.cpp```: Convert modern C++
+  * ```tester.cpp```: Convert to modern C++
   * ```tester.cpp```: Add more test cases
   * ```benchmark_branchfreee.cpp```: Convert to modern C++
   * ```benchmark.c```: Prevent compilers from optmizing too much
