@@ -154,7 +154,7 @@ Note that you need to define one of macros below to enable vector division:
   faster than its signed division. This is especially true for the branchfree divider.
 * Try both the default branchfull divider and the branchfree divider in your program and
   choose the one that performs best. The branchfree divider is more likely to get auto
-  vectorized by the compiler (if you compile with e.g. ```--march=native```). But don't forget
+  vectorized by the compiler (if you compile with e.g. ```-march=native```). But don't forget
   that the unsigned branchfree divider cannot be 1.
 * Vector division is much faster for 32-bit than for 64-bit. This is because there are
   currently no vector multiplication instructions on x86 to efficiently calculate
