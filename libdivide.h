@@ -182,15 +182,15 @@ enum {
     LIBDIVIDE_NEGATIVE_DIVISOR = 0x80
 };
 
-static inline struct libdivide_s32_t libdivide_s32_gen(int32_t y);
-static inline struct libdivide_u32_t libdivide_u32_gen(uint32_t y);
-static inline struct libdivide_s64_t libdivide_s64_gen(int64_t y);
-static inline struct libdivide_u64_t libdivide_u64_gen(uint64_t y);
+static inline struct libdivide_s32_t libdivide_s32_gen(int32_t d);
+static inline struct libdivide_u32_t libdivide_u32_gen(uint32_t d);
+static inline struct libdivide_s64_t libdivide_s64_gen(int64_t d);
+static inline struct libdivide_u64_t libdivide_u64_gen(uint64_t d);
 
-static inline struct libdivide_s32_branchfree_t libdivide_s32_branchfree_gen(int32_t y);
-static inline struct libdivide_u32_branchfree_t libdivide_u32_branchfree_gen(uint32_t y);
-static inline struct libdivide_s64_branchfree_t libdivide_s64_branchfree_gen(int64_t y);
-static inline struct libdivide_u64_branchfree_t libdivide_u64_branchfree_gen(uint64_t y);
+static inline struct libdivide_s32_branchfree_t libdivide_s32_branchfree_gen(int32_t d);
+static inline struct libdivide_u32_branchfree_t libdivide_u32_branchfree_gen(uint32_t d);
+static inline struct libdivide_s64_branchfree_t libdivide_s64_branchfree_gen(int64_t d);
+static inline struct libdivide_u64_branchfree_t libdivide_u64_branchfree_gen(uint64_t d);
 
 static inline int32_t  libdivide_s32_do(int32_t numer, const struct libdivide_s32_t *denom);
 static inline uint32_t libdivide_u32_do(uint32_t numer, const struct libdivide_u32_t *denom);
