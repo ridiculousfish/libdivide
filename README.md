@@ -210,8 +210,9 @@ so benchmark is valuable for its verification as well.
 
 # Contributing
 
-Before sending in patches to libdivide, please run the tester to completion with all four types,
-and the benchmark program for a reasonable period, to ensure that you have not introduced a
-regression.
+We currently do not have automated testing! Hence, before sending in patches, it would be nice
+if you compiled your new code at high warning levels using at least MSVC and GCC (or Clang).
+Also run the tester program to verify correctness and the benchmark programs to ensure you have
+not introduced any performance regressions.
 
 ### Happy hacking!
