@@ -2,7 +2,7 @@
 
 This is a list of notable changes to libdivide.
 
-## [2.0](https://github.com/ridiculousfish/libdivide/releases/tag/v2.0) - 2019-06-21
+## [2.0](https://github.com/ridiculousfish/libdivide/releases/tag/v2.0) - 2019-06-22
 * BREAKING
   * Removed unswitch functionality ([#46](https://github.com/ridiculousfish/libdivide/issues/46))
   * Renamed macro ```LIBDIVIDE_USE_SSE2``` to ```LIBDIVIDE_SSE2```
@@ -26,7 +26,11 @@ This is a list of notable changes to libdivide.
   * ```benchmark.c```: Prevent compilers from optmizing too much
 * BUILD
   * Automatically detect SSE2/AVX2/AVX512
-
+* DOCS
+  * ```doc/C-API.md```: Add C API reference
+  * ```doc/CPP-API.md```: Add C++ API reference
+  * ```README.md```: Add [vector division](https://github.com/ridiculousfish/libdivide#vector-division) and [performance tips](https://github.com/ridiculousfish/libdivide#performance-tips) sections
+  
 ## [1.1](https://github.com/ridiculousfish/libdivide/releases/tag/v1.1) - 2019-05-29
 * BUG FIXES
   * Fix bug in ```libdivide_128_div_64_to_64()``` ([#45](https://github.com/ridiculousfish/libdivide/issues/45))
