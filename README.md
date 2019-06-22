@@ -67,12 +67,12 @@ corresponding ```libdivide_*_do``` function.
 ```C
 #include "libdivide.h"
 
-void divide(int64_t *array, size_t count, int64_t divisor)
+void divide(int64_t *array, size_t size, int64_t divisor)
 {
     struct libdivide_s64_t fast_d = libdivide_s64_gen(divisor);
 
     // Fast, computes division using libdivide
-    for (size_t i = 0; i < count; i++)
+    for (size_t i = 0; i < size; i++)
         array[i] = libdivide_s64_do(array[i], &fast_d);
 }
 ```
