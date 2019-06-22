@@ -60,10 +60,9 @@ Generally libdivide will give at significant speedup if:
 
 # C example
 
-When using libdivide's C API you first need to generate a libdivide divider using
-one of the ```libdivide_*_gen``` functions (```*```:&nbsp;```s32```,&nbsp;```u32```,&nbsp;```s64```,&nbsp;```u64```)
+You first need to generate a libdivide divider using one of the ```libdivide_*_gen``` functions (```*```:&nbsp;```s32```,&nbsp;```u32```,&nbsp;```s64```,&nbsp;```u64```)
 which can then be used to compute the actual integer division using the
-corresponding ```libdivide_*_do``` or ```libdivide_*_branchfree_do```functions.
+corresponding ```libdivide_*_do``` function.
 
 ```C
 #include "libdivide.h"
@@ -78,7 +77,10 @@ void divide(int64_t *array, size_t count, int64_t divisor)
 }
 ```
 
-For more information please visit the [C API documentation](https://libdivide.com/documentation.html#c_api) on libdivide's website.
+# API reference
+
+* [C API](https://github.com/ridiculousfish/libdivide/blob/master/doc/C-API.md)
+* [C++ API](https://github.com/ridiculousfish/libdivide/blob/master/doc/CPP-API.md)
 
 # Branchfull vs branchfree
 
