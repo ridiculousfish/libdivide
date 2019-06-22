@@ -1,4 +1,8 @@
-# C API reference
+# libdivide C API
+
+Note that all of libdivide's public API functions are declared as ```static inline```
+for performance reasons, however ```static inline``` is omitted in the code sections
+below in order to increase readability.
 
 ## Generate libdivide divider
 
