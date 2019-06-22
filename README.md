@@ -148,6 +148,18 @@ Note that you need to define one of macros below to enable vector division:
 * ```LIBDIVIDE_AVX2```
 * ```LIBDIVIDE_AVX512```
 
+# Performance tips
+
+* If possible use unsigned integer types because libdivide's unsigned division is measurably
+  faster than its signed division. This is especially true for the branchfree divider.
+* Try both the default branchfull divider and the branchfree divider in your program and
+  choose the one that performs best. The branchfree divider is more likely to get auto
+  vectorized by the compiler (if you compile with e.g. ```--march=native```). But don't forget
+  that the unsigned branchfree divider cannot be 1.
+* Vector division is much faster for 32-bit than for 64-bit. This is because there are
+  currently no vector multiplication instructions on x86 to efficiently calculate
+  64-bit * 64-bit to 128-bit. 
+
 # Build instructions
 
 libdivide has one test program and two benchmark programs which can be built using cmake and
