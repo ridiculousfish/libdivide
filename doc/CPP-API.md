@@ -1,7 +1,7 @@
-# C++ API reference
+# libdivide C++ API
 
 The entire content of ```libdivide.h``` is wrapped inside the ```libdivide``` namespace,
-for clarity the ```libdivide``` namespace is omitted in the code examples below.
+for clarity the ```libdivide``` namespace is omitted in the code sections below.
 
 ## divider class
 
