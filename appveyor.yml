@@ -19,29 +19,29 @@ for:
   - matrix:
       only:
         - image: Visual Studio 2015
-      environment:
-        CFLAGS: "/W3 /WX /DLIBDIVIDE_ASSERTIONS_ON"
-        CXXFLAGS: "/W3 /WX /DLIBDIVIDE_ASSERTIONS_ON"
-      build_script:
-        - if "%platform%" == "x86" cmake . -G "Visual Studio 14 2015
-        - if "%platform%" == "x64" cmake . -G "Visual Studio 14 2015 Win64"
+    environment:
+      CFLAGS: "/W3 /WX /DLIBDIVIDE_ASSERTIONS_ON"
+      CXXFLAGS: "/W3 /WX /DLIBDIVIDE_ASSERTIONS_ON"
+    build_script:
+      - if "%platform%" == "x86" cmake . -G "Visual Studio 14 2015
+      - if "%platform%" == "x64" cmake . -G "Visual Studio 14 2015 Win64"
 
   - matrix:
       only:
         - image: Visual Studio 2017
-      environment:
-        CFLAGS: "/W3 /WX /DLIBDIVIDE_ASSERTIONS_ON"
-        CXXFLAGS: "/W3 /WX /DLIBDIVIDE_ASSERTIONS_ON"
-      build_script:
-        - if "%platform%" == "x86" cmake . -G "Visual Studio 15 2017"
-        - if "%platform%" == "x64" cmake . -G "Visual Studio 15 2017 Win64"
+    environment:
+      CFLAGS: "/W3 /WX /DLIBDIVIDE_ASSERTIONS_ON"
+      CXXFLAGS: "/W3 /WX /DLIBDIVIDE_ASSERTIONS_ON"
+    build_script:
+      - if "%platform%" == "x86" cmake . -G "Visual Studio 15 2017"
+      - if "%platform%" == "x64" cmake . -G "Visual Studio 15 2017 Win64"
 
   - matrix:
       only:
         - image: Ubuntu
-      environment:
-        CFLAGS: "-Wall -Wextra -pedantic"
-        CXXFLAGS: "-Wall -Wextra -pedantic"
+    environment:
+      CFLAGS: "-Wall -Wextra -pedantic"
+      CXXFLAGS: "-Wall -Wextra -pedantic"
 
 build_script:
   # Windows
