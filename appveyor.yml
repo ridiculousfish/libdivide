@@ -19,7 +19,7 @@ for:
   - matrix:
       only:
         - image: Visual Studio 2015
-        - platform: x86
+          platform: x86
     environment:
       CFLAGS: "/DLIBDIVIDE_ASSERTIONS_ON"
       CXXFLAGS: "/DLIBDIVIDE_ASSERTIONS_ON"
@@ -30,7 +30,7 @@ for:
   - matrix:
       only:
         - image: Visual Studio 2015
-        - platform: x64
+          platform: x64
     environment:
       CFLAGS: "/W3 /WX /DLIBDIVIDE_ASSERTIONS_ON"
       CXXFLAGS: "/W3 /WX /DLIBDIVIDE_ASSERTIONS_ON"
@@ -41,7 +41,7 @@ for:
   - matrix:
       only:
         - image: Visual Studio 2017
-        - platform: x86
+          platform: x86
     environment:
       CFLAGS: "/DLIBDIVIDE_ASSERTIONS_ON"
       CXXFLAGS: "/DLIBDIVIDE_ASSERTIONS_ON"
@@ -52,7 +52,7 @@ for:
   - matrix:
       only:
         - image: Visual Studio 2017
-        - platform: x64
+          platform: x64
     environment:
       CFLAGS: "/W3 /WX /DLIBDIVIDE_ASSERTIONS_ON"
       CXXFLAGS: "/W3 /WX /DLIBDIVIDE_ASSERTIONS_ON"
