@@ -6,75 +6,109 @@ version: '{branch}-{build}'
 image:
 - Visual Studio 2015
 - Visual Studio 2017
-- Ubuntu
+- Ubuntu1804
 
 configuration:
   - Debug
 
 platform:
-  - x86
-  - x64
+  - msvc_x86
+  - msvc_x64
+  - gcc
+  - clang
+  - cppcheck
 
 for:
   - matrix:
       only:
         - image: Visual Studio 2015
-          platform: x86
+          platform: msvc_x86
     environment:
       CFLAGS: "/DLIBDIVIDE_ASSERTIONS_ON"
       CXXFLAGS: "/DLIBDIVIDE_ASSERTIONS_ON"
     build_script:
       - cmake . -G "Visual Studio 14 2015"
       - cmake --build . --config Release
+    test_script:
+      - cd Release
+      - tester.exe
+      - benchmark_branchfree.exe
 
   - matrix:
       only:
         - image: Visual Studio 2015
-          platform: x64
-    environment:
-      CFLAGS: "/W3 /WX /DLIBDIVIDE_ASSERTIONS_ON"
-      CXXFLAGS: "/W3 /WX /DLIBDIVIDE_ASSERTIONS_ON"
-    build_script:
-      - cmake . -G "Visual Studio 14 2015 Win64"
-      - cmake --build . --config Release
-
-  - matrix:
-      only:
-        - image: Visual Studio 2017
-          platform: x86
+          platform: msvc_x64
     environment:
       CFLAGS: "/DLIBDIVIDE_ASSERTIONS_ON"
       CXXFLAGS: "/DLIBDIVIDE_ASSERTIONS_ON"
     build_script:
-      - cmake . -G "Visual Studio 15 2017"
+      - cmake . -G "Visual Studio 14 2015 Win64"
       - cmake --build . --config Release
+    test_script:
+      - cd Release
+      - tester.exe
+      - benchmark_branchfree.exe
 
   - matrix:
       only:
         - image: Visual Studio 2017
-          platform: x64
+          platform: msvc_x86
+    build_script:
+      - cmake . -G "Visual Studio 15 2017"
+      - cmake --build . --config Release
+    test_script:
+      - cd Release
+      - tester.exe
+      - benchmark_branchfree.exe
+
+  - matrix:
+      only:
+        - image: Visual Studio 2017
+          platform: msvc_x64
     environment:
       CFLAGS: "/W3 /WX /DLIBDIVIDE_ASSERTIONS_ON"
       CXXFLAGS: "/W3 /WX /DLIBDIVIDE_ASSERTIONS_ON"
     build_script:
       - cmake . -G "Visual Studio 15 2017 Win64"
       - cmake --build . --config Release
+    test_script:
+      - cd Release
+      - tester.exe
+      - benchmark_branchfree.exe
 
   - matrix:
       only:
-        - image: Ubuntu
+        - image: Ubuntu1804
+          platform: gcc
     environment:
-      CFLAGS: "-Wall -Wextra -pedantic"
-      CXXFLAGS: "-Wall -Wextra -pedantic"
+      CFLAGS: "-Wall -Wextra -pedantic -Werror -O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
+      CXXFLAGS: "-Wall -Wextra -pedantic -Werror -O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
     build_script:
-      - cmake .
+      - cmake . -DCMAKE_BUILD_TYPE=Debug
       - make VERBOSE=1
+    test_script:
+      - ./tester
+      - ./benchmark_branchfree
 
-test_script:
-  # Windows
-  - cmd: cd Release
-  - cmd: tester.exe
-  - cmd: benchmark_branchfree.exe
-  # Linux
-  - sh: ./tester
-  - sh: ./benchmark_branchfree
+  - matrix:
+      only:
+        - image: Ubuntu1804
+          platform: clang
+    environment:
+      CFLAGS: "-Wall -Wextra -pedantic -Werror -O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
+      CXXFLAGS: "-Wall -Wextra -pedantic -Werror -O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
+    build_script:
+      - CC=clang CXX=clang++ cmake . -DCMAKE_BUILD_TYPE=Debug
+      - make VERBOSE=1
+    test_script:
+      - ./tester
+      - ./benchmark_branchfree
+
+  - matrix:
+      only:
+        - image: Ubuntu1804
+          platform: cppcheck
+    install:
+      - sudo apt install --yes cppcheck
+    test_script:
+      - cppcheck . --error-exitcode=1 --force -i doc
