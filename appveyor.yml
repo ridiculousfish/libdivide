@@ -12,17 +12,14 @@ configuration:
   - Debug
 
 platform:
-  - msvc_x86
-  - msvc_x64
-  - gcc
-  - clang
-  - cppcheck
+  - x86
+  - x64
 
 for:
   - matrix:
       only:
         - image: Visual Studio 2015
-          platform: msvc_x86
+          platform: x86
     environment:
       CFLAGS: "/DLIBDIVIDE_ASSERTIONS_ON"
       CXXFLAGS: "/DLIBDIVIDE_ASSERTIONS_ON"
@@ -37,7 +34,7 @@ for:
   - matrix:
       only:
         - image: Visual Studio 2015
-          platform: msvc_x64
+          platform: x64
     environment:
       CFLAGS: "/DLIBDIVIDE_ASSERTIONS_ON"
       CXXFLAGS: "/DLIBDIVIDE_ASSERTIONS_ON"
@@ -52,7 +49,7 @@ for:
   - matrix:
       only:
         - image: Visual Studio 2017
-          platform: msvc_x86
+          platform: x86
     build_script:
       - cmake . -G "Visual Studio 15 2017"
       - cmake --build . --config Release
@@ -64,7 +61,7 @@ for:
   - matrix:
       only:
         - image: Visual Studio 2017
-          platform: msvc_x64
+          platform: x64
     environment:
       CFLAGS: "/W3 /WX /DLIBDIVIDE_ASSERTIONS_ON"
       CXXFLAGS: "/W3 /WX /DLIBDIVIDE_ASSERTIONS_ON"
@@ -79,36 +76,33 @@ for:
   - matrix:
       only:
         - image: Ubuntu1804
-          platform: gcc
+          platform: x86
     environment:
       CFLAGS: "-Wall -Wextra -pedantic -Werror -O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
       CXXFLAGS: "-Wall -Wextra -pedantic -Werror -O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
+    install:
+      - sudo apt install --yes cppcheck
     build_script:
       - cmake . -DCMAKE_BUILD_TYPE=Debug
       - make VERBOSE=1
     test_script:
+      - cppcheck . --error-exitcode=1 --force -i doc
       - ./tester
       - ./benchmark_branchfree
 
   - matrix:
       only:
         - image: Ubuntu1804
-          platform: clang
+          platform: x64
     environment:
       CFLAGS: "-Wall -Wextra -pedantic -Werror -O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
       CXXFLAGS: "-Wall -Wextra -pedantic -Werror -O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
+    install:
+      - sudo apt install --yes cppcheck
     build_script:
       - CC=clang CXX=clang++ cmake . -DCMAKE_BUILD_TYPE=Debug
       - make VERBOSE=1
     test_script:
+      - cppcheck . --error-exitcode=1 --force -i doc
       - ./tester
       - ./benchmark_branchfree
-
-  - matrix:
-      only:
-        - image: Ubuntu1804
-          platform: cppcheck
-    install:
-      - sudo apt install --yes cppcheck
-    test_script:
-      - cppcheck . --error-exitcode=1 --force -i doc
