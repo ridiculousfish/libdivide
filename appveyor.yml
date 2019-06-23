@@ -4,9 +4,9 @@
 version: '{branch}-{build}'
 
 image:
+- Ubuntu1804
 - Visual Studio 2015
 - Visual Studio 2017
-- Ubuntu1804
 
 configuration:
   - Debug
@@ -16,6 +16,40 @@ platform:
   - x64
 
 for:
+  - matrix:
+      only:
+        - image: Ubuntu1804
+          platform: x86
+    environment:
+      CFLAGS: "-Wall -Wextra -pedantic -Werror -O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
+      CXXFLAGS: "-Wall -Wextra -pedantic -Werror -O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
+    install:
+      - sudo apt install --yes cppcheck
+    build_script:
+      - cmake . -DCMAKE_BUILD_TYPE=Debug
+      - make VERBOSE=1
+    test_script:
+      - cppcheck . --error-exitcode=1 --force -i doc
+      - ./tester
+      - ./benchmark_branchfree
+
+  - matrix:
+      only:
+        - image: Ubuntu1804
+          platform: x64
+    environment:
+      CFLAGS: "-Wall -Wextra -pedantic -Werror -O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
+      CXXFLAGS: "-Wall -Wextra -pedantic -Werror -O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
+    install:
+      - sudo apt install --yes cppcheck
+    build_script:
+      - CC=clang CXX=clang++ cmake . -DCMAKE_BUILD_TYPE=Debug
+      - make VERBOSE=1
+    test_script:
+      - cppcheck . --error-exitcode=1 --force -i doc
+      - ./tester
+      - ./benchmark_branchfree
+
   - matrix:
       only:
         - image: Visual Studio 2015
@@ -72,37 +106,3 @@ for:
       - cd Release
       - tester.exe
       - benchmark_branchfree.exe
-
-  - matrix:
-      only:
-        - image: Ubuntu1804
-          platform: x86
-    environment:
-      CFLAGS: "-Wall -Wextra -pedantic -Werror -O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
-      CXXFLAGS: "-Wall -Wextra -pedantic -Werror -O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
-    install:
-      - sudo apt install --yes cppcheck
-    build_script:
-      - cmake . -DCMAKE_BUILD_TYPE=Debug
-      - make VERBOSE=1
-    test_script:
-      - cppcheck . --error-exitcode=1 --force -i doc
-      - ./tester
-      - ./benchmark_branchfree
-
-  - matrix:
-      only:
-        - image: Ubuntu1804
-          platform: x64
-    environment:
-      CFLAGS: "-Wall -Wextra -pedantic -Werror -O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
-      CXXFLAGS: "-Wall -Wextra -pedantic -Werror -O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
-    install:
-      - sudo apt install --yes cppcheck
-    build_script:
-      - CC=clang CXX=clang++ cmake . -DCMAKE_BUILD_TYPE=Debug
-      - make VERBOSE=1
-    test_script:
-      - cppcheck . --error-exitcode=1 --force -i doc
-      - ./tester
-      - ./benchmark_branchfree
