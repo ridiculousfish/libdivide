@@ -8,9 +8,6 @@ image:
 - Visual Studio 2015
 - Visual Studio 2017
 
-configuration:
-  - Debug
-
 platform:
   - x86
   - x64
