@@ -1984,6 +1984,28 @@ template<> struct dispatcher<int64_t, BRANCHFREE> { DISPATCHER_GEN(int64_t, s64_
 template<> struct dispatcher<uint64_t, BRANCHFULL> { DISPATCHER_GEN(uint64_t, u64) };
 template<> struct dispatcher<uint64_t, BRANCHFREE> { DISPATCHER_GEN(uint64_t, u64_branchfree) };
 
+// This helper template determines if a given type is signed or
+// not. This is not complete, and C++11 would provide the
+// <type_traits> include, but this code should also work with
+// older C++ standards, so restrict this.
+template<typename T> struct is_signed  { enum { value = false }; };
+template<> struct is_signed<short>     { enum { value = true }; };
+template<> struct is_signed<int>       { enum { value = true }; };
+template<> struct is_signed<long>      { enum { value = true }; };
+template<> struct is_signed<long long> { enum { value = true }; };
+
+// This helper template determines the normalized type that a
+// given type corresponds to. For example, on 64bit systems, both
+// long and long long are 64bit, but only one of them is typedef'd
+// to int64_t, and the type system treats them as eparate types.
+// Using this template we can let the compiler automatically choose
+// the correct type.
+template<typename T, int SIZE = sizeof(T), bool SIGNED = is_signed<T>::value> struct sized_type { };
+template<typename T> struct sized_type<T, 4, false> { typedef uint32_t type; };
+template<typename T> struct sized_type<T, 4, true>  { typedef int32_t type; };
+template<typename T> struct sized_type<T, 8, false> { typedef uint64_t type; };
+template<typename T> struct sized_type<T, 8, true>  { typedef int64_t type; };
+
 // This is the main divider class for use by the user (C++ API).
 // The actual division algorithm is selected using the dispatcher struct
 // based on the integer and algorithm template parameters.
@@ -2027,8 +2049,13 @@ public:
     }
 #endif
 private:
+    // Normalize the type so it is possible to always create a
+    // divider object, assuming the underlying integer type is
+    // 32bit or 64bit
+    typedef typename sized_type<T>::type ST;
+
     // Storage for the actual divisor
-    dispatcher<T, ALGO> div;
+    dispatcher<ST, ALGO> div;
 };
 
 // Overload of operator / for scalar division
