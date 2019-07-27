@@ -16,6 +16,7 @@
 #define LIBDIVIDE_VERSION_MINOR 0
 
 #include <stdint.h>
+#include <limits.h>
 
 #if defined(__cplusplus)
     #include <cstdlib>
@@ -1984,27 +1985,34 @@ template<> struct dispatcher<int64_t, BRANCHFREE> { DISPATCHER_GEN(int64_t, s64_
 template<> struct dispatcher<uint64_t, BRANCHFULL> { DISPATCHER_GEN(uint64_t, u64) };
 template<> struct dispatcher<uint64_t, BRANCHFREE> { DISPATCHER_GEN(uint64_t, u64_branchfree) };
 
-// This helper template determines if a given type is signed or
-// not. This is not complete, and C++11 would provide the
-// <type_traits> include, but this code should also work with
-// older C++ standards, so restrict this.
-template<typename T> struct is_signed  { enum { value = false }; };
-template<> struct is_signed<short>     { enum { value = true }; };
-template<> struct is_signed<int>       { enum { value = true }; };
-template<> struct is_signed<long>      { enum { value = true }; };
-template<> struct is_signed<long long> { enum { value = true }; };
+// On many systems at two of the types int, long and long long have
+// the same size. For example, on Linux x86_64 both long and long long
+// are 64 bits. But the C++ type system thinks they are distinct types
+// and only one of them is aliased to int64_t. This template determines
+// the possible category of the types that might alias int32_t,
+// int64_t, uint32_t and uint64_t. The signed versions are 1, the
+// unsigned versions are 2 and all types that are not going to be
+// possible aliases for {u,}int{32,64}_t will have a category of 0.
+template<typename T> struct overloaded_inttype_category                     { enum { value = 0 }; };
+template<>           struct overloaded_inttype_category<int>                { enum { value = 1 }; };
+template<>           struct overloaded_inttype_category<long>               { enum { value = 1 }; };
+template<>           struct overloaded_inttype_category<long long>          { enum { value = 1 }; };
+template<>           struct overloaded_inttype_category<unsigned int>       { enum { value = 2 }; };
+template<>           struct overloaded_inttype_category<unsigned long>      { enum { value = 2 }; };
+template<>           struct overloaded_inttype_category<unsigned long long> { enum { value = 2 }; };
 
-// This helper template determines the normalized type that a
-// given type corresponds to. For example, on 64bit systems, both
-// long and long long are 64bit, but only one of them is typedef'd
-// to int64_t, and the type system treats them as eparate types.
-// Using this template we can let the compiler automatically choose
-// the correct type.
-template<typename T, int SIZE = sizeof(T), bool SIGNED = is_signed<T>::value> struct sized_type { };
-template<typename T> struct sized_type<T, 4, false> { typedef uint32_t type; };
-template<typename T> struct sized_type<T, 4, true>  { typedef int32_t type; };
-template<typename T> struct sized_type<T, 8, false> { typedef uint64_t type; };
-template<typename T> struct sized_type<T, 8, true>  { typedef int64_t type; };
+// Map any given type to {u,}int{32,64}_t if the type has the same size
+// and signedness but might be a distinct type according to the C++
+// type system. For example, on x86_32, where both int and long are
+// 32bit signed integers, but only one of them is typedef'd to int32_t
+// in <stdint.h>, map both of them to int32_t. For any type that does
+// not have a size of exactly 32 or 64 bits this template will leave
+// the type as-is.
+template<typename T, int Category = overloaded_inttype_category<T>::value, int Size = sizeof(T) * CHAR_BIT> struct mapped_type { typedef T type; };
+template<typename T> struct mapped_type<T, 1, 32> { typedef  int32_t type; };
+template<typename T> struct mapped_type<T, 2, 32> { typedef uint32_t type; };
+template<typename T> struct mapped_type<T, 1, 64> { typedef  int64_t type; };
+template<typename T> struct mapped_type<T, 2, 64> { typedef uint64_t type; };
 
 // This is the main divider class for use by the user (C++ API).
 // The actual division algorithm is selected using the dispatcher struct
@@ -2049,10 +2057,11 @@ public:
     }
 #endif
 private:
-    // Normalize the type so it is possible to always create a
-    // divider object, assuming the underlying integer type is
-    // 32bit or 64bit
-    typedef typename sized_type<T>::type ST;
+    // Map all integer types that are exactly 32 and 64bit in size
+    // to the respective {u,}int{32,64}_t type. This ensures that
+    // types that have the same size, but are considered distinct
+    // types in the C++ type systems, will still work with libdivide.
+    typedef typename mapped_type<T>::type ST;
 
     // Storage for the actual divisor
     dispatcher<ST, ALGO> div;
