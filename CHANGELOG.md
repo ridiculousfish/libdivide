@@ -2,6 +2,12 @@
 
 This is a list of notable changes to libdivide.
 
+## [3.0](https://github.com/ridiculousfish/libdivide/releases/tag/v3.0) - not yet released
+* BREAKING
+  * ```libdivide.h``` now requires C++11 or later
+* BUG FIXES
+  * Support all integer types in C++ ([#58](https://github.com/ridiculousfish/libdivide/issues/58))
+
 ## [2.0](https://github.com/ridiculousfish/libdivide/releases/tag/v2.0) - 2019-06-22
 * BREAKING
   * Removed unswitch functionality ([#46](https://github.com/ridiculousfish/libdivide/issues/46))
