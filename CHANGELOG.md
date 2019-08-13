@@ -6,7 +6,7 @@ This is a list of notable changes to libdivide.
 * BREAKING
   * ```libdivide.h``` now requires C++11 or later
 * BUG FIXES
-  * Support all integer types in C++ ([#58](https://github.com/ridiculousfish/libdivide/issues/58))
+  * Support all 32-bit and 64-bit integer types in C++ ([#58](https://github.com/ridiculousfish/libdivide/issues/58))
 
 ## [2.0](https://github.com/ridiculousfish/libdivide/releases/tag/v2.0) - 2019-06-22
 * BREAKING
