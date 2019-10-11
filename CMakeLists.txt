@@ -189,7 +189,7 @@ install(FILES libdivide.h
 
 install(TARGETS libdivide
         EXPORT libdivideTargets
-        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+        INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 
 install(EXPORT libdivideTargets
         NAMESPACE libdivide::
