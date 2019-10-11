@@ -124,7 +124,7 @@ elseif(cpu_x86 AND NOT IS_CROSS_COMPILIATION)
             __m512i b = _mm512_set_epi32(0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1);
             __m512i c = _mm512_add_epi32(a, b);
             __m512i d = _mm512_srai_epi32(c, 23);
-            __m512i e = _mm512_shuffle_epi32(d, (_MM_PERM_ENUM) 0xB1);
+            d = _mm512_shuffle_epi32(d, (_MM_PERM_ENUM) 0xB1);
             return 0;
         }"
         avx512)
@@ -138,7 +138,7 @@ elseif(cpu_x86 AND NOT IS_CROSS_COMPILIATION)
             {
                 __m256i a = _mm256_set_epi32(1, 0, 1, 0, 1, 0, 1, 0);
                 __m256i b = _mm256_set_epi32(0, 1, 0, 1, 0, 1, 0, 1);
-                __m256i c = _mm256_add_epi32(a, b);
+                b = _mm256_add_epi32(a, b);
                 return 0;
             }"
             avx2)
@@ -152,7 +152,7 @@ elseif(cpu_x86 AND NOT IS_CROSS_COMPILIATION)
                 {
                     __m128i a = _mm_set_epi32(1, 0, 1, 0);
                     __m128i b = _mm_set_epi32(0, 1, 0, 1);
-                    __m128i c = _mm_add_epi32(a, b);
+                    b = _mm_add_epi32(a, b);
                     return 0;
                 }"
                 sse2)
