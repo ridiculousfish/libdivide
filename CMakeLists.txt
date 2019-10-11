@@ -187,10 +187,6 @@ install(FILES libdivide.h
 
 # CMake find_package(libdivide) support ########################
 
-export(TARGETS libdivide
-       NAMESPACE libdivide::
-       FILE "${CMAKE_CURRENT_BINARY_DIR}/libdivideTargets.cmake")
-
 install(TARGETS libdivide
         EXPORT libdivideTargets
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
