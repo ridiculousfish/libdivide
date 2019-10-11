@@ -1,0 +1,12 @@
+# ====================================================================
+# The libdivide CMake configuration file
+#
+# Usage from an external project:
+#     In your CMakeLists.txt, add these lines:
+#
+#     find_package(libdivide REQUIRED)
+#     target_link_libraries(your_target libdivide::libdivide)
+#
+# ====================================================================
+
+include("${CMAKE_CURRENT_LIST_DIR}/libdivideTargets.cmake")

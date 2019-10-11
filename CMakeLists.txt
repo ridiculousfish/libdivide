@@ -1,7 +1,11 @@
 cmake_minimum_required(VERSION 3.4)
+set(LIBDIVIDE_VERSION "3.0")
 project(libdivide C CXX)
+
 include(CheckCXXCompilerFlag)
 include(CheckCXXSourceRuns)
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 include(CMakePushCheckState)
 
 # Build options ################################################
@@ -166,6 +170,49 @@ elseif(cpu_x86 AND NOT IS_CROSS_COMPILIATION)
     cmake_pop_check_state()
 endif()
 
+# libdivide header-only library target #########################
+
+add_library(libdivide INTERFACE)
+add_library(libdivide::libdivide ALIAS libdivide)
+
+target_compile_features(libdivide INTERFACE cxx_alias_templates)
+
+target_include_directories(libdivide INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>)
+
+install(FILES libdivide.h
+              COMPONENT libdivide-header
+              DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+# CMake find_package(libdivide) support ########################
+
+export(TARGETS libdivide
+       NAMESPACE libdivide::
+       FILE "${CMAKE_CURRENT_BINARY_DIR}/libdivideTargets.cmake")
+
+install(TARGETS libdivide
+        EXPORT libdivideTargets
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+install(EXPORT libdivideTargets
+        NAMESPACE libdivide::
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/libdivide")
+
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/libdivideConfigVersion.cmake"
+    VERSION ${LIBDIVIDE_VERSION}
+    COMPATIBILITY SameMajorVersion)
+
+configure_package_config_file(
+    "${PROJECT_SOURCE_DIR}/cmake/libdivideConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/libdivideConfig.cmake"
+    INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/libdivide")
+
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libdivideConfig.cmake"
+              "${CMAKE_CURRENT_BINARY_DIR}/libdivideConfigVersion.cmake"
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/libdivide")
+
 # Build test programs ##########################################
 
 if (BUILD_TESTS)
@@ -175,8 +222,9 @@ if (BUILD_TESTS)
     add_executable(benchmark test/benchmark.c)
     add_executable(benchmark_branchfree test/benchmark_branchfree.cpp)
 
-    target_compile_features(tester PRIVATE cxx_alias_templates)
-    target_compile_features(benchmark_branchfree PRIVATE cxx_alias_templates)
+    target_link_libraries(tester INTERFACE libdivide PRIVATE Threads::Threads)
+    target_link_libraries(benchmark INTERFACE libdivide)
+    target_link_libraries(benchmark_branchfree INTERFACE libdivide)
 
     target_compile_options(tester PRIVATE "${NATIVE_FLAG}" "${NO_VECTORIZE}")
     target_compile_options(benchmark PRIVATE "${NATIVE_FLAG}" "${NO_VECTORIZE}")
@@ -185,12 +233,6 @@ if (BUILD_TESTS)
     target_compile_definitions(tester PRIVATE "${LIBDIVIDE_ASSERTIONS}" "${LIBDIVIDE_VECTOR_EXT}")
     target_compile_definitions(benchmark PRIVATE "${LIBDIVIDE_ASSERTIONS}" "${LIBDIVIDE_VECTOR_EXT}")
     target_compile_definitions(benchmark_branchfree PRIVATE "${LIBDIVIDE_ASSERTIONS}" "${LIBDIVIDE_VECTOR_EXT}")
-
-    target_include_directories(tester PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-    target_include_directories(benchmark PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-    target_include_directories(benchmark_branchfree PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-
-    target_link_libraries(tester Threads::Threads)
 endif()
 
 # Enable testing ###############################################
@@ -200,7 +242,3 @@ if (BUILD_TESTS)
     add_test(tester tester)
     add_test(benchmark_branchfree benchmark_branchfree)
 endif()
-
-# By default install to /usr/local/install #####################
-
-install(FILES libdivide.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
