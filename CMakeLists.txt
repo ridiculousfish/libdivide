@@ -222,9 +222,9 @@ if (BUILD_TESTS)
     add_executable(benchmark test/benchmark.c)
     add_executable(benchmark_branchfree test/benchmark_branchfree.cpp)
 
-    target_link_libraries(tester INTERFACE libdivide PRIVATE Threads::Threads)
-    target_link_libraries(benchmark INTERFACE libdivide)
-    target_link_libraries(benchmark_branchfree INTERFACE libdivide)
+    target_link_libraries(tester libdivide Threads::Threads)
+    target_link_libraries(benchmark libdivide)
+    target_link_libraries(benchmark_branchfree libdivide)
 
     target_compile_options(tester PRIVATE "${NATIVE_FLAG}" "${NO_VECTORIZE}")
     target_compile_options(benchmark PRIVATE "${NATIVE_FLAG}" "${NO_VECTORIZE}")
