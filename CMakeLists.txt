@@ -184,12 +184,17 @@ target_include_directories(libdivide INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include>)
 
-install(FILES libdivide.h DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+install(FILES libdivide.h
+        COMPONENT libdivide-header
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 
 # CMake find_package(libdivide) support ########################
 
 install(TARGETS libdivide
-        EXPORT libdivideConfig)
+        EXPORT libdivideConfig
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 
 export(TARGETS libdivide
        NAMESPACE libdivide::
