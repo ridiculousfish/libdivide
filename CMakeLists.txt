@@ -11,6 +11,7 @@ include(CMakePushCheckState)
 # Build options ################################################
 
 option(BUILD_TESTS "Build the test programs" ON)
+option(ENABLE_VECTOR_EXTENSIONS "Enable CPU vector instructions for test programs" ON)
 
 # By default we automatically enable the widest vector
 # instruction set supported by your x86/x64 CPU.
@@ -58,7 +59,7 @@ endif()
 
 # Check if x86/x64 CPU  ########################################
 
-if (BUILD_TESTS AND NOT IS_CROSS_COMPILIATION)
+if (BUILD_TESTS AND ENABLE_VECTOR_EXTENSIONS AND NOT IS_CROSS_COMPILIATION)
     check_cxx_source_runs("
         int main()
         {
@@ -73,15 +74,17 @@ if (BUILD_TESTS AND NOT IS_CROSS_COMPILIATION)
         cpu_x86)
 
     if (cpu_x86)
+        set(ENABLE_X86_VECTOR_EXTENSIONS ON)
+
         cmake_push_check_state()
         set(CMAKE_REQUIRED_FLAGS -Werror)
         check_cxx_compiler_flag(-march=native march_native)
         cmake_pop_check_state()
-    endif()
 
-    if (march_native)
-        # -march=native required for AVX2/AVX512 on x86
-        set(NATIVE_FLAG -march=native)
+        if (march_native)
+            # -march=native required for AVX2/AVX512 on x86
+            set(NATIVE_FLAG -march=native)
+        endif()
     endif()
 endif()
 
@@ -91,7 +94,7 @@ endif()
 # to prevent the compiler from vectorizing our scalar benchmarks
 # which would make the benchmark results less useful.
 
-if (cpu_x86)
+if(ENABLE_X86_VECTOR_EXTENSIONS)
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         check_cxx_compiler_flag("-fno-vectorize" fno_vectorize)
         if(fno_vectorize)
@@ -108,12 +111,12 @@ endif()
 # Check if CPU supports AVX512/AVX2/SSE2 #######################
 
 if(LIBDIVIDE_AVX512)
-    add_definitions(-DLIBDIVIDE_AVX512)
+    set(LIBDIVIDE_VECTOR_EXT -DLIBDIVIDE_AVX512)
 elseif(LIBDIVIDE_AVX2)
-    add_definitions(-DLIBDIVIDE_AVX2)
+    set(LIBDIVIDE_VECTOR_EXT -DLIBDIVIDE_AVX2)
 elseif(LIBDIVIDE_SSE2)
-    add_definitions(-DLIBDIVIDE_SSE2)
-elseif(cpu_x86 AND NOT IS_CROSS_COMPILIATION)
+    set(LIBDIVIDE_VECTOR_EXT -DLIBDIVIDE_SSE2)
+elseif(ENABLE_X86_VECTOR_EXTENSIONS)
 
     cmake_push_check_state()
     if(march_native)
