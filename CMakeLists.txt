@@ -181,17 +181,18 @@ target_include_directories(libdivide INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include>)
 
-install(FILES libdivide.h
-              COMPONENT libdivide-header
-              DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(FILES libdivide.h DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 
 # CMake find_package(libdivide) support ########################
 
 install(TARGETS libdivide
-        EXPORT libdivideTargets
-        INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+        EXPORT libdivideConfig)
 
-install(EXPORT libdivideTargets
+export(TARGETS libdivide
+       NAMESPACE libdivide::
+       FILE "${CMAKE_CURRENT_BINARY_DIR}/libdivideConfig.cmake")
+
+install(EXPORT libdivideConfig
         NAMESPACE libdivide::
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/libdivide")
 
@@ -200,13 +201,7 @@ write_basic_package_version_file(
     VERSION ${LIBDIVIDE_VERSION}
     COMPATIBILITY SameMajorVersion)
 
-configure_package_config_file(
-    "${PROJECT_SOURCE_DIR}/cmake/libdivideConfig.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/libdivideConfig.cmake"
-    INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/libdivide")
-
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libdivideConfig.cmake"
-              "${CMAKE_CURRENT_BINARY_DIR}/libdivideConfigVersion.cmake"
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libdivideConfigVersion.cmake"
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/libdivide")
 
 # Build test programs ##########################################
