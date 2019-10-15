@@ -43,23 +43,13 @@ if("${BUILD_TYPE}" MATCHES DEBUG)
     set(LIBDIVIDE_ASSERTIONS -DLIBDIVIDE_ASSERTIONS_ON)
 endif()
 
-# Detect cross compilation #####################################
-
-if(CMAKE_SYSTEM_NAME AND
-   CMAKE_HOST_SYSTEM_NAME AND
-   NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "${CMAKE_HOST_SYSTEM_NAME}")
-    set(IS_CROSS_COMPILIATION ON)
-endif()
-
-if(CMAKE_SYSTEM_PROCESSOR AND
-   CMAKE_HOST_SYSTEM_PROCESSOR AND
-   NOT "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "${CMAKE_HOST_SYSTEM_PROCESSOR}")
-    set(IS_CROSS_COMPILIATION ON)
-endif()
-
 # Check if x86/x64 CPU  ########################################
 
-if (BUILD_TESTS AND ENABLE_VECTOR_EXTENSIONS AND NOT IS_CROSS_COMPILIATION)
+# Note that check_cxx_source_runs() must not be used when
+# cross-compiling otherwise the following error will occur:
+# CMake Error: TRY_RUN() invoked in cross-compiling mode, ...
+
+if (BUILD_TESTS AND ENABLE_VECTOR_EXTENSIONS AND NOT CMAKE_CROSSCOMPILING)
     check_cxx_source_runs("
         int main()
         {
