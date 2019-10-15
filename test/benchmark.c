@@ -681,6 +681,7 @@ static void report_result(const char *input, struct TestResult result) {
 }
 
 static void test_many_u32(const uint32_t *data) {
+    printf("\n%50s", "=== libdivide u32 benchmark ===\n\n");
     report_header();
     uint32_t d;
     for (d=1; d > 0; d++) {
@@ -692,6 +693,7 @@ static void test_many_u32(const uint32_t *data) {
 }
 
 static void test_many_s32(const int32_t *data) {
+    printf("\n%50s", "=== libdivide s32 benchmark ===\n\n");
     report_header();
     int32_t d;
     for (d=1; d != 0;) {
@@ -706,6 +708,7 @@ static void test_many_s32(const int32_t *data) {
 }
 
 static void test_many_u64(const uint64_t *data) {
+    printf("\n%50s", "=== libdivide u64 benchmark ===\n\n");
     report_header();
     uint64_t d;
     for (d=1; d > 0; d++) {
@@ -717,6 +720,7 @@ static void test_many_u64(const uint64_t *data) {
 }
 
 static void test_many_s64(const int64_t *data) {
+    printf("\n%50s", "=== libdivide s64 benchmark ===\n\n");
     report_header();
     int64_t d;
     for (d=1; d != 0;) {
