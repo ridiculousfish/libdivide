@@ -234,13 +234,20 @@ if (BUILD_TESTS)
 endif()
 
 if (BUILD_FUZZERS)
+    # build like this:
+    # cmake sourcedir -DBUILD_FUZZERS=On -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS="-fsanitize=fuzzer-no-link -mavx2"
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        add_executable(fuzzer_scalar fuzzer_scalar.cpp)
-        add_executable(fuzzer_simd   fuzzer_simd.cpp)
+        add_executable(fuzzer_scalar test/fuzzer_scalar.cpp)
+        add_executable(fuzzer_simd   test/fuzzer_simd.cpp)
+        # needs generic lambdas and the _v aliases
+        target_compile_features(fuzzer_scalar PRIVATE cxx_std_17)
+        target_compile_features(fuzzer_simd   PRIVATE cxx_std_17)
         target_link_libraries(fuzzer_scalar PRIVATE "-fsanitize=fuzzer")
         target_link_libraries(fuzzer_simd   PRIVATE "-fsanitize=fuzzer")
         target_compile_definitions(fuzzer_scalar PRIVATE "${LIBDIVIDE_ASSERTIONS}" "${LIBDIVIDE_VECTOR_EXT}")
         target_compile_definitions(fuzzer_simd PRIVATE "${LIBDIVIDE_ASSERTIONS}" "${LIBDIVIDE_VECTOR_EXT}")
+        target_link_libraries(fuzzer_scalar PRIVATE libdivide)
+        target_link_libraries(fuzzer_simd PRIVATE libdivide)
     else()
         message(FATAL_ERROR "You must use clang to build the fuzzers (uses libFuzzer)")
     endif()

@@ -5,6 +5,10 @@
 #include <cstring>
 #include <limits>
 
+#if __cplusplus < 201703L
+# error "Sorry, needs C++17 or later."
+#endif
+
 // How many bytes of data to use for numerators at most.
 // Must be larger than the largest simd size.
 constexpr const std::size_t NbytesOfInput = 512 / 8;
