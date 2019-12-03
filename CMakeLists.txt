@@ -10,7 +10,8 @@ include(CMakePushCheckState)
 
 # Build options ################################################
 
-option(BUILD_TESTS "Build the test programs" ON)
+option(BUILD_TESTS   "Build the test programs" ON)
+option(BUILD_FUZZERS "Build the fuzzers (requires clang)" OFF)
 option(ENABLE_VECTOR_EXTENSIONS "Enable CPU vector instructions for test programs" ON)
 
 # By default we automatically enable the widest vector
@@ -230,4 +231,17 @@ if (BUILD_TESTS)
     enable_testing()
     add_test(tester tester)
     add_test(benchmark_branchfree benchmark_branchfree)
+endif()
+
+if (BUILD_FUZZERS)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        add_executable(fuzzer_scalar fuzzer_scalar.cpp)
+        add_executable(fuzzer_simd   fuzzer_simd.cpp)
+        target_link_libraries(fuzzer_scalar PRIVATE "-fsanitize=fuzzer")
+        target_link_libraries(fuzzer_simd   PRIVATE "-fsanitize=fuzzer")
+        target_compile_definitions(fuzzer_scalar PRIVATE "${LIBDIVIDE_ASSERTIONS}" "${LIBDIVIDE_VECTOR_EXT}")
+        target_compile_definitions(fuzzer_simd PRIVATE "${LIBDIVIDE_ASSERTIONS}" "${LIBDIVIDE_VECTOR_EXT}")
+    else()
+        message(FATAL_ERROR "You must use clang to build the fuzzers (uses libFuzzer)")
+    endif()
 endif()
