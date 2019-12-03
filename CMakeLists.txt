@@ -236,6 +236,10 @@ endif()
 if (BUILD_FUZZERS)
     # build like this:
     #
+    # for avx512: (not tested, have no such hardware!)
+    # mkdir build-avx512 && cd build-avx512
+    # cmake .. -DLIBDIVIDE_AVX512=On -DBUILD_FUZZERS=On -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS="-fsanitize=fuzzer-no-link"
+    #
     # for avx2:
     # mkdir build-avx2 && cd build-avx2
     # cmake .. -DLIBDIVIDE_AVX2=On -DBUILD_FUZZERS=On -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS="-fsanitize=fuzzer-no-link"
@@ -249,8 +253,10 @@ if (BUILD_FUZZERS)
         # needs generic lambdas and the _v aliases
         target_compile_features(fuzzer_scalar PRIVATE cxx_std_17)
         target_compile_features(fuzzer_simd   PRIVATE cxx_std_17)
-        target_link_libraries(fuzzer_scalar PRIVATE "-fsanitize=fuzzer")
-        target_link_libraries(fuzzer_simd   PRIVATE "-fsanitize=fuzzer")
+        target_link_libraries(fuzzer_scalar   PRIVATE "-fsanitize=fuzzer")
+        target_link_libraries(fuzzer_simd     PRIVATE "-fsanitize=fuzzer")
+        target_compile_options(fuzzer_scalar  PRIVATE "${NATIVE_FLAG}" "${NO_VECTORIZE}")
+        target_compile_options(fuzzer_simd    PRIVATE "${NATIVE_FLAG}" "${NO_VECTORIZE}")
         target_compile_definitions(fuzzer_scalar PRIVATE "${LIBDIVIDE_ASSERTIONS}" "${LIBDIVIDE_VECTOR_EXT}")
         target_compile_definitions(fuzzer_simd PRIVATE "${LIBDIVIDE_ASSERTIONS}" "${LIBDIVIDE_VECTOR_EXT}")
         target_link_libraries(fuzzer_scalar PRIVATE libdivide)
