@@ -69,6 +69,7 @@ LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size)
 
       // The numbers to later divide by divisor
       ArrayOfIntegers numerators;
+      numerators.fill(0);
       if (Size < NbytesOfInput)
         return 0;
       std::memcpy(numerators.data(), Data, NbytesOfInput);
@@ -85,6 +86,7 @@ LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size)
       // get data into a simd register
 #if defined(LIBDIVIDE_AVX512)
       using Vector = __m512i;
+      static_assert("please implement me");
 #endif
 
 #if defined(LIBDIVIDE_AVX2)
@@ -95,6 +97,8 @@ LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size)
 
 #if defined(LIBDIVIDE_SSE2)
       using Vector = __m128i;
+      const Vector num_as_simdvector =
+        _mm_loadu_si128((const Vector*)numerators.data());
 #endif
       // carry out the division
       libdivide::divider<Integer, branchingtypedummy.value> divider(divisor);
@@ -102,18 +106,19 @@ LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size)
 
       // this will eventually contain the result
       ArrayOfIntegers simdresult;
+      simdresult.fill(0);
 
       // copy the results from the simd register
 #if defined(LIBDIVIDE_AVX512)
-
+     static_assert("please implement me");
 #endif
 
 #if defined(LIBDIVIDE_AVX2)
       _mm256_storeu_si256((Vector*)simdresult.data(), res);
 #endif
 
-#if defined(LIBDIVIDE_SSE2)
-      using Vector = __m128i;
+#if defined(LIBDIVIDE_SSE2)      
+      _mm_storeu_si128((Vector*)simdresult.data(), res);
 #endif
 
       // how many elements will be assigned?

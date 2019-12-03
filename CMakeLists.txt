@@ -235,7 +235,11 @@ endif()
 
 if (BUILD_FUZZERS)
     # build like this:
-    # cmake sourcedir -DBUILD_FUZZERS=On -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS="-fsanitize=fuzzer-no-link -mavx2"
+    #
+    # for avx2:
+    # cmake sourcedir -DLIBDIVIDE_AVX2=On -DBUILD_FUZZERS=On -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS="-fsanitize=fuzzer-no-link -mavx2"
+    # for sse2:
+    # cmake .. -DLIBDIVIDE_SSE2=On -DBUILD_FUZZERS=On -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS="-fsanitize=fuzzer-no-link -msse4"
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         add_executable(fuzzer_scalar test/fuzzer_scalar.cpp)
         add_executable(fuzzer_simd   test/fuzzer_simd.cpp)
