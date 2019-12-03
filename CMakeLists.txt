@@ -237,9 +237,12 @@ if (BUILD_FUZZERS)
     # build like this:
     #
     # for avx2:
-    # cmake sourcedir -DLIBDIVIDE_AVX2=On -DBUILD_FUZZERS=On -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS="-fsanitize=fuzzer-no-link -mavx2"
+    # mkdir build-avx2 && cd build-avx2
+    # cmake .. -DLIBDIVIDE_AVX2=On -DBUILD_FUZZERS=On -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS="-fsanitize=fuzzer-no-link"
+    #
     # for sse2:
-    # cmake .. -DLIBDIVIDE_SSE2=On -DBUILD_FUZZERS=On -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS="-fsanitize=fuzzer-no-link -msse4"
+    # mkdir build-sse2 && cd build-sse2
+    # cmake .. -DLIBDIVIDE_SSE2=On -DBUILD_FUZZERS=On -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS="-fsanitize=fuzzer-no-link"
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         add_executable(fuzzer_scalar test/fuzzer_scalar.cpp)
         add_executable(fuzzer_simd   test/fuzzer_simd.cpp)
