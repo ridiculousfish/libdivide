@@ -20,10 +20,17 @@ applyOnScalars(const uint8_t* Data, size_t Size)
   Data += Nmax;
   std::memcpy(&divisor, Data, N);
 
-  if (divisor == 0 ||
+  // avoid division by zero
+  if (divisor == 0) {
+     return;
+  }
+
+  // avoid signed integer overflow INT_MIN/-1 
+  if(std::is_signed_v<Integer> &&
       (numerator == std::numeric_limits<Integer>::min() && divisor == -1)) {
     return;
   }
+
   libdivide::divider<Integer, libdivide::BRANCHFULL> fast_d_branchfull(divisor);
   const auto quotient_full = numerator / fast_d_branchfull;
 
