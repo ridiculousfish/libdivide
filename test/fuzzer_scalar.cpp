@@ -22,11 +22,11 @@ applyOnScalars(const uint8_t* Data, size_t Size)
 
   // avoid division by zero
   if (divisor == 0) {
-     return;
+    return;
   }
 
-  // avoid signed integer overflow INT_MIN/-1 
-  if(std::is_signed_v<Integer> &&
+  // avoid signed integer overflow INT_MIN/-1
+  if (std::is_signed_v<Integer> &&
       (numerator == std::numeric_limits<Integer>::min() && divisor == -1)) {
     return;
   }

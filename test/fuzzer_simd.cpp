@@ -6,7 +6,7 @@
 #include <limits>
 
 #if __cplusplus < 201703L
-# error "Sorry, needs C++17 or later."
+#error "Sorry, needs C++17 or later."
 #endif
 
 // How many bytes of data to use for numerators at most.
@@ -88,7 +88,7 @@ LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size)
       // not tested!
       using Vector = __m512i;
       const Vector num_as_simdvector =
-      _mm512_loadu_si512((const Vector*)numerators.data());
+        _mm512_loadu_si512((const Vector*)numerators.data());
 #endif
 
 #if defined(LIBDIVIDE_AVX2)
@@ -112,14 +112,14 @@ LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size)
 
       // copy the results from the simd register
 #if defined(LIBDIVIDE_AVX512)
-     _mm512_storeu_si512((Vector*)simdresult.data(), res);
+      _mm512_storeu_si512((Vector*)simdresult.data(), res);
 #endif
 
 #if defined(LIBDIVIDE_AVX2)
       _mm256_storeu_si256((Vector*)simdresult.data(), res);
 #endif
 
-#if defined(LIBDIVIDE_SSE2)      
+#if defined(LIBDIVIDE_SSE2)
       _mm_storeu_si128((Vector*)simdresult.data(), res);
 #endif
 
