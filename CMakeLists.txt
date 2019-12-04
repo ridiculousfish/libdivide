@@ -248,29 +248,24 @@ if (BUILD_TESTS)
 endif()
 
 if (BUILD_FUZZERS)
-    # build like this:
+    # build the fuzzers like this:
     #
-    # for avx512: (not tested, have no such hardware!)
-    # mkdir build-avx512 && cd build-avx512
-    # cmake .. -DLIBDIVIDE_AVX512=On -DBUILD_FUZZERS=On -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS="-fsanitize=fuzzer-no-link"
+    # mkdir build-autodetect && cd build-autodetect
+    # cmake .. -DBUILD_FUZZERS=On -DCMAKE_CXX_COMPILER=clang++
     #
-    # for avx2:
-    # mkdir build-avx2 && cd build-avx2
-    # cmake .. -DLIBDIVIDE_AVX2=On -DBUILD_FUZZERS=On -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS="-fsanitize=fuzzer-no-link"
-    #
-    # for sse2:
-    # mkdir build-sse2 && cd build-sse2
-    # cmake .. -DLIBDIVIDE_SSE2=On -DBUILD_FUZZERS=On -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS="-fsanitize=fuzzer-no-link"
+    # Combine with the simd flags (-DLIBDIVIDE_AVX2=On etc) to force fuzzing
+    # of that simd instruction set.
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         add_executable(fuzzer_scalar test/fuzzer_scalar.cpp)
         add_executable(fuzzer_simd   test/fuzzer_simd.cpp)
         # needs generic lambdas and the _v aliases
         target_compile_features(fuzzer_scalar PRIVATE cxx_std_17)
         target_compile_features(fuzzer_simd   PRIVATE cxx_std_17)
-        target_link_libraries(fuzzer_scalar   PRIVATE "-fsanitize=fuzzer")
-        target_link_libraries(fuzzer_simd     PRIVATE "-fsanitize=fuzzer")
-        target_compile_options(fuzzer_scalar  PRIVATE "${NATIVE_FLAG}" "${NO_VECTORIZE}")
-        target_compile_options(fuzzer_simd    PRIVATE "${NATIVE_FLAG}" "${NO_VECTORIZE}")
+        set(fuzzflags  "-fsanitize=fuzzer,address,undefined")
+        target_link_libraries(fuzzer_scalar   PRIVATE "${fuzzflags}")
+        target_link_libraries(fuzzer_simd     PRIVATE "${fuzzflags}")
+        target_compile_options(fuzzer_scalar  PRIVATE "${NATIVE_FLAG}" "${NO_VECTORIZE}" "${fuzzflags}")
+        target_compile_options(fuzzer_simd    PRIVATE "${NATIVE_FLAG}" "${NO_VECTORIZE}" "${fuzzflags}")
         target_compile_definitions(fuzzer_scalar PRIVATE "${LIBDIVIDE_ASSERTIONS}" "${LIBDIVIDE_VECTOR_EXT}")
         target_compile_definitions(fuzzer_simd PRIVATE "${LIBDIVIDE_ASSERTIONS}" "${LIBDIVIDE_VECTOR_EXT}")
         target_link_libraries(fuzzer_scalar PRIVATE libdivide)
