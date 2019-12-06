@@ -261,7 +261,7 @@ if (BUILD_FUZZERS)
         # needs generic lambdas and the _v aliases
         target_compile_features(fuzzer_scalar PRIVATE cxx_std_17)
         target_compile_features(fuzzer_simd   PRIVATE cxx_std_17)
-        set(fuzzflags  "-fsanitize=fuzzer,address,undefined")
+        set(fuzzflags  "-fsanitize=fuzzer,address")
         target_link_libraries(fuzzer_scalar   PRIVATE "${fuzzflags}")
         target_link_libraries(fuzzer_simd     PRIVATE "${fuzzflags}")
         target_compile_options(fuzzer_scalar  PRIVATE "${NATIVE_FLAG}" "${NO_VECTORIZE}" "${fuzzflags}")
