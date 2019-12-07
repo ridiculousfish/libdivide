@@ -2,6 +2,10 @@
 
 This is a list of notable changes to libdivide.
 
+## [3.1](https://github.com/ridiculousfish/libdivide/releases/tag/v3.1) - not yet released
+* ENHANCEMENT
+  * Add fuzzing support (requires clang) ([#60](https://github.com/ridiculousfish/libdivide/pull/60))
+
 ## [3.0](https://github.com/ridiculousfish/libdivide/releases/tag/v3.0) - 2019-10-16
 * BREAKING
   * ```libdivide.h``` now requires C++11 or later

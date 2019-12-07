@@ -3,6 +3,7 @@ set(LIBDIVIDE_VERSION "3.0")
 project(libdivide C CXX)
 
 include(CheckCXXCompilerFlag)
+include(CheckCCompilerFlag)
 include(CheckCXXSourceRuns)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
@@ -10,7 +11,8 @@ include(CMakePushCheckState)
 
 # Build options ################################################
 
-option(BUILD_TESTS "Build the test programs" ON)
+option(BUILD_TESTS   "Build the test programs" ON)
+option(BUILD_FUZZERS "Build the fuzzers (requires clang)" OFF)
 option(ENABLE_VECTOR_EXTENSIONS "Enable CPU vector instructions for test programs" ON)
 
 # By default we automatically enable the widest vector
@@ -85,6 +87,7 @@ endif()
 # which would make the benchmark results less useful.
 
 if(ENABLE_X86_VECTOR_EXTENSIONS)
+    # first check the C++ compiler
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         check_cxx_compiler_flag("-fno-vectorize" fno_vectorize)
         if(fno_vectorize)
@@ -94,6 +97,18 @@ if(ENABLE_X86_VECTOR_EXTENSIONS)
         check_cxx_compiler_flag("-fno-tree-vectorize" fno_tree_vectorize)
         if(fno_tree_vectorize)
             set(NO_VECTORIZE -fno-tree-vectorize)
+        endif()
+    endif()
+    # then check the C compiler
+    if("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
+        check_c_compiler_flag("-fno-vectorize" fno_vectorize_c)
+        if(fno_vectorize_c)
+            set(NO_VECTORIZE_C -fno-vectorize)
+        endif()
+    elseif("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+        check_c_compiler_flag("-fno-tree-vectorize" fno_tree_vectorize_c)
+        if(fno_tree_vectorize_c)
+            set(NO_VECTORIZE_C -fno-tree-vectorize)
         endif()
     endif()
 endif()
@@ -216,7 +231,7 @@ if (BUILD_TESTS)
     target_link_libraries(benchmark_branchfree libdivide)
 
     target_compile_options(tester PRIVATE "${NATIVE_FLAG}" "${NO_VECTORIZE}")
-    target_compile_options(benchmark PRIVATE "${NATIVE_FLAG}" "${NO_VECTORIZE}")
+    target_compile_options(benchmark PRIVATE "${NATIVE_FLAG}" "${NO_VECTORIZE_C}")
     target_compile_options(benchmark_branchfree PRIVATE "${NATIVE_FLAG}" "${NO_VECTORIZE}")
 
     target_compile_definitions(tester PRIVATE "${LIBDIVIDE_ASSERTIONS}" "${LIBDIVIDE_VECTOR_EXT}")
@@ -230,4 +245,31 @@ if (BUILD_TESTS)
     enable_testing()
     add_test(tester tester)
     add_test(benchmark_branchfree benchmark_branchfree)
+endif()
+
+# Build the fuzzers (requires clang) ###########################
+
+if (BUILD_FUZZERS)
+
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        set(fuzzflags "-fsanitize=fuzzer,address")
+
+        add_executable(fuzzer_scalar test/fuzzer_scalar.cpp)
+        target_compile_features(fuzzer_scalar PRIVATE cxx_std_17)
+        target_link_libraries(fuzzer_scalar PRIVATE "${fuzzflags}")
+        target_compile_options(fuzzer_scalar PRIVATE "${NATIVE_FLAG}" "${NO_VECTORIZE}" "${fuzzflags}")
+        target_compile_definitions(fuzzer_scalar PRIVATE "${LIBDIVIDE_ASSERTIONS}")
+        target_link_libraries(fuzzer_scalar PRIVATE libdivide)
+
+        if (LIBDIVIDE_VECTOR_EXT)
+            add_executable(fuzzer_simd test/fuzzer_simd.cpp)
+            target_compile_features(fuzzer_simd PRIVATE cxx_std_17)
+            target_link_libraries(fuzzer_simd PRIVATE "${fuzzflags}")
+            target_compile_options(fuzzer_simd PRIVATE "${NATIVE_FLAG}" "${NO_VECTORIZE}" "${fuzzflags}")
+            target_compile_definitions(fuzzer_simd PRIVATE "${LIBDIVIDE_ASSERTIONS}" "${LIBDIVIDE_VECTOR_EXT}")
+            target_link_libraries(fuzzer_simd PRIVATE libdivide)
+        endif()
+    else()
+        message(FATAL_ERROR "You must use clang to build the fuzzers (uses libFuzzer)")
+    endif()
 endif()
