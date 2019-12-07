@@ -247,29 +247,28 @@ if (BUILD_TESTS)
     add_test(benchmark_branchfree benchmark_branchfree)
 endif()
 
+# Build the fuzzers (requires clang) ###########################
+
 if (BUILD_FUZZERS)
-    # build the fuzzers like this:
-    #
-    # mkdir build-autodetect && cd build-autodetect
-    # cmake .. -DBUILD_FUZZERS=On -DCMAKE_CXX_COMPILER=clang++
-    #
-    # Combine with the simd flags (-DLIBDIVIDE_AVX2=On etc) to force fuzzing
-    # of that simd instruction set.
+
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        set(fuzzflags "-fsanitize=fuzzer,address")
+
         add_executable(fuzzer_scalar test/fuzzer_scalar.cpp)
-        add_executable(fuzzer_simd   test/fuzzer_simd.cpp)
-        # needs generic lambdas and the _v aliases
         target_compile_features(fuzzer_scalar PRIVATE cxx_std_17)
-        target_compile_features(fuzzer_simd   PRIVATE cxx_std_17)
-        set(fuzzflags  "-fsanitize=fuzzer,address")
-        target_link_libraries(fuzzer_scalar   PRIVATE "${fuzzflags}")
-        target_link_libraries(fuzzer_simd     PRIVATE "${fuzzflags}")
-        target_compile_options(fuzzer_scalar  PRIVATE "${NATIVE_FLAG}" "${NO_VECTORIZE}" "${fuzzflags}")
-        target_compile_options(fuzzer_simd    PRIVATE "${NATIVE_FLAG}" "${NO_VECTORIZE}" "${fuzzflags}")
-        target_compile_definitions(fuzzer_scalar PRIVATE "${LIBDIVIDE_ASSERTIONS}" "${LIBDIVIDE_VECTOR_EXT}")
-        target_compile_definitions(fuzzer_simd PRIVATE "${LIBDIVIDE_ASSERTIONS}" "${LIBDIVIDE_VECTOR_EXT}")
+        target_link_libraries(fuzzer_scalar PRIVATE "${fuzzflags}")
+        target_compile_options(fuzzer_scalar PRIVATE "${NATIVE_FLAG}" "${NO_VECTORIZE}" "${fuzzflags}")
+        target_compile_definitions(fuzzer_scalar PRIVATE "${LIBDIVIDE_ASSERTIONS}")
         target_link_libraries(fuzzer_scalar PRIVATE libdivide)
-        target_link_libraries(fuzzer_simd PRIVATE libdivide)
+
+        if (LIBDIVIDE_VECTOR_EXT)
+            add_executable(fuzzer_simd test/fuzzer_simd.cpp)
+            target_compile_features(fuzzer_simd PRIVATE cxx_std_17)
+            target_link_libraries(fuzzer_simd PRIVATE "${fuzzflags}")
+            target_compile_options(fuzzer_simd PRIVATE "${NATIVE_FLAG}" "${NO_VECTORIZE}" "${fuzzflags}")
+            target_compile_definitions(fuzzer_simd PRIVATE "${LIBDIVIDE_ASSERTIONS}" "${LIBDIVIDE_VECTOR_EXT}")
+            target_link_libraries(fuzzer_simd PRIVATE libdivide)
+        endif()
     else()
         message(FATAL_ERROR "You must use clang to build the fuzzers (uses libFuzzer)")
     endif()
