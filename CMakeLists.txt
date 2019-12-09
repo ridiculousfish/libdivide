@@ -250,7 +250,6 @@ endif()
 # Build the fuzzers (requires clang) ###########################
 
 if (BUILD_FUZZERS)
-
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         set(fuzzflags "-fsanitize=fuzzer,address")
 
