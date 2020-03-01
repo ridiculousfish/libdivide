@@ -1,0 +1,39 @@
+kind: pipeline
+name: arm
+
+platform:
+  os: linux
+  arch: arm
+
+steps:
+- name: build
+  image: alpine
+  commands:
+  - apk update
+  - apk add --no-cache build-base cmake
+  - mkdir build && cd build
+  - cmake .. -DCMAKE_BUILD_TYPE=Release
+  - cmake --build . --parallel
+  - ./tester
+  - ./benchmark_branchfree
+
+---
+
+kind: pipeline
+name: arm64
+
+platform:
+  os: linux
+  arch: arm64
+
+steps:
+- name: build
+  image: alpine
+  commands:
+  - apk update
+  - apk add --no-cache build-base cmake
+  - mkdir build && cd build
+  - cmake .. -DCMAKE_BUILD_TYPE=Release
+  - cmake --build . --parallel
+  - ./tester
+  - ./benchmark_branchfree
