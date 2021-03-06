@@ -15,14 +15,11 @@ option(BUILD_TESTS   "Build the test programs" ON)
 option(BUILD_FUZZERS "Build the fuzzers (requires clang)" OFF)
 option(ENABLE_VECTOR_EXTENSIONS "Enable CPU vector instructions for test programs" ON)
 
-# By default we automatically enable the widest vector
-# instruction set supported by your x86/x64 CPU.
-# But you can also force a specific vector instruction
-# set using the options below.
-
-option(LIBDIVIDE_SSE2   "Enable SSE2 vector instructions"   OFF)
-option(LIBDIVIDE_AVX2   "Enable AVX2 vector instructions"   OFF)
-option(LIBDIVIDE_AVX512 "Enable AVX512 vector instructions" OFF)
+# By default we automatically enable vectors supported by
+# the host CPU. You may also set these explicitly to OFF or ON.
+set(LIBDIVIDE_SSE2  AUTO CACHE STRING  "Enable SSE2 vector instructions")
+set(LIBDIVIDE_AVX2  AUTO CACHE STRING  "Enable AVX2 vector instructions")
+set(LIBDIVIDE_AVX512 AUTO CACHE STRING "Enable AVX512 vector instructions")
 
 # By default enable release mode ###############################
 
@@ -63,19 +60,18 @@ if (BUILD_TESTS AND ENABLE_VECTOR_EXTENSIONS AND NOT CMAKE_CROSSCOMPILING)
             #endif
             return 0;
         }"
-        cpu_x86)
-
-    if (cpu_x86)
+        CPU_X86)
+    if (CPU_X86)
         set(ENABLE_X86_VECTOR_EXTENSIONS ON)
 
         cmake_push_check_state()
         set(CMAKE_REQUIRED_FLAGS -Werror)
-        check_cxx_compiler_flag(-march=native march_native)
+        check_cxx_compiler_flag(-march=native MARCH_NATIVE)
         cmake_pop_check_state()
 
-        if (march_native)
+        if (MARCH_NATIVE)
             # -march=native required for AVX2/AVX512 on x86
-            set(NATIVE_FLAG -march=native)
+            set(NATIVE_FLAG "-march=native")
         endif()
     endif()
 endif()
@@ -113,69 +109,64 @@ if(ENABLE_X86_VECTOR_EXTENSIONS)
     endif()
 endif()
 
-# Check if CPU supports AVX512/AVX2/SSE2 #######################
+# Resolve any "auto" supported vector types ##################
+cmake_push_check_state()
+set(CMAKE_REQUIRED_FLAGS "${NATIVE_FLAG}")
 
-if(LIBDIVIDE_AVX512)
-    set(LIBDIVIDE_VECTOR_EXT -DLIBDIVIDE_AVX512)
-elseif(LIBDIVIDE_AVX2)
-    set(LIBDIVIDE_VECTOR_EXT -DLIBDIVIDE_AVX2)
-elseif(LIBDIVIDE_SSE2)
-    set(LIBDIVIDE_VECTOR_EXT -DLIBDIVIDE_SSE2)
-elseif(ENABLE_X86_VECTOR_EXTENSIONS)
+# AVX512
+if (NOT LIBDIVIDE_AVX512 STREQUAL "AUTO")
+    set(LIBDIVIDE_AVX512_ENABLED "${LIBDIVIDE_AVX512}")
+else()
+    check_cxx_source_compiles("
+                #include <immintrin.h>
+                int main()
+                {
+                    __m512i a = _mm512_setzero_si512();
+                    return *(int *)&a;
+                }"
+                LIBDIVIDE_AVX512_ENABLED)
+endif()
 
-    cmake_push_check_state()
-    if(march_native)
-        set(CMAKE_REQUIRED_FLAGS "-march=native")
-    endif()
+# AVX2
+if (NOT LIBDIVIDE_AVX2 STREQUAL "AUTO")
+    set(LIBDIVIDE_AVX2_ENABLED "${LIBDIVIDE_AVX2}")
+else()
+    check_cxx_source_compiles("
+                #include <immintrin.h>
+                int main()
+                {
+                    __m256i a = _mm256_setzero_si256();
+                    return *(int *)&a;
+                }"
+                LIBDIVIDE_AVX2_ENABLED)
+endif()
 
-    check_cxx_source_runs("
-        #include <immintrin.h>
-        int main()
-        {
-            __m512i a = _mm512_set_epi32(1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0);
-            __m512i b = _mm512_set_epi32(0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1);
-            __m512i c = _mm512_add_epi32(a, b);
-            __m512i d = _mm512_srai_epi32(c, 23);
-            d = _mm512_shuffle_epi32(d, (_MM_PERM_ENUM) 0xB1);
-            return 0;
-        }"
-        avx512)
-
-    if(avx512)
-        set(LIBDIVIDE_VECTOR_EXT -DLIBDIVIDE_AVX512)
-    else()
-        check_cxx_source_runs("
-            #include <immintrin.h>
-            int main()
-            {
-                __m256i a = _mm256_set_epi32(1, 0, 1, 0, 1, 0, 1, 0);
-                __m256i b = _mm256_set_epi32(0, 1, 0, 1, 0, 1, 0, 1);
-                b = _mm256_add_epi32(a, b);
-                return 0;
-            }"
-            avx2)
-
-        if(avx2)
-            set(LIBDIVIDE_VECTOR_EXT -DLIBDIVIDE_AVX2)
-        else()
-            check_cxx_source_runs("
+# SSE2
+if (NOT LIBDIVIDE_SSE2 STREQUAL "AUTO")
+    set(LIBDIVIDE_SSE2_ENABLED "${LIBDIVIDE_SSE2}")
+else()
+    check_cxx_source_compiles("
                 #include <emmintrin.h>
                 int main()
                 {
-                    __m128i a = _mm_set_epi32(1, 0, 1, 0);
-                    __m128i b = _mm_set_epi32(0, 1, 0, 1);
-                    b = _mm_add_epi32(a, b);
-                    return 0;
+                    __m128i a = _mm_setzero_si128();
+                    return *(int *)&a;
                 }"
-                sse2)
+                LIBDIVIDE_SSE2_ENABLED)
+endif()
+cmake_pop_check_state()
 
-            if(sse2)
-                set(LIBDIVIDE_VECTOR_EXT -DLIBDIVIDE_SSE2)
-            endif()
-        endif()
-    endif()
 
-    cmake_pop_check_state()
+# Populate LIBDIVIDE_VECTOR_EXT ##################
+set(LIBDIVIDE_VECTOR_EXT "")
+if(LIBDIVIDE_AVX512_ENABLED)
+    list(APPEND LIBDIVIDE_VECTOR_EXT "LIBDIVIDE_AVX512")
+endif()
+if(LIBDIVIDE_AVX2_ENABLED)
+    list(APPEND LIBDIVIDE_VECTOR_EXT "LIBDIVIDE_AVX2")
+endif()
+if(LIBDIVIDE_SSE2_ENABLED)
+    list(APPEND LIBDIVIDE_VECTOR_EXT "LIBDIVIDE_SSE2")
 endif()
 
 # libdivide header-only library target #########################
@@ -223,7 +214,7 @@ if (BUILD_TESTS)
     find_package(Threads REQUIRED QUIET)
 
     add_executable(tester test/tester.cpp)
-    add_executable(benchmark test/benchmark.c)
+    add_executable(benchmark test/benchmark.cpp)
     add_executable(benchmark_branchfree test/benchmark_branchfree.cpp)
 
     target_link_libraries(tester libdivide Threads::Threads)
@@ -245,6 +236,10 @@ if (BUILD_TESTS)
     enable_testing()
     add_test(tester tester)
     add_test(benchmark_branchfree benchmark_branchfree)
+
+    # cmake won't actually build the tests before it tries to run them
+    add_test(build_tests "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target tester benchmark_branchfree)
+    set_tests_properties(tester benchmark_branchfree PROPERTIES DEPENDS build_tests)
 endif()
 
 # Build the fuzzers (requires clang) ###########################

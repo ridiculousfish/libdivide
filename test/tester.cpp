@@ -76,7 +76,7 @@ private:
         return result;
     }
 
-    template<int ALGO>
+    template<Branching ALGO>
     void test_one(T numer, T denom, const divider<T, ALGO>& the_divider) {
         // Don't crash with INT_MIN / -1
         // INT_MIN / -1 is undefined behavior in C/C++
@@ -97,34 +97,19 @@ private:
         }
     }
 
-#if defined(LIBDIVIDE_AVX512) || \
-    defined(LIBDIVIDE_AVX2) || \
-    defined(LIBDIVIDE_SSE2)   
-
-#if defined(LIBDIVIDE_AVX512)
-    #define VECTOR_TYPE __m512i
-    #define VECTOR_LOAD _mm512_loadu_si512
-#elif defined(LIBDIVIDE_AVX2)
-    #define VECTOR_TYPE __m256i
-    #define VECTOR_LOAD _mm256_loadu_si256
-#elif defined(LIBDIVIDE_SSE2)
-    #define VECTOR_TYPE __m128i
-    #define VECTOR_LOAD _mm_loadu_si128
-#endif
-
-    template<int ALGO>
-    void test_16(const T *numers, T denom, const divider<T, ALGO> & the_divider) {
+    template<typename VecType, Branching ALGO>
+    void test_vec(const T *numers, T denom, const divider<T, ALGO> &div) {
         // Align memory to 64 byte boundary for AVX512
         char mem[16 * sizeof(T) + 64];
         size_t offset = 64 - (size_t)&mem % 64;
         T* results = (T*) &mem[offset];
 
-        size_t iters = 64 / sizeof(VECTOR_TYPE);
-        size_t size = sizeof(VECTOR_TYPE) / sizeof(T);
+        size_t iters = 64 / sizeof(VecType);
+        size_t size = sizeof(VecType) / sizeof(T);
 
         for (size_t j = 0; j < iters; j++, numers += size) {
-            VECTOR_TYPE x = VECTOR_LOAD((const VECTOR_TYPE*) numers);
-            VECTOR_TYPE resultVector = x / the_divider;
+            VecType x = *((const VecType*) numers);
+            VecType resultVector = x / div;
             results = (T*) &resultVector;
 
             for (size_t i = 0; i < size; i++) {
@@ -141,16 +126,15 @@ private:
                 else {
                     #if 0
                         ostringstream oss;
-                        oss << "Vector success for: " << numer << " / " << denom << " = " << result << endl;
+                        oss << "vec" << (CHAR_BIT * sizeof(VecType)) << " success for: " << numer << " / " << denom << " = " << result << endl;
                         cout << oss.str();
                     #endif
                 }
             }
         }
     }
-#endif
 
-    template<int ALGO>
+    template<Branching ALGO>
     void test_many(T denom) {
         // Don't try dividing by 1 with unsigned branchfree
         if (ALGO == BRANCHFREE && 
@@ -171,7 +155,7 @@ private:
         T min = limits::min();
         T max = limits::max();
 
-        vector<T> edgeCases = {
+        static const T edgeCases[] = {
             0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
             10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
             20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
@@ -231,10 +215,14 @@ private:
             for (size_t j = 0; j < 16; j++) {
                 test_one(numers[j], denom, the_divider);
             }
-#if defined(LIBDIVIDE_AVX512) || \
-    defined(LIBDIVIDE_AVX2) || \
-    defined(LIBDIVIDE_SSE2)   
-            test_16(numers, denom, the_divider);
+#ifdef LIBDIVIDE_SSE2
+            test_vec<__m128i>(numers, denom, the_divider);
+#endif
+#ifdef LIBDIVIDE_AVX2
+            test_vec<__m256i>(numers, denom, the_divider);
+#endif
+#ifdef LIBDIVIDE_AVX512
+            test_vec<__m512i>(numers, denom, the_divider);
 #endif
         }
     }

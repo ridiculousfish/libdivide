@@ -9,7 +9,7 @@ for clarity the ```libdivide``` namespace is omitted in the code sections below.
 // This is the main divider class for use by the user (C++ API).
 // The actual division algorithm is selected using the dispatcher struct
 // based on the integer and algorithm template parameters.
-template<typename T, int ALGO = BRANCHFULL>
+template<typename T, Branching ALGO = BRANCHFULL>
 class divider {
 public:
     // Generate a libdivide divisor for d

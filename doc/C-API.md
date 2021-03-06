@@ -40,16 +40,16 @@ uint64_t libdivide_u64_branchfree_do(uint64_t numer, const struct libdivide_u64_
 
 ```C
 /* libdivide SSE2 division */
-__m128i libdivide_u32_do_vector(__m128i numers, const struct libdivide_u32_t *denom);
-__m128i libdivide_s32_do_vector(__m128i numers, const struct libdivide_s32_t *denom);
-__m128i libdivide_u64_do_vector(__m128i numers, const struct libdivide_u64_t *denom);
-__m128i libdivide_s64_do_vector(__m128i numers, const struct libdivide_s64_t *denom);
+__m128i libdivide_u32_do_vec128(__m128i numers, const struct libdivide_u32_t *denom);
+__m128i libdivide_s32_do_vec128(__m128i numers, const struct libdivide_s32_t *denom);
+__m128i libdivide_u64_do_vec128(__m128i numers, const struct libdivide_u64_t *denom);
+__m128i libdivide_s64_do_vec128(__m128i numers, const struct libdivide_s64_t *denom);
 
 /* libdivide SSE2 branchfree division */
-__m128i libdivide_u32_branchfree_do_vector(__m128i numers, const struct libdivide_u32_branchfree_t *denom);
-__m128i libdivide_s32_branchfree_do_vector(__m128i numers, const struct libdivide_s32_branchfree_t *denom);
-__m128i libdivide_u64_branchfree_do_vector(__m128i numers, const struct libdivide_u64_branchfree_t *denom);
-__m128i libdivide_s64_branchfree_do_vector(__m128i numers, const struct libdivide_s64_branchfree_t *denom);
+__m128i libdivide_u32_branchfree_do_vec128(__m128i numers, const struct libdivide_u32_branchfree_t *denom);
+__m128i libdivide_s32_branchfree_do_vec128(__m128i numers, const struct libdivide_s32_branchfree_t *denom);
+__m128i libdivide_u64_branchfree_do_vec128(__m128i numers, const struct libdivide_u64_branchfree_t *denom);
+__m128i libdivide_s64_branchfree_do_vec128(__m128i numers, const struct libdivide_s64_branchfree_t *denom);
 ```
 
 You need to define ```LIBDIVIDE_SSE2``` to enable SSE2 vector division.
@@ -58,16 +58,16 @@ You need to define ```LIBDIVIDE_SSE2``` to enable SSE2 vector division.
 
 ```C
 /* libdivide AVX2 division */
-__m256i libdivide_u32_do_vector(__m256i numers, const struct libdivide_u32_t *denom);
-__m256i libdivide_s32_do_vector(__m256i numers, const struct libdivide_s32_t *denom);
-__m256i libdivide_u64_do_vector(__m256i numers, const struct libdivide_u64_t *denom);
-__m256i libdivide_s64_do_vector(__m256i numers, const struct libdivide_s64_t *denom);
+__m256i libdivide_u32_do_vec256(__m256i numers, const struct libdivide_u32_t *denom);
+__m256i libdivide_s32_do_vec256(__m256i numers, const struct libdivide_s32_t *denom);
+__m256i libdivide_u64_do_vec256(__m256i numers, const struct libdivide_u64_t *denom);
+__m256i libdivide_s64_do_vec256(__m256i numers, const struct libdivide_s64_t *denom);
 
 /* libdivide AVX2 branchfree division */
-__m256i libdivide_u32_branchfree_do_vector(__m256i numers, const struct libdivide_u32_branchfree_t *denom);
-__m256i libdivide_s32_branchfree_do_vector(__m256i numers, const struct libdivide_s32_branchfree_t *denom);
-__m256i libdivide_u64_branchfree_do_vector(__m256i numers, const struct libdivide_u64_branchfree_t *denom);
-__m256i libdivide_s64_branchfree_do_vector(__m256i numers, const struct libdivide_s64_branchfree_t *denom);
+__m256i libdivide_u32_branchfree_do_vec256(__m256i numers, const struct libdivide_u32_branchfree_t *denom);
+__m256i libdivide_s32_branchfree_do_vec256(__m256i numers, const struct libdivide_s32_branchfree_t *denom);
+__m256i libdivide_u64_branchfree_do_vec256(__m256i numers, const struct libdivide_u64_branchfree_t *denom);
+__m256i libdivide_s64_branchfree_do_vec256(__m256i numers, const struct libdivide_s64_branchfree_t *denom);
 ```
 
 You need to define ```LIBDIVIDE_AVX2``` to enable AVX2 vector division.
@@ -76,16 +76,16 @@ You need to define ```LIBDIVIDE_AVX2``` to enable AVX2 vector division.
 
 ```C
 /* libdivide AVX512 division */
-__m512i libdivide_u32_do_vector(__m512i numers, const struct libdivide_u32_t *denom);
-__m512i libdivide_s32_do_vector(__m512i numers, const struct libdivide_s32_t *denom);
-__m512i libdivide_u64_do_vector(__m512i numers, const struct libdivide_u64_t *denom);
-__m512i libdivide_s64_do_vector(__m512i numers, const struct libdivide_s64_t *denom);
+__m512i libdivide_u32_do_vec512(__m512i numers, const struct libdivide_u32_t *denom);
+__m512i libdivide_s32_do_vec512(__m512i numers, const struct libdivide_s32_t *denom);
+__m512i libdivide_u64_do_vec512(__m512i numers, const struct libdivide_u64_t *denom);
+__m512i libdivide_s64_do_vec512(__m512i numers, const struct libdivide_s64_t *denom);
 
 /* libdivide AVX512 branchfree division */
-__m512i libdivide_u32_branchfree_do_vector(__m512i numers, const struct libdivide_u32_branchfree_t *denom);
-__m512i libdivide_s32_branchfree_do_vector(__m512i numers, const struct libdivide_s32_branchfree_t *denom);
-__m512i libdivide_u64_branchfree_do_vector(__m512i numers, const struct libdivide_u64_branchfree_t *denom);
-__m512i libdivide_s64_branchfree_do_vector(__m512i numers, const struct libdivide_s64_branchfree_t *denom);
+__m512i libdivide_u32_branchfree_do_vec512(__m512i numers, const struct libdivide_u32_branchfree_t *denom);
+__m512i libdivide_s32_branchfree_do_vec512(__m512i numers, const struct libdivide_s32_branchfree_t *denom);
+__m512i libdivide_u64_branchfree_do_vec512(__m512i numers, const struct libdivide_u64_branchfree_t *denom);
+__m512i libdivide_s64_branchfree_do_vec512(__m512i numers, const struct libdivide_s64_branchfree_t *denom);
 ```
 
 You need to define ```LIBDIVIDE_AVX512``` to enable AVX512 vector division.
