@@ -8,8 +8,6 @@
 // division to hardware division. It may take a long time to run, but it
 // will output as soon as it finds a discrepancy.
 
-#include "libdivide.h"
-
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
@@ -20,12 +18,13 @@
 #include <type_traits>
 #include <vector>
 
+#include "libdivide.h"
+
 using namespace libdivide;
 
-template<typename T>
-class DivideTest
-{
-private:
+template <typename T>
+class DivideTest {
+   private:
     using UT = typename std::make_unsigned<T>::type;
     using limits = std::numeric_limits<T>;
     std::string name;
@@ -50,13 +49,12 @@ private:
         }
 
         // The algorithm above generates mostly positive numbers.
-        // Hence convert 50% of all values to negative. 
+        // Hence convert 50% of all values to negative.
         if (limits::is_signed) {
-            if (seed % 2)
-                return -(T) rand_n;
+            if (seed % 2) return -(T)rand_n;
         }
 
-        return (T) rand_n;
+        return (T)rand_n;
     }
 
     T random_denominator() {
@@ -75,13 +73,11 @@ private:
         return result;
     }
 
-    template<Branching ALGO>
-    void test_one(T numer, T denom, const divider<T, ALGO>& the_divider) {
+    template <Branching ALGO>
+    void test_one(T numer, T denom, const divider<T, ALGO> &the_divider) {
         // Don't crash with INT_MIN / -1
         // INT_MIN / -1 is undefined behavior in C/C++
-        if (limits::is_signed && 
-            numer == limits::min() && 
-            denom == T(-1)) {
+        if (limits::is_signed && numer == limits::min() && denom == T(-1)) {
             return;
         }
 
@@ -89,25 +85,26 @@ private:
         T result = numer / the_divider;
 
         if (result != expect) {
-            std::cerr << "Failure for " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " = " << expect << ", but got " << result << std::endl;
+            std::cerr << "Failure for " << testcase_name(ALGO) << ": " << numer << " / " << denom
+                      << " = " << expect << ", but got " << result << std::endl;
             exit(1);
         }
     }
 
-    template<typename VecType, Branching ALGO>
+    template <typename VecType, Branching ALGO>
     void test_vec(const T *numers, T denom, const divider<T, ALGO> &div) {
         // Align memory to 64 byte boundary for AVX512
         char mem[16 * sizeof(T) + 64];
         size_t offset = 64 - (size_t)&mem % 64;
-        T* results = (T*) &mem[offset];
+        T *results = (T *)&mem[offset];
 
         size_t iters = 64 / sizeof(VecType);
         size_t size = sizeof(VecType) / sizeof(T);
 
         for (size_t j = 0; j < iters; j++, numers += size) {
-            VecType x = *((const VecType*) numers);
+            VecType x = *((const VecType *)numers);
             VecType resultVector = x / div;
-            results = (T*) &resultVector;
+            results = (T *)&resultVector;
 
             for (size_t i = 0; i < size; i++) {
                 T numer = numers[i];
@@ -115,49 +112,45 @@ private:
                 T expect = numer / denom;
 
                 if (result != expect) {
-                    std::cerr << "Vector failure for: " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " = " << expect << ", but got " << result << std::endl;
+                    std::cerr << "Vector failure for: " << testcase_name(ALGO) << ": " << numer
+                              << " / " << denom << " = " << expect << ", but got " << result
+                              << std::endl;
                     exit(1);
-                }
-                else {
-                    #if 0
+                } else {
+#if 0
                         std::cout << "vec" << (CHAR_BIT * sizeof(VecType)) << " success for: " << numer << " / " << denom << " = " << result << std::endl;
-                    #endif
+#endif
                 }
             }
         }
     }
 
-    template<Branching ALGO>
+    template <Branching ALGO>
     void test_many(T denom) {
         // Don't try dividing by 1 with unsigned branchfree
-        if (ALGO == BRANCHFREE && 
-            std::is_unsigned<T>::value &&
-            denom == 1) {
+        if (ALGO == BRANCHFREE && std::is_unsigned<T>::value && denom == 1) {
             return;
         }
 
         const divider<T, ALGO> the_divider = divider<T, ALGO>(denom);
-        T recovered = the_divider.recover(); 
+        T recovered = the_divider.recover();
         if (recovered != denom) {
-            std::cerr << "Failed to recover divisor for " << testcase_name(ALGO) << ": "<< denom << ", but got " << recovered << std::endl;
+            std::cerr << "Failed to recover divisor for " << testcase_name(ALGO) << ": " << denom
+                      << ", but got " << recovered << std::endl;
             exit(1);
         }
 
         T min = limits::min();
         T max = limits::max();
 
-        static const T edgeCases[] = {
-            0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
-            10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-            20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
-            30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
-            40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
-            123, 1232, 36847, 506838, 3000003, 70000007,
-            max, max-1, max-2, max-3, max-4, max-5, max-3213, max-2453242, max-432234231,
-            min, min+1, min+2, min+3, min+4, min+5, min+3213, min+2453242, min+432234231,
-            max/2, max/2+1, max/2-1, max/3, max/3+1, max/3-1, max/4, max/4+1, max/4-1,
-            min/2, min/2+1, min/2-1, min/3, min/3+1, min/3-1, min/4, max/4+1, min/4-1
-        };
+        static const T edgeCases[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
+            18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
+            40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 123, 1232, 36847, 506838, 3000003, 70000007,
+            max, max - 1, max - 2, max - 3, max - 4, max - 5, max - 3213, max - 2453242,
+            max - 432234231, min, min + 1, min + 2, min + 3, min + 4, min + 5, min + 3213,
+            min + 2453242, min + 432234231, max / 2, max / 2 + 1, max / 2 - 1, max / 3, max / 3 + 1,
+            max / 3 - 1, max / 4, max / 4 + 1, max / 4 - 1, min / 2, min / 2 + 1, min / 2 - 1,
+            min / 3, min / 3 + 1, min / 3 - 1, min / 4, max / 4 + 1, min / 4 - 1};
 
         for (T numerator : edgeCases) {
             test_one(numerator, denom, the_divider);
@@ -189,14 +182,14 @@ private:
 
         // test all bits set:
         // 11111111, 11111110, 11111100, ...
-        for (UT bits = (UT) ~0ull; bits != 0; bits <<= 1) {
-            test_one((T) bits, denom, the_divider);
+        for (UT bits = (UT)~0ull; bits != 0; bits <<= 1) {
+            test_one((T)bits, denom, the_divider);
         }
 
         // Align memory to 64 byte boundary for AVX512
         char mem[16 * sizeof(T) + 64];
         size_t offset = 64 - (size_t)&mem % 64;
-        T* numers = (T*) &mem[offset];
+        T *numers = (T *)&mem[offset];
 
         // test random numerators
         for (size_t i = 0; i < 10000; i += 16) {
@@ -218,15 +211,13 @@ private:
         }
     }
 
-public:
-    DivideTest(const std::string &n) :
-        name(n)
-    {
+   public:
+    DivideTest(const std::string &n) : name(n) {
         std::random_device randomDevice;
         std::mt19937 randGen(randomDevice());
         std::uniform_int_distribution<uint32_t> randDist(1, std::numeric_limits<uint32_t>::max());
         seed = randDist(randGen);
-        rand_n = (UT) randDist(randGen);
+        rand_n = (UT)randDist(randGen);
     }
 
     void run() {
@@ -265,9 +256,9 @@ public:
 
         // test all bits set:
         // 11111111, 11111110, 11111100, ...
-        for (UT bits = (UT) ~0ull; bits != 0; bits <<= 1) {
-            test_many<BRANCHFULL>((T) bits);
-            test_many<BRANCHFREE>((T) bits);
+        for (UT bits = (UT)~0ull; bits != 0; bits <<= 1) {
+            test_many<BRANCHFULL>((T)bits);
+            test_many<BRANCHFREE>((T)bits);
         }
 
         // Test random denominators
@@ -292,27 +283,33 @@ void run_test(const char *name) {
     dt.run();
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     const TestType test_types[] = {type_s32, type_u32, type_s64, type_u64};
     bool default_do_test = (argc <= 1);
     std::vector<bool> do_tests(4, default_do_test);
 
     for (int i = 1; i < argc; i++) {
         const std::string arg(argv[i]);
-        if (arg == "s32") do_tests[type_s32] = true;
-        else if (arg == "u32") do_tests[type_u32] = true;
-        else if (arg == "s64") do_tests[type_s64] = true;
-        else if (arg == "u64") do_tests[type_u64] = true;
+        if (arg == "s32")
+            do_tests[type_s32] = true;
+        else if (arg == "u32")
+            do_tests[type_u32] = true;
+        else if (arg == "s64")
+            do_tests[type_s64] = true;
+        else if (arg == "u64")
+            do_tests[type_u64] = true;
         else {
-            std::cout << "Usage: tester [OPTIONS]\n"
-                    "\n"
-                    "You can pass the tester program one or more of the following options:\n"
-                    "u32, s32, u64, s64 or run it without arguments to test all four.\n"
-                    "The tester is multithreaded so it can test multiple cases simultaneously.\n"
-                    "The tester will verify the correctness of libdivide via a set of\n"
-                    "randomly chosen denominators, by comparing the result of libdivide's\n"
-                    "division to hardware division. It may take a long time to run, but it\n"
-                    "will output as soon as it finds a discrepancy." << std::endl;
+            std::cout
+                << "Usage: tester [OPTIONS]\n"
+                   "\n"
+                   "You can pass the tester program one or more of the following options:\n"
+                   "u32, s32, u64, s64 or run it without arguments to test all four.\n"
+                   "The tester is multithreaded so it can test multiple cases simultaneously.\n"
+                   "The tester will verify the correctness of libdivide via a set of\n"
+                   "randomly chosen denominators, by comparing the result of libdivide's\n"
+                   "division to hardware division. It may take a long time to run, but it\n"
+                   "will output as soon as it finds a discrepancy."
+                << std::endl;
             exit(1);
         }
     }

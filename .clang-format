@@ -1,0 +1,8 @@
+---
+Language:        Cpp
+BasedOnStyle:  Google
+ColumnLimit:     100
+AlignAfterOpenBracket: false
+IndentWidth: 4
+...
+

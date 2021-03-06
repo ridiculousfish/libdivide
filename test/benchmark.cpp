@@ -356,13 +356,13 @@ NOINLINE struct TestResult test_one_s64(int64_t d, const int64_t *data) {
 
 static void report_header(void) {
     printf("%6s%9s%8s%8s%8s%8s%8s%7s\n", "#", "system", "scalar", "scl_bf", "vector", "vec_bf",
-           "gener", "algo");
+        "gener", "algo");
 }
 
 static void report_result(const char *input, struct TestResult result) {
     printf("%6s%8.3f%8.3f%8.3f%8.3f%8.3f%9.3f%4d\n", input, result.hardware_time, result.base_time,
-           result.branchfree_time, result.vector_time, result.vector_branchfree_time,
-           result.gen_time, result.algo);
+        result.branchfree_time, result.vector_time, result.vector_branchfree_time, result.gen_time,
+        result.algo);
 }
 
 static void test_many_u32(const uint32_t *data) {
