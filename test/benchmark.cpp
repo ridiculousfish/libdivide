@@ -29,19 +29,19 @@
 #endif
 
 #if defined(LIBDIVIDE_AVX512)
-#define VECTOR_TYPE __m512i
+#define x86_VECTOR_TYPE __m512i
 #define SETZERO_SI _mm512_setzero_si512
 #define LOAD_SI _mm512_load_si512
 #define ADD_EPI64 _mm512_add_epi64
 #define ADD_EPI32 _mm512_add_epi32
 #elif defined(LIBDIVIDE_AVX2)
-#define VECTOR_TYPE __m256i
+#define x86_VECTOR_TYPE __m256i
 #define SETZERO_SI _mm256_setzero_si256
 #define LOAD_SI _mm256_load_si256
 #define ADD_EPI64 _mm256_add_epi64
 #define ADD_EPI32 _mm256_add_epi32
 #elif defined(LIBDIVIDE_SSE2)
-#define VECTOR_TYPE __m128i
+#define x86_VECTOR_TYPE __m128i
 #define SETZERO_SI _mm_setzero_si128
 #define LOAD_SI _mm_load_si128
 #define ADD_EPI64 _mm_add_epi64
@@ -107,13 +107,13 @@ NOINLINE uint64_t sum_quotients(const IntT *vals, Divisor div) {
     return (uint64_t)sum;
 }
 
-#ifdef VECTOR_TYPE
+#ifdef x86_VECTOR_TYPE
 template <typename IntT, typename Divisor>
 NOINLINE uint64_t sum_quotients_vec(const IntT *vals, Divisor div) {
-    size_t count = sizeof(VECTOR_TYPE) / sizeof(IntT);
-    VECTOR_TYPE sumX4 = SETZERO_SI();
+    size_t count = sizeof(x86_VECTOR_TYPE) / sizeof(IntT);
+    x86_VECTOR_TYPE sumX4 = SETZERO_SI();
     for (size_t iter = 0; iter < iters; iter += count) {
-        VECTOR_TYPE numers = LOAD_SI((const VECTOR_TYPE *)&vals[iter]);
+        x86_VECTOR_TYPE numers = LOAD_SI((const x86_VECTOR_TYPE *)&vals[iter]);
         numers = numers / div;
         if (sizeof(IntT) == 4) {
             sumX4 = ADD_EPI32(sumX4, numers);
@@ -130,6 +130,85 @@ NOINLINE uint64_t sum_quotients_vec(const IntT *vals, Divisor div) {
     }
     return (uint64_t)sum;
 }
+#elif defined(LIBDIVIDE_NEON)
+
+template <typename Divisor>
+NOINLINE uint64_t sum_quotients_vec(const uint32_t *vals, Divisor div) {
+    typedef uint32_t IntT;
+    typedef typename NeonVecFor<IntT>::type NeonVectorType;
+    size_t count = sizeof(NeonVectorType) / sizeof(IntT);
+    NeonVectorType sumX4 = vdupq_n_u32(0);
+    for (size_t iter = 0; iter < iters; iter += count) {
+        NeonVectorType numers = *(NeonVectorType *)&vals[iter];
+        numers = numers / div;
+        sumX4 = vaddq_u32(sumX4, numers);
+    }
+    const IntT *comps = (const IntT *)&sumX4;
+    IntT sum = 0;
+    for (size_t i = 0; i < count; i++) {
+        sum += comps[i];
+    }
+    return (uint64_t)sum;
+}
+
+template <typename Divisor>
+NOINLINE int32_t sum_quotients_vec(const int32_t *vals, Divisor div) {
+    typedef int32_t IntT;
+    typedef typename NeonVecFor<IntT>::type NeonVectorType;
+    size_t count = sizeof(NeonVectorType) / sizeof(IntT);
+    NeonVectorType sumX4 = vdupq_n_s32(0);
+    for (size_t iter = 0; iter < iters; iter += count) {
+        NeonVectorType numers = *(NeonVectorType *)&vals[iter];
+        numers = numers / div;
+        sumX4 = vaddq_s32(sumX4, numers);
+    }
+    const IntT *comps = (const IntT *)&sumX4;
+    IntT sum = 0;
+    for (size_t i = 0; i < count; i++) {
+        sum += comps[i];
+    }
+    return (uint64_t)sum;
+}
+
+template <typename Divisor>
+NOINLINE uint64_t sum_quotients_vec(const uint64_t *vals, Divisor div) {
+    typedef uint64_t IntT;
+    typedef typename NeonVecFor<IntT>::type NeonVectorType;
+    size_t count = sizeof(NeonVectorType) / sizeof(IntT);
+    NeonVectorType sumX4 = vdupq_n_u64(0);
+    for (size_t iter = 0; iter < iters; iter += count) {
+        NeonVectorType numers = *(NeonVectorType *)&vals[iter];
+        numers = numers / div;
+        sumX4 = vaddq_u64(sumX4, numers);
+    }
+    const IntT *comps = (const IntT *)&sumX4;
+    IntT sum = 0;
+    for (size_t i = 0; i < count; i++) {
+        sum += comps[i];
+    }
+    return (uint64_t)sum;
+}
+
+template <typename Divisor>
+NOINLINE uint64_t sum_quotients_vec(const int64_t *vals, Divisor div) {
+    typedef int64_t IntT;
+    typedef typename NeonVecFor<IntT>::type NeonVectorType;
+    size_t count = sizeof(NeonVectorType) / sizeof(IntT);
+    const uint64x2_t zeros = vdupq_n_u64(0);
+    NeonVectorType sumX4 = *reinterpret_cast<const NeonVectorType *>(&zeros);
+    for (size_t iter = 0; iter < iters; iter += count) {
+        NeonVectorType numers = *(NeonVectorType *)&vals[iter];
+        numers = numers / div;
+        sumX4 = vaddq_s64(sumX4, numers);
+    }
+    const IntT *comps = (const IntT *)&sumX4;
+    IntT sum = 0;
+    for (size_t i = 0; i < count; i++) {
+        sum += comps[i];
+    }
+    return (uint64_t)sum;
+}
+
 #endif
 
 // noinline to force compiler to emit this
@@ -183,7 +262,7 @@ NOINLINE static struct time_result time_function(const IntT *vals, IntT denom) {
         case func_scalar_branchfree:
             result = sum_quotients(vals, div_bfree);
             break;
-#ifdef VECTOR_TYPE
+#if defined(x86_VECTOR_TYPE) || defined(LIBDIVIDE_NEON)
         case func_vec_branchfull:
             result = sum_quotients_vec(vals, div_bfull);
             break;
@@ -257,7 +336,7 @@ NOINLINE struct TestResult test_one(const IntT *vals, IntT denom) {
             my_times_branchfree[iter] = tresult.time;
             CHECK(tresult.result, expected);
         }
-#ifdef VECTOR_TYPE
+#if defined(VECTOR_TYPE) || defined(LIBDIVIDE_NEON)
         tresult = time_function<func_vec_branchfull>(vals, denom);
         my_times_vector[iter] = tresult.time;
         CHECK(tresult.result, expected);

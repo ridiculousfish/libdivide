@@ -4,6 +4,7 @@ project(libdivide C CXX)
 
 include(CheckCXXCompilerFlag)
 include(CheckCCompilerFlag)
+include(CheckCXXSourceCompiles)
 include(CheckCXXSourceRuns)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
@@ -13,13 +14,13 @@ include(CMakePushCheckState)
 
 option(BUILD_TESTS   "Build the test programs" ON)
 option(BUILD_FUZZERS "Build the fuzzers (requires clang)" OFF)
-option(ENABLE_VECTOR_EXTENSIONS "Enable CPU vector instructions for test programs" ON)
 
 # By default we automatically enable vectors supported by
 # the host CPU. You may also set these explicitly to OFF or ON.
 set(LIBDIVIDE_SSE2  AUTO CACHE STRING  "Enable SSE2 vector instructions")
 set(LIBDIVIDE_AVX2  AUTO CACHE STRING  "Enable AVX2 vector instructions")
 set(LIBDIVIDE_AVX512 AUTO CACHE STRING "Enable AVX512 vector instructions")
+set(LIBDIVIDE_NEON AUTO CACHE STRING "Enable ARM NEON vector instructions")
 
 # By default enable release mode ###############################
 
@@ -42,36 +43,51 @@ if("${BUILD_TYPE}" MATCHES DEBUG)
     set(LIBDIVIDE_ASSERTIONS -DLIBDIVIDE_ASSERTIONS_ON)
 endif()
 
+# Try to warn about bogus vector conversions ###################
+set(LIBDIVIDE_FLAGS)
+check_cxx_compiler_flag(-fno-lax-vector-conversions WARN_VEC_CONVERSIONS)
+if (WARN_VEC_CONVERSIONS)
+    list(APPEND LIBDIVIDE_FLAGS "-fno-lax-vector-conversions")
+endif()
+
+
 # Check if x86/x64 CPU  ########################################
 
 # Note that check_cxx_source_runs() must not be used when
 # cross-compiling otherwise the following error will occur:
 # CMake Error: TRY_RUN() invoked in cross-compiling mode, ...
 
-if (BUILD_TESTS AND ENABLE_VECTOR_EXTENSIONS AND NOT CMAKE_CROSSCOMPILING)
-    check_cxx_source_runs("
+if (BUILD_TESTS AND NOT CMAKE_CROSSCOMPILING)
+    check_cxx_source_compiles("
         int main()
         {
             #if !defined(__i386__) && \
                 !defined(__x86_64__) && \
                 !defined(_M_IX86) && \
                 !defined(_M_X64)
-                Compile error: not x86 CPU architecture
+                #error not x86 CPU architecture
             #endif
             return 0;
         }"
         CPU_X86)
-    if (CPU_X86)
-        set(ENABLE_X86_VECTOR_EXTENSIONS ON)
-
+    check_cxx_source_compiles("
+        #include <arm_neon.h>
+        int main()
+        {
+            #if !defined(__ARM_NEON)
+                #error not ARM NEON CPU architecture
+            #endif
+            return 0;
+        }"
+        CPU_ARM_NEON)
+    if (CPU_X86 OR CPU_ARM_NEON)
         cmake_push_check_state()
         set(CMAKE_REQUIRED_FLAGS -Werror)
         check_cxx_compiler_flag(-march=native MARCH_NATIVE)
         cmake_pop_check_state()
 
         if (MARCH_NATIVE)
-            # -march=native required for AVX2/AVX512 on x86
-            set(NATIVE_FLAG "-march=native")
+            list(APPEND LIBDIVIDE_FLAGS "-march=native")
         endif()
     endif()
 endif()
@@ -82,7 +98,7 @@ endif()
 # to prevent the compiler from vectorizing our scalar benchmarks
 # which would make the benchmark results less useful.
 
-if(ENABLE_X86_VECTOR_EXTENSIONS)
+if(CPU_X86 OR CPU_ARM_NEON)
     # first check the C++ compiler
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         check_cxx_compiler_flag("-fno-vectorize" fno_vectorize)
@@ -112,6 +128,20 @@ endif()
 # Resolve any "auto" supported vector types ##################
 cmake_push_check_state()
 set(CMAKE_REQUIRED_FLAGS "${NATIVE_FLAG}")
+
+# NEON
+if (NOT LIBDIVIDE_NEON STREQUAL "AUTO")
+    set(LIBDIVIDE_NEON_ENABLED "${LIBDIVIDE_NEON}")
+else()
+    check_cxx_source_compiles("
+                #include <arm_neon.h>
+                int main()
+                {
+                    int32x4_t a = vdupq_n_s32(0);
+                    return *(int *)&a;
+                }"
+                LIBDIVIDE_NEON_ENABLED)
+endif()
 
 # AVX512
 if (NOT LIBDIVIDE_AVX512 STREQUAL "AUTO")
@@ -159,6 +189,9 @@ cmake_pop_check_state()
 
 # Populate LIBDIVIDE_VECTOR_EXT ##################
 set(LIBDIVIDE_VECTOR_EXT "")
+if(LIBDIVIDE_NEON_ENABLED)
+    list(APPEND LIBDIVIDE_VECTOR_EXT "LIBDIVIDE_NEON")
+endif()
 if(LIBDIVIDE_AVX512_ENABLED)
     list(APPEND LIBDIVIDE_VECTOR_EXT "LIBDIVIDE_AVX512")
 endif()
@@ -221,9 +254,9 @@ if (BUILD_TESTS)
     target_link_libraries(benchmark libdivide)
     target_link_libraries(benchmark_branchfree libdivide)
 
-    target_compile_options(tester PRIVATE "${NATIVE_FLAG}" "${NO_VECTORIZE}")
-    target_compile_options(benchmark PRIVATE "${NATIVE_FLAG}" "${NO_VECTORIZE_C}")
-    target_compile_options(benchmark_branchfree PRIVATE "${NATIVE_FLAG}" "${NO_VECTORIZE}")
+    target_compile_options(tester PRIVATE "${LIBDIVIDE_FLAGS}" "${NO_VECTORIZE}")
+    target_compile_options(benchmark PRIVATE "${LIBDIVIDE_FLAGS}" "${NO_VECTORIZE_C}")
+    target_compile_options(benchmark_branchfree PRIVATE "${LIBDIVIDE_FLAGS}" "${NO_VECTORIZE}")
 
     target_compile_definitions(tester PRIVATE "${LIBDIVIDE_ASSERTIONS}" "${LIBDIVIDE_VECTOR_EXT}")
     target_compile_definitions(benchmark PRIVATE "${LIBDIVIDE_ASSERTIONS}" "${LIBDIVIDE_VECTOR_EXT}")

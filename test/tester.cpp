@@ -208,6 +208,9 @@ class DivideTest {
 #ifdef LIBDIVIDE_AVX512
             test_vec<__m512i>(numers, denom, the_divider);
 #endif
+#ifdef LIBDIVIDE_NEON
+            test_vec<typename NeonVecFor<T>::type>(numers, denom, the_divider);
+#endif
         }
     }
 
@@ -323,6 +326,9 @@ int main(int argc, char *argv[]) {
 #endif
 #if defined(LIBDIVIDE_AVX512)
     vecTypes += "avx512 ";
+#endif
+#if defined(LIBDIVIDE_NEON)
+    vecTypes += "neon ";
 #endif
     if (vecTypes.empty()) {
         vecTypes = "none ";
