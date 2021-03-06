@@ -347,14 +347,13 @@ static inline uint32_t libdivide_64_div_32_to_32(
 // uint {v}. The result must fit in 64 bits.
 // Returns the quotient directly and the remainder in *r
 static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v, uint64_t *r) {
+    // N.B. resist the temptation to use __uint128_t here.
+    // In LLVM compiler-rt, it performs a 128/128 -> 128 division which is many times slower than
+    // necessary. In gcc it's better but still slower than the divlu implementation, perhaps because
+    // it's not inlined.
 #if defined(LIBDIVIDE_X86_64) && defined(LIBDIVIDE_GCC_STYLE_ASM)
     uint64_t result;
     __asm__("divq %[v]" : "=a"(result), "=d"(*r) : [v] "r"(v), "a"(u0), "d"(u1));
-    return result;
-#elif defined(HAS_INT128_T) && defined(HAS_INT128_DIV)
-    __uint128_t n = ((__uint128_t)u1 << 64) | u0;
-    uint64_t result = (uint64_t)(n / v);
-    *r = (uint64_t)(n - result * (__uint128_t)v);
     return result;
 #else
     // Code taken from Hacker's Delight:
