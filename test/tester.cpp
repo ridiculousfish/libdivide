@@ -12,15 +12,14 @@
 
 #include <algorithm>
 #include <cstdlib>
-#include <future>
 #include <iostream>
 #include <limits>
 #include <random>
 #include <string>
-#include <sstream>
+#include <thread>
 #include <type_traits>
+#include <vector>
 
-using namespace std;
 using namespace libdivide;
 
 template<typename T>
@@ -90,9 +89,7 @@ private:
         T result = numer / the_divider;
 
         if (result != expect) {
-            ostringstream oss;
-            oss << "Failure for " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " = " << expect << ", but got " << result << endl;
-            cerr << oss.str();
+            std::cerr << "Failure for " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " = " << expect << ", but got " << result << std::endl;
             exit(1);
         }
     }
@@ -118,16 +115,12 @@ private:
                 T expect = numer / denom;
 
                 if (result != expect) {
-                    ostringstream oss;
-                    oss << "Vector failure for: " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " = " << expect << ", but got " << result << endl;
-                    cerr << oss.str();
+                    std::cerr << "Vector failure for: " << testcase_name(ALGO) << ": " <<  numer << " / " << denom << " = " << expect << ", but got " << result << std::endl;
                     exit(1);
                 }
                 else {
                     #if 0
-                        ostringstream oss;
-                        oss << "vec" << (CHAR_BIT * sizeof(VecType)) << " success for: " << numer << " / " << denom << " = " << result << endl;
-                        cout << oss.str();
+                        std::cout << "vec" << (CHAR_BIT * sizeof(VecType)) << " success for: " << numer << " / " << denom << " = " << result << std::endl;
                     #endif
                 }
             }
@@ -146,9 +139,7 @@ private:
         const divider<T, ALGO> the_divider = divider<T, ALGO>(denom);
         T recovered = the_divider.recover(); 
         if (recovered != denom) {
-            ostringstream oss;
-            oss << "Failed to recover divisor for " << testcase_name(ALGO) << ": "<< denom << ", but got " << recovered << endl;
-            cerr << oss.str();
+            std::cerr << "Failed to recover divisor for " << testcase_name(ALGO) << ": "<< denom << ", but got " << recovered << std::endl;
             exit(1);
         }
 
@@ -233,7 +224,7 @@ public:
     {
         std::random_device randomDevice;
         std::mt19937 randGen(randomDevice());
-        std::uniform_int_distribution<uint32_t> randDist(1, numeric_limits<uint32_t>::max());
+        std::uniform_int_distribution<uint32_t> randDist(1, std::numeric_limits<uint32_t>::max());
         seed = randDist(randGen);
         rand_n = (UT) randDist(randGen);
     }
@@ -288,87 +279,66 @@ public:
     }
 };
 
-void run_test(int idx) {
-    switch (idx) {
-        case 0:
-        {
-            std::string msg = "Testing int32_t\n"; 
-            cout << msg << flush;
-            DivideTest<int32_t> dt("s32");
-            dt.run();
-            break;
-        }   
-        case 1:
-        {
-            std::string msg = "Testing uint32_t\n"; 
-            cout << msg << flush;
-            DivideTest<uint32_t> dt("u32");
-            dt.run();
-            break;
-        }
-        case 2:
-        {
-            std::string msg = "Testing int64_t\n"; 
-            cout << msg << flush;
-            DivideTest<int64_t> dt("s64");
-            dt.run();
-            break;
-        }
-        case 3:
-        {
-            std::string msg = "Testing uint64_t\n"; 
-            cout << msg << flush;
-            DivideTest<uint64_t> dt("u64");
-            dt.run();
-            break;
-        }
-    }
+enum TestType {
+    type_s32,
+    type_u32,
+    type_s64,
+    type_u64,
+};
+
+template <typename T>
+void run_test(const char *name) {
+    DivideTest<T> dt(name);
+    dt.run();
 }
 
 int main(int argc, char* argv[]) {
-    vector<bool> is_test(4, false);
- 
-    if (argc == 1) {
-        // Test all
-        fill(is_test.begin(), is_test.end(), true);
-    }
-    else {
-        for (int i = 1; i < argc; i++) {
-            string arg(argv[i]);
+    const TestType test_types[] = {type_s32, type_u32, type_s64, type_u64};
+    bool default_do_test = (argc <= 1);
+    std::vector<bool> do_tests(4, default_do_test);
 
-            if (arg == "s32") is_test[0] = true;
-            else if (arg == "u32") is_test[1] = true;
-            else if (arg == "s64") is_test[2] = true;
-            else if (arg == "u64") is_test[3] = true;
-            else {
-                cout << "Usage: tester [OPTIONS]\n"
-                       "\n"
-                       "You can pass the tester program one or more of the following options:\n"
-                       "u32, s32, u64, s64 or run it without arguments to test all four.\n"
-                       "The tester is multithreaded so it can test multiple cases simultaneously.\n"
-                       "The tester will verify the correctness of libdivide via a set of\n"
-                       "randomly chosen denominators, by comparing the result of libdivide's\n"
-                       "division to hardware division. It may take a long time to run, but it\n"
-                       "will output as soon as it finds a discrepancy." << endl;
-                exit(1);
-            }
+    for (int i = 1; i < argc; i++) {
+        const std::string arg(argv[i]);
+        if (arg == "s32") do_tests[type_s32] = true;
+        else if (arg == "u32") do_tests[type_u32] = true;
+        else if (arg == "s64") do_tests[type_s64] = true;
+        else if (arg == "u64") do_tests[type_u64] = true;
+        else {
+            std::cout << "Usage: tester [OPTIONS]\n"
+                    "\n"
+                    "You can pass the tester program one or more of the following options:\n"
+                    "u32, s32, u64, s64 or run it without arguments to test all four.\n"
+                    "The tester is multithreaded so it can test multiple cases simultaneously.\n"
+                    "The tester will verify the correctness of libdivide via a set of\n"
+                    "randomly chosen denominators, by comparing the result of libdivide's\n"
+                    "division to hardware division. It may take a long time to run, but it\n"
+                    "will output as soon as it finds a discrepancy." << std::endl;
+            exit(1);
         }
     }
 
-    vector<future<void>> futures;
-    futures.reserve(4);
-
-    // Start 4 threads
-    for (int test_id = 0; test_id < 4; test_id++) {
-        if (is_test.at(test_id))
-            futures.emplace_back(async(launch::async, run_test, test_id));
+    // Run tests in threads.
+    std::vector<std::thread> test_threads;
+    if (do_tests[type_s32]) {
+        std::cout << "Testing int32_t\n";
+        test_threads.emplace_back(run_test<int32_t>, "s32");
+    }
+    if (do_tests[type_u32]) {
+        std::cout << "Testing uint32_t\n";
+        test_threads.emplace_back(run_test<uint32_t>, "u32");
+    }
+    if (do_tests[type_s64]) {
+        std::cout << "Testing int64_t\n";
+        test_threads.emplace_back(run_test<int64_t>, "s64");
+    }
+    if (do_tests[type_u64]) {
+        std::cout << "Testing int32_t\n";
+        test_threads.emplace_back(run_test<int32_t>, "s32");
+    }
+    for (auto &t : test_threads) {
+        t.join();
     }
 
-    // Wait until threads finish
-    for (auto &f : futures) {
-        f.get();
-    }
-
-    cout << "\nAll tests passed successfully!" << endl;
+    std::cout << "\nAll tests passed successfully!" << std::endl;
     return 0;
 }
