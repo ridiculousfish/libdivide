@@ -314,6 +314,22 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    std::string vecTypes = "";
+#if defined(LIBDIVIDE_SSE2)
+    vecTypes += "sse2 ";
+#endif
+#if defined(LIBDIVIDE_AVX2)
+    vecTypes += "avx2 ";
+#endif
+#if defined(LIBDIVIDE_AVX512)
+    vecTypes += "avx512 ";
+#endif
+    if (vecTypes.empty()) {
+        vecTypes = "none ";
+    }
+    vecTypes.back() = '\n';  // trailing space
+    std::cout << "Testing with SIMD ISAs: " << vecTypes;
+
     // Run tests in threads.
     std::vector<std::thread> test_threads;
     if (do_tests[type_s32]) {
