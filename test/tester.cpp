@@ -345,8 +345,8 @@ int main(int argc, char *argv[]) {
         test_threads.emplace_back(run_test<int64_t>, "s64");
     }
     if (do_tests[type_u64]) {
-        std::cout << "Testing int32_t\n";
-        test_threads.emplace_back(run_test<int32_t>, "s32");
+        std::cout << "Testing uint64_t\n";
+        test_threads.emplace_back(run_test<uint64_t>, "u64");
     }
     for (auto &t : test_threads) {
         t.join();
