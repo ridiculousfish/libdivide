@@ -36,6 +36,24 @@ int64_t  libdivide_s64_branchfree_do(int64_t numer, const struct libdivide_s64_b
 uint64_t libdivide_u64_branchfree_do(uint64_t numer, const struct libdivide_u64_branchfree_t *denom);
 ```
 
+## libdivide NEON vector division
+
+```C
+/* libdivide NEON division */
+uint32x4_t libdivide_u32_do_vec128(uint32x4_t numers, const struct libdivide_u32_t *denom);
+int32x4_t libdivide_s32_do_vec128(int32x4_t numers, const struct libdivide_s32_t *denom);
+uint64x2_t libdivide_u64_do_vec128(uint64x2_t numers, const struct libdivide_u64_t *denom);
+int64x2_t libdivide_s64_do_vec128(int64x2_t numers, const struct libdivide_s64_t *denom);
+
+/* libdivide NEON branchfree division */
+uint32x4_t libdivide_u32_branchfree_do_vec128(uint32x4_t numers, const struct libdivide_u32_branchfree_t *denom);
+int32x4_t libdivide_s32_branchfree_do_vec128(int32x4_t numers, const struct libdivide_s32_branchfree_t *denom);
+uint64x2_t libdivide_u64_branchfree_do_vec128(uint2x4_t numers, const struct libdivide_u64_branchfree_t *denom);
+int64x2_t libdivide_s64_branchfree_do_vec128(int64x2_t numers, const struct libdivide_s64_branchfree_t *denom);
+```
+
+You need to define ```LIBDIVIDE_NEON``` to enable NEON vector division.
+
 ## libdivide SSE2 vector division
 
 ```C
