@@ -287,7 +287,6 @@ void run_test(const char *name) {
 }
 
 int main(int argc, char *argv[]) {
-    const TestType test_types[] = {type_s32, type_u32, type_s64, type_u64};
     bool default_do_test = (argc <= 1);
     std::vector<bool> do_tests(4, default_do_test);
 
