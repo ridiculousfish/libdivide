@@ -1202,10 +1202,14 @@ int64_t libdivide_s64_branchfree_recover(const struct libdivide_s64_branchfree_t
 
 #if defined(LIBDIVIDE_NEON)
 
-static inline uint32x4_t libdivide_u32_do_vec128(uint32x4_t numers, const struct libdivide_u32_t *denom);
-static inline int32x4_t libdivide_s32_do_vec128(int32x4_t numers, const struct libdivide_s32_t *denom);
-static inline uint64x2_t libdivide_u64_do_vec128(uint64x2_t numers, const struct libdivide_u64_t *denom);
-static inline int64x2_t libdivide_s64_do_vec128(int64x2_t numers, const struct libdivide_s64_t *denom);
+static inline uint32x4_t libdivide_u32_do_vec128(
+    uint32x4_t numers, const struct libdivide_u32_t *denom);
+static inline int32x4_t libdivide_s32_do_vec128(
+    int32x4_t numers, const struct libdivide_s32_t *denom);
+static inline uint64x2_t libdivide_u64_do_vec128(
+    uint64x2_t numers, const struct libdivide_u64_t *denom);
+static inline int64x2_t libdivide_s64_do_vec128(
+    int64x2_t numers, const struct libdivide_s64_t *denom);
 
 static inline uint32x4_t libdivide_u32_branchfree_do_vec128(
     uint32x4_t numers, const struct libdivide_u32_branchfree_t *denom);
@@ -1241,25 +1245,23 @@ static inline int64x2_t libdivide_s64_neon_sra(int64x2_t v, uint8_t amt) {
     return vshlq_s64(v, vdupq_n_s64(-wamt));
 }
 
-static inline int64x2_t libdivide_s64_signbits(int64x2_t v) {
-    return vshrq_n_s64(v, 63);
-}
+static inline int64x2_t libdivide_s64_signbits(int64x2_t v) { return vshrq_n_s64(v, 63); }
 
 static inline uint32x4_t libdivide_mullhi_u32_vec128(uint32x4_t a, uint32_t b) {
     // Desire is [x0, x1, x2, x3]
-    uint32x4_t w1 = vreinterpretq_u32_u64(vmull_n_u32(vget_low_u32(a), b)); // [_, x0, _, x1]
-    uint32x4_t w2 = vreinterpretq_u32_u64(vmull_high_n_u32(a, b)); //[_, x2, _, x3]
-    return vuzp2q_u32(w1, w2); // [x0, x1, x2, x3]
+    uint32x4_t w1 = vreinterpretq_u32_u64(vmull_n_u32(vget_low_u32(a), b));  // [_, x0, _, x1]
+    uint32x4_t w2 = vreinterpretq_u32_u64(vmull_high_n_u32(a, b));           //[_, x2, _, x3]
+    return vuzp2q_u32(w1, w2);                                               // [x0, x1, x2, x3]
 }
 
 static inline int32x4_t libdivide_mullhi_s32_vec128(int32x4_t a, int32_t b) {
-    int32x4_t w1 = vreinterpretq_s32_s64(vmull_n_s32(vget_low_s32(a), b)); // [_, x0, _, x1]
-    int32x4_t w2 = vreinterpretq_s32_s64(vmull_high_n_s32(a, b)); //[_, x2, _, x3]
-    return vuzp2q_s32(w1, w2); // [x0, x1, x2, x3]
+    int32x4_t w1 = vreinterpretq_s32_s64(vmull_n_s32(vget_low_s32(a), b));  // [_, x0, _, x1]
+    int32x4_t w2 = vreinterpretq_s32_s64(vmull_high_n_s32(a, b));           //[_, x2, _, x3]
+    return vuzp2q_s32(w1, w2);                                              // [x0, x1, x2, x3]
 }
 
 static inline uint64x2_t libdivide_mullhi_u64_vec128(uint64x2_t x, uint64_t sy) {
-     // full 128 bits product is:
+    // full 128 bits product is:
     // x0*y0 + (x0*y1 << 32) + (x1*y0 << 32) + (x1*y1 << 64)
     // Note x0,y0,x1,y1 are all conceptually uint32, products are 32x32->64.
 
@@ -1275,22 +1277,23 @@ static inline uint64x2_t libdivide_mullhi_u64_vec128(uint64x2_t x, uint64_t sy) 
     uint64x2_t x0y0_hi = vshrq_n_u64(x0y0, 32);
 
     // Compute other intermediate products.
-    uint64x2_t temp = vmlal_u32(x0y0_hi, x1, y0); // temp = x0y0_hi + x1*y0;
+    uint64x2_t temp = vmlal_u32(x0y0_hi, x1, y0);  // temp = x0y0_hi + x1*y0;
     // We want to split temp into its low 32 bits and high 32 bits, both
     // in the low half of 64 bit registers.
     // Use shifts to avoid needing a reg for the mask.
-    uint64x2_t temp_lo = vshrq_n_u64(vshlq_n_u64(temp, 32), 32); // temp_lo = temp & 0xFFFFFFFF;
-    uint64x2_t temp_hi = vshrq_n_u64(temp, 32); // temp_hi = temp >> 32;
+    uint64x2_t temp_lo = vshrq_n_u64(vshlq_n_u64(temp, 32), 32);  // temp_lo = temp & 0xFFFFFFFF;
+    uint64x2_t temp_hi = vshrq_n_u64(temp, 32);                   // temp_hi = temp >> 32;
 
-    temp_lo = vmlal_u32(temp_lo, x0, y1); // temp_lo += x0*y0
-    temp_lo = vshrq_n_u64(temp_lo, 32);  // temp_lo >>= 32
-    temp_hi = vmlal_u32(temp_hi, x1, y1); // temp_hi += x1*y1
+    temp_lo = vmlal_u32(temp_lo, x0, y1);  // temp_lo += x0*y0
+    temp_lo = vshrq_n_u64(temp_lo, 32);    // temp_lo >>= 32
+    temp_hi = vmlal_u32(temp_hi, x1, y1);  // temp_hi += x1*y1
     uint64x2_t result = vaddq_u64(temp_hi, temp_lo);
     return result;
 }
 
 static inline int64x2_t libdivide_mullhi_s64_vec128(int64x2_t x, int64_t sy) {
-    int64x2_t p = vreinterpretq_s64_u64(libdivide_mullhi_u64_vec128(vreinterpretq_u64_s64(x), static_cast<uint64_t>(sy)));
+    int64x2_t p = vreinterpretq_s64_u64(
+        libdivide_mullhi_u64_vec128(vreinterpretq_u64_s64(x), static_cast<uint64_t>(sy)));
     int64x2_t y = vdupq_n_s64(sy);
     int64x2_t t1 = vandq_s64(libdivide_s64_signbits(x), y);
     int64x2_t t2 = vandq_s64(libdivide_s64_signbits(y), x);
@@ -1380,7 +1383,8 @@ int32x4_t libdivide_s32_do_vec128(int32x4_t numers, const struct libdivide_s32_t
         }
         // q >>= shift
         q = libdivide_s32_neon_sra(q, more & LIBDIVIDE_32_SHIFT_MASK);
-        q = vaddq_s32(q, vreinterpretq_s32_u32(vshrq_n_u32(vreinterpretq_u32_s32(q), 31)));  // q += (q < 0)
+        q = vaddq_s32(
+            q, vreinterpretq_s32_u32(vshrq_n_u32(vreinterpretq_u32_s32(q), 31)));  // q += (q < 0)
         return q;
     }
 }
@@ -1402,7 +1406,7 @@ int32x4_t libdivide_s32_branchfree_do_vec128(
     int32x4_t q_sign = vshrq_n_s32(q, 31);  // q_sign = q >> 31
     int32x4_t mask = vdupq_n_s32((1U << shift) - is_power_of_2);
     q = vaddq_s32(q, vandq_s32(q_sign, mask));  // q = q + (q_sign & mask)
-    q = libdivide_s32_neon_sra(q, shift);                       // q >>= shift
+    q = libdivide_s32_neon_sra(q, shift);       // q >>= shift
     q = vsubq_s32(veorq_s32(q, sign), sign);    // q = (q ^ sign) - sign
     return q;
 }
@@ -1415,9 +1419,10 @@ int64x2_t libdivide_s64_do_vec128(int64x2_t numers, const struct libdivide_s64_t
     if (magic == 0) {  // shift path
         uint8_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
         uint64_t mask = (1ULL << shift) - 1;
-        int64x2_t roundToZeroTweak = vdupq_n_s64(mask); // TODO: no need to sign extend
+        int64x2_t roundToZeroTweak = vdupq_n_s64(mask);  // TODO: no need to sign extend
         // q = numer + ((numer >> 63) & roundToZeroTweak);
-        int64x2_t q = vaddq_s64(numers, vandq_s64(libdivide_s64_signbits(numers), roundToZeroTweak));
+        int64x2_t q =
+            vaddq_s64(numers, vandq_s64(libdivide_s64_signbits(numers), roundToZeroTweak));
         q = libdivide_s64_neon_sra(q, shift);
         // q = (q ^ sign) - sign;
         int64x2_t sign = vreinterpretq_s64_s8(vdupq_n_s8((int8_t)more >> 7));
@@ -1427,13 +1432,14 @@ int64x2_t libdivide_s64_do_vec128(int64x2_t numers, const struct libdivide_s64_t
         int64x2_t q = libdivide_mullhi_s64_vec128(numers, magic);
         if (more & LIBDIVIDE_ADD_MARKER) {
             // must be arithmetic shift
-            int64x2_t sign = vdupq_n_s64((int8_t)more >> 7); // TODO: no need to widen
+            int64x2_t sign = vdupq_n_s64((int8_t)more >> 7);  // TODO: no need to widen
             // q += ((numer ^ sign) - sign);
             q = vaddq_s64(q, vsubq_s64(veorq_s64(numers, sign), sign));
         }
         // q >>= denom->mult_path.shift
         q = libdivide_s64_neon_sra(q, more & LIBDIVIDE_64_SHIFT_MASK);
-        q = vaddq_s64(q, vreinterpretq_s64_u64(vshrq_n_u64(vreinterpretq_u64_s64(q), 63)));  // q += (q < 0)
+        q = vaddq_s64(
+            q, vreinterpretq_s64_u64(vshrq_n_u64(vreinterpretq_u64_s64(q), 63)));  // q += (q < 0)
         return q;
     }
 }
@@ -1444,7 +1450,7 @@ int64x2_t libdivide_s64_branchfree_do_vec128(
     uint8_t more = denom->more;
     uint8_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
     // must be arithmetic shift
-    int64x2_t sign = vdupq_n_s64((int8_t)more >> 7); // TODO: avoid sign extend
+    int64x2_t sign = vdupq_n_s64((int8_t)more >> 7);  // TODO: avoid sign extend
 
     // libdivide_mullhi_s64(numers, magic);
     int64x2_t q = libdivide_mullhi_s64_vec128(numers, magic);
@@ -1457,7 +1463,7 @@ int64x2_t libdivide_s64_branchfree_do_vec128(
     int64x2_t q_sign = libdivide_s64_signbits(q);  // q_sign = q >> 63
     int64x2_t mask = vdupq_n_s64((1ULL << shift) - is_power_of_2);
     q = vaddq_s64(q, vandq_s64(q_sign, mask));  // q = q + (q_sign & mask)
-    q = libdivide_s64_neon_sra(q, shift);     // q >>= shift
+    q = libdivide_s64_neon_sra(q, shift);       // q >>= shift
     q = vsubq_s64(veorq_s64(q, sign), sign);    // q = (q ^ sign) - sign
     return q;
 }
@@ -2258,8 +2264,10 @@ struct NeonVecFor<int64_t> {
 
 // Versions of our algorithms for SIMD.
 #if defined(LIBDIVIDE_NEON)
-#define LIBDIVIDE_DIVIDE_NEON(ALGO, INT_TYPE) \
-    typename NeonVecFor<INT_TYPE>::type divide(typename NeonVecFor<INT_TYPE>::type n) const { return libdivide_##ALGO##_do_vec128(n, &denom); }
+#define LIBDIVIDE_DIVIDE_NEON(ALGO, INT_TYPE)                                                 \
+    typename NeonVecFor<INT_TYPE>::type divide(typename NeonVecFor<INT_TYPE>::type n) const { \
+        return libdivide_##ALGO##_do_vec128(n, &denom);                                       \
+    }
 #else
 #define LIBDIVIDE_DIVIDE_NEON(ALGO, INT_TYPE)
 #endif
@@ -2292,9 +2300,9 @@ struct NeonVecFor<int64_t> {
     dispatcher(T d) : denom(libdivide_##ALGO##_gen(d)) {}            \
     T divide(T n) const { return libdivide_##ALGO##_do(n, &denom); } \
     T recover() const { return libdivide_##ALGO##_recover(&denom); } \
-    LIBDIVIDE_DIVIDE_NEON(ALGO, T) \
-    LIBDIVIDE_DIVIDE_SSE2(ALGO)                                    \
-    LIBDIVIDE_DIVIDE_AVX2(ALGO)                                    \
+    LIBDIVIDE_DIVIDE_NEON(ALGO, T)                                   \
+    LIBDIVIDE_DIVIDE_SSE2(ALGO)                                      \
+    LIBDIVIDE_DIVIDE_AVX2(ALGO)                                      \
     LIBDIVIDE_DIVIDE_AVX512(ALGO)
 
 // The dispatcher selects a specific division algorithm for a given
@@ -2375,7 +2383,9 @@ class divider {
     __m512i divide(__m512i n) const { return div.divide(n); }
 #endif
 #if defined(LIBDIVIDE_NEON)
-    typename NeonVecFor<T>::type divide(typename NeonVecFor<T>::type n) const { return div.divide(n); }
+    typename NeonVecFor<T>::type divide(typename NeonVecFor<T>::type n) const {
+        return div.divide(n);
+    }
 #endif
 
    private:
