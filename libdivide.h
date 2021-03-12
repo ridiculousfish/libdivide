@@ -2490,7 +2490,7 @@ int64x2_t operator/=(int64x2_t &n, const divider<int64_t, ALGO> &div) {
 }
 #endif
 
-#if __cplusplus >= 201103L
+#if __cplusplus >= 201103L || (defined(_MSC_VER) && _MSC_VER >= 1900)
 // libdivide::branchfree_divider<T>
 template <typename T>
 using branchfree_divider = divider<T, BRANCHFREE>;
