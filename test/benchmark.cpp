@@ -336,7 +336,7 @@ NOINLINE struct TestResult test_one(const IntT *vals, IntT denom) {
             my_times_branchfree[iter] = tresult.time;
             CHECK(tresult.result, expected);
         }
-#if defined(VECTOR_TYPE) || defined(LIBDIVIDE_NEON)
+#if defined(x86_VECTOR_TYPE) || defined(LIBDIVIDE_NEON)
         tresult = time_function<func_vec_branchfull>(vals, denom);
         my_times_vector[iter] = tresult.time;
         CHECK(tresult.result, expected);
