@@ -126,14 +126,17 @@ if(CPU_X86 OR CPU_ARM_NEON)
 endif()
 
 # Resolve any "auto" supported vector types ##################
+# Note these use "check_cxx_source_runs" and not "check_cxx_source_compiles"
+# because VC++ will compile AVX512 even though it's not available at runtime.
 cmake_push_check_state()
-set(CMAKE_REQUIRED_FLAGS "${NATIVE_FLAG}")
+# Need to convert from list to space-separated string.
+string(REPLACE ";" " " CMAKE_REQUIRED_FLAGS "${LIBDIVIDE_FLAGS}")
 
 # NEON
 if (NOT LIBDIVIDE_NEON STREQUAL "AUTO")
     set(LIBDIVIDE_NEON_ENABLED "${LIBDIVIDE_NEON}")
 else()
-    check_cxx_source_compiles("
+    check_cxx_source_runs("
                 #include <arm_neon.h>
                 int main()
                 {
@@ -147,7 +150,7 @@ endif()
 if (NOT LIBDIVIDE_AVX512 STREQUAL "AUTO")
     set(LIBDIVIDE_AVX512_ENABLED "${LIBDIVIDE_AVX512}")
 else()
-    check_cxx_source_compiles("
+    check_cxx_source_runs("
                 #include <immintrin.h>
                 int main()
                 {
@@ -161,7 +164,7 @@ endif()
 if (NOT LIBDIVIDE_AVX2 STREQUAL "AUTO")
     set(LIBDIVIDE_AVX2_ENABLED "${LIBDIVIDE_AVX2}")
 else()
-    check_cxx_source_compiles("
+    check_cxx_source_runs("
                 #include <immintrin.h>
                 int main()
                 {
@@ -175,7 +178,7 @@ endif()
 if (NOT LIBDIVIDE_SSE2 STREQUAL "AUTO")
     set(LIBDIVIDE_SSE2_ENABLED "${LIBDIVIDE_SSE2}")
 else()
-    check_cxx_source_compiles("
+    check_cxx_source_runs("
                 #include <emmintrin.h>
                 int main()
                 {
