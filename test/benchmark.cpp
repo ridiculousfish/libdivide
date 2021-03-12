@@ -18,6 +18,20 @@
 #include <string.h>
 #include <time.h>
 
+#if defined(_WIN32) || defined(WIN32)
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#define VC_EXTRALEAN
+#include <windows.h>
+#include <mmsystem.h>
+#define LIBDIVIDE_WINDOWS
+#pragma comment(lib, "winmm")
+#endif
+
+#if !defined(LIBDIVIDE_WINDOWS)
+#include <sys/time.h>  // for gettimeofday()
+#endif
+
 #include "libdivide.h"
 
 #if defined(__GNUC__)
@@ -55,20 +69,6 @@
     { 2147483563, 2147483563 ^ 0x49616E42 }
 
 using namespace libdivide;
-
-#if defined(_WIN32) || defined(WIN32)
-#define NOMINMAX
-#define WIN32_LEAN_AND_MEAN
-#define VC_EXTRALEAN
-#include <mmsystem.h>
-#include <windows.h>
-#define LIBDIVIDE_WINDOWS
-#pragma comment(lib, "winmm")
-#endif
-
-#if !defined(LIBDIVIDE_WINDOWS)
-#include <sys/time.h>  // for gettimeofday()
-#endif
 
 struct random_state {
     uint32_t hi;
