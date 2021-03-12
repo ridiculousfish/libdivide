@@ -164,11 +164,12 @@ endif()
 if (NOT LIBDIVIDE_AVX2 STREQUAL "AUTO")
     set(LIBDIVIDE_AVX2_ENABLED "${LIBDIVIDE_AVX2}")
 else()
+    # Need to use an AVX2 insn like srai, not just AVX.
     check_cxx_source_runs("
                 #include <immintrin.h>
                 int main()
                 {
-                    __m256i a = _mm256_setzero_si256();
+                    __m256i a = _mm256_srai_epi32(_mm256_setzero_si256(), 3);
                     return *(int *)&a;
                 }"
                 LIBDIVIDE_AVX2_ENABLED)
