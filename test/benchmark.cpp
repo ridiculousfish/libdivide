@@ -224,7 +224,7 @@ NOINLINE void generate_divisor(IntT denom) {
     }
 }
 
-struct time_result {
+struct time_result_t {
     uint64_t time;  // in nanoseconds
     uint64_t result;
 };
@@ -239,8 +239,8 @@ enum which_function_t {
 };
 
 template <which_function_t Which, typename IntT>
-NOINLINE static struct time_result time_function(const IntT *vals, IntT denom) {
-    struct time_result tresult;
+NOINLINE static time_result_t time_function(const IntT *vals, IntT denom) {
+    time_result_t tresult;
     uint64_t result;
     uint64_t diff_nanos;
     divider<IntT, BRANCHFULL> div_bfull(denom);
@@ -323,7 +323,7 @@ NOINLINE struct TestResult test_one(const IntT *vals, IntT denom) {
 
     uint64_t my_times[TEST_COUNT], my_times_branchfree[TEST_COUNT], my_times_vector[TEST_COUNT],
         my_times_vector_branchfree[TEST_COUNT], his_times[TEST_COUNT], gen_times[TEST_COUNT];
-    struct time_result tresult;
+    time_result_t tresult;
     for (size_t iter = 0; iter < TEST_COUNT; iter++) {
         tresult = time_function<func_hardware>(vals, denom);
         his_times[iter] = tresult.time;
