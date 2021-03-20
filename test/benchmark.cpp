@@ -152,7 +152,7 @@ NOINLINE uint64_t sum_quotients_vec(const uint32_t *vals, Divisor div) {
 }
 
 template <typename Divisor>
-NOINLINE int32_t sum_quotients_vec(const int32_t *vals, Divisor div) {
+NOINLINE uint64_t sum_quotients_vec(const int32_t *vals, Divisor div) {
     typedef int32_t IntT;
     typedef typename NeonVecFor<IntT>::type NeonVectorType;
     size_t count = sizeof(NeonVectorType) / sizeof(IntT);
