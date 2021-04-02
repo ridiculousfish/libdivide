@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <type_traits>
 
 #if defined(_WIN32) || defined(WIN32)
 #define NOMINMAX
@@ -98,11 +99,25 @@ static uint64_t nanoseconds(void) {
 }
 #endif
 
+// Helper - given a vector of some type, convert it to unsigned and sum it.
+// This is factored out in this funny way to avoid signed integer overflow.
+template <typename IntT>
+inline uint64_t unsigned_sum_vals(const IntT *vals, size_t count) {
+    typedef typename std::make_unsigned<IntT>::type UIntT;
+    UIntT sum = 0;
+    for (size_t i=0; i < count; i++) {
+        sum += static_cast<UIntT>(vals[i]);
+    }
+    return sum;
+}
+
 template <typename IntT, typename Divisor>
 NOINLINE uint64_t sum_quotients(const IntT *vals, Divisor div) {
-    IntT sum = 0;
+    // Need to use unsigned to avoid signed integer overlow.
+    typedef typename std::make_unsigned<IntT>::type UIntT;
+    UIntT sum = 0;
     for (size_t iter = 0; iter < iters; iter += 1) {
-        sum += vals[iter] / div;
+        sum += (UIntT)(vals[iter] / div);
     }
     return (uint64_t)sum;
 }
@@ -123,12 +138,7 @@ NOINLINE uint64_t sum_quotients_vec(const IntT *vals, Divisor div) {
             abort();
         }
     }
-    const IntT *comps = (const IntT *)&sumX4;
-    IntT sum = 0;
-    for (size_t i = 0; i < count; i++) {
-        sum += comps[i];
-    }
-    return (uint64_t)sum;
+    return unsigned_sum_vals((const IntT *)&sumX4, count);
 }
 #elif defined(LIBDIVIDE_NEON)
 
@@ -143,12 +153,7 @@ NOINLINE uint64_t sum_quotients_vec(const uint32_t *vals, Divisor div) {
         numers = numers / div;
         sumX4 = vaddq_u32(sumX4, numers);
     }
-    const IntT *comps = (const IntT *)&sumX4;
-    IntT sum = 0;
-    for (size_t i = 0; i < count; i++) {
-        sum += comps[i];
-    }
-    return (uint64_t)sum;
+    return unsigned_sum_vals((const IntT *)&sumX4, count);
 }
 
 template <typename Divisor>
@@ -162,12 +167,7 @@ NOINLINE uint64_t sum_quotients_vec(const int32_t *vals, Divisor div) {
         numers = numers / div;
         sumX4 = vaddq_s32(sumX4, numers);
     }
-    const IntT *comps = (const IntT *)&sumX4;
-    IntT sum = 0;
-    for (size_t i = 0; i < count; i++) {
-        sum += comps[i];
-    }
-    return (uint64_t)sum;
+    return unsigned_sum_vals((const IntT *)&sumX4, count);
 }
 
 template <typename Divisor>
@@ -181,12 +181,7 @@ NOINLINE uint64_t sum_quotients_vec(const uint64_t *vals, Divisor div) {
         numers = numers / div;
         sumX4 = vaddq_u64(sumX4, numers);
     }
-    const IntT *comps = (const IntT *)&sumX4;
-    IntT sum = 0;
-    for (size_t i = 0; i < count; i++) {
-        sum += comps[i];
-    }
-    return (uint64_t)sum;
+    return unsigned_sum_vals((const IntT *)&sumX4, count);
 }
 
 template <typename Divisor>
@@ -201,12 +196,7 @@ NOINLINE uint64_t sum_quotients_vec(const int64_t *vals, Divisor div) {
         numers = numers / div;
         sumX4 = vaddq_s64(sumX4, numers);
     }
-    const IntT *comps = (const IntT *)&sumX4;
-    IntT sum = 0;
-    for (size_t i = 0; i < count; i++) {
-        sum += comps[i];
-    }
-    return (uint64_t)sum;
+    return unsigned_sum_vals((const IntT *)&sumX4, count);
 }
 
 #endif
