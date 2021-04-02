@@ -74,6 +74,17 @@
 #define LIBDIVIDE_FUNCTION __func__
 #endif
 
+// Set up forced inlining if possible.
+// We need both the attribute and keyword to avoid "might not be inlineable" warnings.
+#ifdef __has_attribute
+#if __has_attribute(always_inline)
+#define LIBDIVIDE_INLINE __attribute__((always_inline)) inline
+#endif
+#endif
+#ifndef LIBDIVIDE_INLINE
+#define LIBDIVIDE_INLINE inline
+#endif
+
 #define LIBDIVIDE_ERROR(msg)                                                                     \
     do {                                                                                         \
         fprintf(stderr, "libdivide.h:%d: %s(): Error: %s\n", __LINE__, LIBDIVIDE_FUNCTION, msg); \
@@ -184,60 +195,64 @@ enum {
     LIBDIVIDE_NEGATIVE_DIVISOR = 0x80
 };
 
-static inline struct libdivide_s32_t libdivide_s32_gen(int32_t d);
-static inline struct libdivide_u32_t libdivide_u32_gen(uint32_t d);
-static inline struct libdivide_s64_t libdivide_s64_gen(int64_t d);
-static inline struct libdivide_u64_t libdivide_u64_gen(uint64_t d);
+static LIBDIVIDE_INLINE struct libdivide_s32_t libdivide_s32_gen(int32_t d);
+static LIBDIVIDE_INLINE struct libdivide_u32_t libdivide_u32_gen(uint32_t d);
+static LIBDIVIDE_INLINE struct libdivide_s64_t libdivide_s64_gen(int64_t d);
+static LIBDIVIDE_INLINE struct libdivide_u64_t libdivide_u64_gen(uint64_t d);
 
-static inline struct libdivide_s32_branchfree_t libdivide_s32_branchfree_gen(int32_t d);
-static inline struct libdivide_u32_branchfree_t libdivide_u32_branchfree_gen(uint32_t d);
-static inline struct libdivide_s64_branchfree_t libdivide_s64_branchfree_gen(int64_t d);
-static inline struct libdivide_u64_branchfree_t libdivide_u64_branchfree_gen(uint64_t d);
+static LIBDIVIDE_INLINE struct libdivide_s32_branchfree_t libdivide_s32_branchfree_gen(int32_t d);
+static LIBDIVIDE_INLINE struct libdivide_u32_branchfree_t libdivide_u32_branchfree_gen(uint32_t d);
+static LIBDIVIDE_INLINE struct libdivide_s64_branchfree_t libdivide_s64_branchfree_gen(int64_t d);
+static LIBDIVIDE_INLINE struct libdivide_u64_branchfree_t libdivide_u64_branchfree_gen(uint64_t d);
 
-static inline int32_t libdivide_s32_do(int32_t numer, const struct libdivide_s32_t *denom);
-static inline uint32_t libdivide_u32_do(uint32_t numer, const struct libdivide_u32_t *denom);
-static inline int64_t libdivide_s64_do(int64_t numer, const struct libdivide_s64_t *denom);
-static inline uint64_t libdivide_u64_do(uint64_t numer, const struct libdivide_u64_t *denom);
+static LIBDIVIDE_INLINE int32_t libdivide_s32_do(
+    int32_t numer, const struct libdivide_s32_t *denom);
+static LIBDIVIDE_INLINE uint32_t libdivide_u32_do(
+    uint32_t numer, const struct libdivide_u32_t *denom);
+static LIBDIVIDE_INLINE int64_t libdivide_s64_do(
+    int64_t numer, const struct libdivide_s64_t *denom);
+static LIBDIVIDE_INLINE uint64_t libdivide_u64_do(
+    uint64_t numer, const struct libdivide_u64_t *denom);
 
-static inline int32_t libdivide_s32_branchfree_do(
+static LIBDIVIDE_INLINE int32_t libdivide_s32_branchfree_do(
     int32_t numer, const struct libdivide_s32_branchfree_t *denom);
-static inline uint32_t libdivide_u32_branchfree_do(
+static LIBDIVIDE_INLINE uint32_t libdivide_u32_branchfree_do(
     uint32_t numer, const struct libdivide_u32_branchfree_t *denom);
-static inline int64_t libdivide_s64_branchfree_do(
+static LIBDIVIDE_INLINE int64_t libdivide_s64_branchfree_do(
     int64_t numer, const struct libdivide_s64_branchfree_t *denom);
-static inline uint64_t libdivide_u64_branchfree_do(
+static LIBDIVIDE_INLINE uint64_t libdivide_u64_branchfree_do(
     uint64_t numer, const struct libdivide_u64_branchfree_t *denom);
 
-static inline int32_t libdivide_s32_recover(const struct libdivide_s32_t *denom);
-static inline uint32_t libdivide_u32_recover(const struct libdivide_u32_t *denom);
-static inline int64_t libdivide_s64_recover(const struct libdivide_s64_t *denom);
-static inline uint64_t libdivide_u64_recover(const struct libdivide_u64_t *denom);
+static LIBDIVIDE_INLINE int32_t libdivide_s32_recover(const struct libdivide_s32_t *denom);
+static LIBDIVIDE_INLINE uint32_t libdivide_u32_recover(const struct libdivide_u32_t *denom);
+static LIBDIVIDE_INLINE int64_t libdivide_s64_recover(const struct libdivide_s64_t *denom);
+static LIBDIVIDE_INLINE uint64_t libdivide_u64_recover(const struct libdivide_u64_t *denom);
 
-static inline int32_t libdivide_s32_branchfree_recover(
+static LIBDIVIDE_INLINE int32_t libdivide_s32_branchfree_recover(
     const struct libdivide_s32_branchfree_t *denom);
-static inline uint32_t libdivide_u32_branchfree_recover(
+static LIBDIVIDE_INLINE uint32_t libdivide_u32_branchfree_recover(
     const struct libdivide_u32_branchfree_t *denom);
-static inline int64_t libdivide_s64_branchfree_recover(
+static LIBDIVIDE_INLINE int64_t libdivide_s64_branchfree_recover(
     const struct libdivide_s64_branchfree_t *denom);
-static inline uint64_t libdivide_u64_branchfree_recover(
+static LIBDIVIDE_INLINE uint64_t libdivide_u64_branchfree_recover(
     const struct libdivide_u64_branchfree_t *denom);
 
 //////// Internal Utility Functions
 
-static inline uint32_t libdivide_mullhi_u32(uint32_t x, uint32_t y) {
+static LIBDIVIDE_INLINE uint32_t libdivide_mullhi_u32(uint32_t x, uint32_t y) {
     uint64_t xl = x, yl = y;
     uint64_t rl = xl * yl;
     return (uint32_t)(rl >> 32);
 }
 
-static inline int32_t libdivide_mullhi_s32(int32_t x, int32_t y) {
+static LIBDIVIDE_INLINE int32_t libdivide_mullhi_s32(int32_t x, int32_t y) {
     int64_t xl = x, yl = y;
     int64_t rl = xl * yl;
     // needs to be arithmetic shift
     return (int32_t)(rl >> 32);
 }
 
-static inline uint64_t libdivide_mullhi_u64(uint64_t x, uint64_t y) {
+static LIBDIVIDE_INLINE uint64_t libdivide_mullhi_u64(uint64_t x, uint64_t y) {
 #if defined(LIBDIVIDE_VC) && defined(LIBDIVIDE_X86_64)
     return __umulh(x, y);
 #elif defined(HAS_INT128_T)
@@ -263,7 +278,7 @@ static inline uint64_t libdivide_mullhi_u64(uint64_t x, uint64_t y) {
 #endif
 }
 
-static inline int64_t libdivide_mullhi_s64(int64_t x, int64_t y) {
+static LIBDIVIDE_INLINE int64_t libdivide_mullhi_s64(int64_t x, int64_t y) {
 #if defined(LIBDIVIDE_VC) && defined(LIBDIVIDE_X86_64)
     return __mulh(x, y);
 #elif defined(HAS_INT128_T)
@@ -285,7 +300,7 @@ static inline int64_t libdivide_mullhi_s64(int64_t x, int64_t y) {
 #endif
 }
 
-static inline int32_t libdivide_count_leading_zeros32(uint32_t val) {
+static LIBDIVIDE_INLINE int32_t libdivide_count_leading_zeros32(uint32_t val) {
 #if defined(__GNUC__) || __has_builtin(__builtin_clz)
     // Fast way to count leading zeros
     return __builtin_clz(val);
@@ -311,7 +326,7 @@ static inline int32_t libdivide_count_leading_zeros32(uint32_t val) {
 #endif
 }
 
-static inline int32_t libdivide_count_leading_zeros64(uint64_t val) {
+static LIBDIVIDE_INLINE int32_t libdivide_count_leading_zeros64(uint64_t val) {
 #if defined(__GNUC__) || __has_builtin(__builtin_clzll)
     // Fast way to count leading zeros
     return __builtin_clzll(val);
@@ -332,7 +347,7 @@ static inline int32_t libdivide_count_leading_zeros64(uint64_t val) {
 // libdivide_64_div_32_to_32: divides a 64-bit uint {u1, u0} by a 32-bit
 // uint {v}. The result must fit in 32 bits.
 // Returns the quotient directly and the remainder in *r
-static inline uint32_t libdivide_64_div_32_to_32(
+static LIBDIVIDE_INLINE uint32_t libdivide_64_div_32_to_32(
     uint32_t u1, uint32_t u0, uint32_t v, uint32_t *r) {
 #if (defined(LIBDIVIDE_i386) || defined(LIBDIVIDE_X86_64)) && defined(LIBDIVIDE_GCC_STYLE_ASM)
     uint32_t result;
@@ -353,7 +368,7 @@ static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v,
     // N.B. resist the temptation to use __uint128_t here.
     // In LLVM compiler-rt, it performs a 128/128 -> 128 division which is many times slower than
     // necessary. In gcc it's better but still slower than the divlu implementation, perhaps because
-    // it's not inlined.
+    // it's not LIBDIVIDE_INLINEd.
 #if defined(LIBDIVIDE_X86_64) && defined(LIBDIVIDE_GCC_STYLE_ASM)
     uint64_t result;
     __asm__("divq %[v]" : "=a"(result), "=d"(*r) : [v] "r"(v), "a"(u0), "d"(u1));
@@ -432,7 +447,8 @@ static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v,
 }
 
 // Bitshift a u128 in place, left (signed_shift > 0) or right (signed_shift < 0)
-static inline void libdivide_u128_shift(uint64_t *u1, uint64_t *u0, int32_t signed_shift) {
+static LIBDIVIDE_INLINE void libdivide_u128_shift(
+    uint64_t *u1, uint64_t *u0, int32_t signed_shift) {
     if (signed_shift > 0) {
         uint32_t shift = signed_shift;
         *u1 <<= shift;
@@ -546,7 +562,8 @@ static uint64_t libdivide_128_div_128_to_64(
 
 ////////// UINT32
 
-static inline struct libdivide_u32_t libdivide_internal_u32_gen(uint32_t d, int branchfree) {
+static LIBDIVIDE_INLINE struct libdivide_u32_t libdivide_internal_u32_gen(
+    uint32_t d, int branchfree) {
     if (d == 0) {
         LIBDIVIDE_ERROR("divider must be != 0");
     }
@@ -703,7 +720,8 @@ uint32_t libdivide_u32_branchfree_recover(const struct libdivide_u32_branchfree_
 
 /////////// UINT64
 
-static inline struct libdivide_u64_t libdivide_internal_u64_gen(uint64_t d, int branchfree) {
+static LIBDIVIDE_INLINE struct libdivide_u64_t libdivide_internal_u64_gen(
+    uint64_t d, int branchfree) {
     if (d == 0) {
         LIBDIVIDE_ERROR("divider must be != 0");
     }
@@ -874,7 +892,8 @@ uint64_t libdivide_u64_branchfree_recover(const struct libdivide_u64_branchfree_
 
 /////////// SINT32
 
-static inline struct libdivide_s32_t libdivide_internal_s32_gen(int32_t d, int branchfree) {
+static LIBDIVIDE_INLINE struct libdivide_s32_t libdivide_internal_s32_gen(
+    int32_t d, int branchfree) {
     if (d == 0) {
         LIBDIVIDE_ERROR("divider must be != 0");
     }
@@ -1042,7 +1061,8 @@ int32_t libdivide_s32_branchfree_recover(const struct libdivide_s32_branchfree_t
 
 ///////////// SINT64
 
-static inline struct libdivide_s64_t libdivide_internal_s64_gen(int64_t d, int branchfree) {
+static LIBDIVIDE_INLINE struct libdivide_s64_t libdivide_internal_s64_gen(
+    int64_t d, int branchfree) {
     if (d == 0) {
         LIBDIVIDE_ERROR("divider must be != 0");
     }
@@ -1202,65 +1222,65 @@ int64_t libdivide_s64_branchfree_recover(const struct libdivide_s64_branchfree_t
 
 #if defined(LIBDIVIDE_NEON)
 
-static inline uint32x4_t libdivide_u32_do_vec128(
+static LIBDIVIDE_INLINE uint32x4_t libdivide_u32_do_vec128(
     uint32x4_t numers, const struct libdivide_u32_t *denom);
-static inline int32x4_t libdivide_s32_do_vec128(
+static LIBDIVIDE_INLINE int32x4_t libdivide_s32_do_vec128(
     int32x4_t numers, const struct libdivide_s32_t *denom);
-static inline uint64x2_t libdivide_u64_do_vec128(
+static LIBDIVIDE_INLINE uint64x2_t libdivide_u64_do_vec128(
     uint64x2_t numers, const struct libdivide_u64_t *denom);
-static inline int64x2_t libdivide_s64_do_vec128(
+static LIBDIVIDE_INLINE int64x2_t libdivide_s64_do_vec128(
     int64x2_t numers, const struct libdivide_s64_t *denom);
 
-static inline uint32x4_t libdivide_u32_branchfree_do_vec128(
+static LIBDIVIDE_INLINE uint32x4_t libdivide_u32_branchfree_do_vec128(
     uint32x4_t numers, const struct libdivide_u32_branchfree_t *denom);
-static inline int32x4_t libdivide_s32_branchfree_do_vec128(
+static LIBDIVIDE_INLINE int32x4_t libdivide_s32_branchfree_do_vec128(
     int32x4_t numers, const struct libdivide_s32_branchfree_t *denom);
-static inline uint64x2_t libdivide_u64_branchfree_do_vec128(
+static LIBDIVIDE_INLINE uint64x2_t libdivide_u64_branchfree_do_vec128(
     uint64x2_t numers, const struct libdivide_u64_branchfree_t *denom);
-static inline int64x2_t libdivide_s64_branchfree_do_vec128(
+static LIBDIVIDE_INLINE int64x2_t libdivide_s64_branchfree_do_vec128(
     int64x2_t numers, const struct libdivide_s64_branchfree_t *denom);
 
 //////// Internal Utility Functions
 
 // Logical right shift by runtime value.
 // NEON implements right shift as left shits by negative values.
-static inline uint32x4_t libdivide_u32_neon_srl(uint32x4_t v, uint8_t amt) {
+static LIBDIVIDE_INLINE uint32x4_t libdivide_u32_neon_srl(uint32x4_t v, uint8_t amt) {
     int32_t wamt = static_cast<int32_t>(amt);
     return vshlq_u32(v, vdupq_n_s32(-wamt));
 }
 
-static inline uint64x2_t libdivide_u64_neon_srl(uint64x2_t v, uint8_t amt) {
+static LIBDIVIDE_INLINE uint64x2_t libdivide_u64_neon_srl(uint64x2_t v, uint8_t amt) {
     int64_t wamt = static_cast<int64_t>(amt);
     return vshlq_u64(v, vdupq_n_s64(-wamt));
 }
 
 // Arithmetic right shift by runtime value.
-static inline int32x4_t libdivide_s32_neon_sra(int32x4_t v, uint8_t amt) {
+static LIBDIVIDE_INLINE int32x4_t libdivide_s32_neon_sra(int32x4_t v, uint8_t amt) {
     int32_t wamt = static_cast<int32_t>(amt);
     return vshlq_s32(v, vdupq_n_s32(-wamt));
 }
 
-static inline int64x2_t libdivide_s64_neon_sra(int64x2_t v, uint8_t amt) {
+static LIBDIVIDE_INLINE int64x2_t libdivide_s64_neon_sra(int64x2_t v, uint8_t amt) {
     int64_t wamt = static_cast<int64_t>(amt);
     return vshlq_s64(v, vdupq_n_s64(-wamt));
 }
 
-static inline int64x2_t libdivide_s64_signbits(int64x2_t v) { return vshrq_n_s64(v, 63); }
+static LIBDIVIDE_INLINE int64x2_t libdivide_s64_signbits(int64x2_t v) { return vshrq_n_s64(v, 63); }
 
-static inline uint32x4_t libdivide_mullhi_u32_vec128(uint32x4_t a, uint32_t b) {
+static LIBDIVIDE_INLINE uint32x4_t libdivide_mullhi_u32_vec128(uint32x4_t a, uint32_t b) {
     // Desire is [x0, x1, x2, x3]
     uint32x4_t w1 = vreinterpretq_u32_u64(vmull_n_u32(vget_low_u32(a), b));  // [_, x0, _, x1]
     uint32x4_t w2 = vreinterpretq_u32_u64(vmull_high_n_u32(a, b));           //[_, x2, _, x3]
     return vuzp2q_u32(w1, w2);                                               // [x0, x1, x2, x3]
 }
 
-static inline int32x4_t libdivide_mullhi_s32_vec128(int32x4_t a, int32_t b) {
+static LIBDIVIDE_INLINE int32x4_t libdivide_mullhi_s32_vec128(int32x4_t a, int32_t b) {
     int32x4_t w1 = vreinterpretq_s32_s64(vmull_n_s32(vget_low_s32(a), b));  // [_, x0, _, x1]
     int32x4_t w2 = vreinterpretq_s32_s64(vmull_high_n_s32(a, b));           //[_, x2, _, x3]
     return vuzp2q_s32(w1, w2);                                              // [x0, x1, x2, x3]
 }
 
-static inline uint64x2_t libdivide_mullhi_u64_vec128(uint64x2_t x, uint64_t sy) {
+static LIBDIVIDE_INLINE uint64x2_t libdivide_mullhi_u64_vec128(uint64x2_t x, uint64_t sy) {
     // full 128 bits product is:
     // x0*y0 + (x0*y1 << 32) + (x1*y0 << 32) + (x1*y1 << 64)
     // Note x0,y0,x1,y1 are all conceptually uint32, products are 32x32->64.
@@ -1291,7 +1311,7 @@ static inline uint64x2_t libdivide_mullhi_u64_vec128(uint64x2_t x, uint64_t sy) 
     return result;
 }
 
-static inline int64x2_t libdivide_mullhi_s64_vec128(int64x2_t x, int64_t sy) {
+static LIBDIVIDE_INLINE int64x2_t libdivide_mullhi_s64_vec128(int64x2_t x, int64_t sy) {
     int64x2_t p = vreinterpretq_s64_u64(
         libdivide_mullhi_u64_vec128(vreinterpretq_u64_s64(x), static_cast<uint64_t>(sy)));
     int64x2_t y = vdupq_n_s64(sy);
@@ -1472,33 +1492,37 @@ int64x2_t libdivide_s64_branchfree_do_vec128(
 
 #if defined(LIBDIVIDE_AVX512)
 
-static inline __m512i libdivide_u32_do_vec512(__m512i numers, const struct libdivide_u32_t *denom);
-static inline __m512i libdivide_s32_do_vec512(__m512i numers, const struct libdivide_s32_t *denom);
-static inline __m512i libdivide_u64_do_vec512(__m512i numers, const struct libdivide_u64_t *denom);
-static inline __m512i libdivide_s64_do_vec512(__m512i numers, const struct libdivide_s64_t *denom);
+static LIBDIVIDE_INLINE __m512i libdivide_u32_do_vec512(
+    __m512i numers, const struct libdivide_u32_t *denom);
+static LIBDIVIDE_INLINE __m512i libdivide_s32_do_vec512(
+    __m512i numers, const struct libdivide_s32_t *denom);
+static LIBDIVIDE_INLINE __m512i libdivide_u64_do_vec512(
+    __m512i numers, const struct libdivide_u64_t *denom);
+static LIBDIVIDE_INLINE __m512i libdivide_s64_do_vec512(
+    __m512i numers, const struct libdivide_s64_t *denom);
 
-static inline __m512i libdivide_u32_branchfree_do_vec512(
+static LIBDIVIDE_INLINE __m512i libdivide_u32_branchfree_do_vec512(
     __m512i numers, const struct libdivide_u32_branchfree_t *denom);
-static inline __m512i libdivide_s32_branchfree_do_vec512(
+static LIBDIVIDE_INLINE __m512i libdivide_s32_branchfree_do_vec512(
     __m512i numers, const struct libdivide_s32_branchfree_t *denom);
-static inline __m512i libdivide_u64_branchfree_do_vec512(
+static LIBDIVIDE_INLINE __m512i libdivide_u64_branchfree_do_vec512(
     __m512i numers, const struct libdivide_u64_branchfree_t *denom);
-static inline __m512i libdivide_s64_branchfree_do_vec512(
+static LIBDIVIDE_INLINE __m512i libdivide_s64_branchfree_do_vec512(
     __m512i numers, const struct libdivide_s64_branchfree_t *denom);
 
 //////// Internal Utility Functions
 
-static inline __m512i libdivide_s64_signbits(__m512i v) {
+static LIBDIVIDE_INLINE __m512i libdivide_s64_signbits(__m512i v) {
     ;
     return _mm512_srai_epi64(v, 63);
 }
 
-static inline __m512i libdivide_s64_shift_right_vec512(__m512i v, int amt) {
+static LIBDIVIDE_INLINE __m512i libdivide_s64_shift_right_vec512(__m512i v, int amt) {
     return _mm512_srai_epi64(v, amt);
 }
 
 // Here, b is assumed to contain one 32-bit value repeated.
-static inline __m512i libdivide_mullhi_u32_vec512(__m512i a, __m512i b) {
+static LIBDIVIDE_INLINE __m512i libdivide_mullhi_u32_vec512(__m512i a, __m512i b) {
     __m512i hi_product_0Z2Z = _mm512_srli_epi64(_mm512_mul_epu32(a, b), 32);
     __m512i a1X3X = _mm512_srli_epi64(a, 32);
     __m512i mask = _mm512_set_epi32(-1, 0, -1, 0, -1, 0, -1, 0, -1, 0, -1, 0, -1, 0, -1, 0);
@@ -1507,7 +1531,7 @@ static inline __m512i libdivide_mullhi_u32_vec512(__m512i a, __m512i b) {
 }
 
 // b is one 32-bit value repeated.
-static inline __m512i libdivide_mullhi_s32_vec512(__m512i a, __m512i b) {
+static LIBDIVIDE_INLINE __m512i libdivide_mullhi_s32_vec512(__m512i a, __m512i b) {
     __m512i hi_product_0Z2Z = _mm512_srli_epi64(_mm512_mul_epi32(a, b), 32);
     __m512i a1X3X = _mm512_srli_epi64(a, 32);
     __m512i mask = _mm512_set_epi32(-1, 0, -1, 0, -1, 0, -1, 0, -1, 0, -1, 0, -1, 0, -1, 0);
@@ -1516,7 +1540,7 @@ static inline __m512i libdivide_mullhi_s32_vec512(__m512i a, __m512i b) {
 }
 
 // Here, y is assumed to contain one 64-bit value repeated.
-static inline __m512i libdivide_mullhi_u64_vec512(__m512i x, __m512i y) {
+static LIBDIVIDE_INLINE __m512i libdivide_mullhi_u64_vec512(__m512i x, __m512i y) {
     // see m128i variant for comments.
     __m512i x0y0 = _mm512_mul_epu32(x, y);
     __m512i x0y0_hi = _mm512_srli_epi64(x0y0, 32);
@@ -1539,7 +1563,7 @@ static inline __m512i libdivide_mullhi_u64_vec512(__m512i x, __m512i y) {
 }
 
 // y is one 64-bit value repeated.
-static inline __m512i libdivide_mullhi_s64_vec512(__m512i x, __m512i y) {
+static LIBDIVIDE_INLINE __m512i libdivide_mullhi_s64_vec512(__m512i x, __m512i y) {
     __m512i p = libdivide_mullhi_u64_vec512(x, y);
     __m512i t1 = _mm512_and_si512(libdivide_s64_signbits(x), y);
     __m512i t2 = _mm512_and_si512(libdivide_s64_signbits(y), x);
@@ -1715,31 +1739,35 @@ __m512i libdivide_s64_branchfree_do_vec512(
 
 #if defined(LIBDIVIDE_AVX2)
 
-static inline __m256i libdivide_u32_do_vec256(__m256i numers, const struct libdivide_u32_t *denom);
-static inline __m256i libdivide_s32_do_vec256(__m256i numers, const struct libdivide_s32_t *denom);
-static inline __m256i libdivide_u64_do_vec256(__m256i numers, const struct libdivide_u64_t *denom);
-static inline __m256i libdivide_s64_do_vec256(__m256i numers, const struct libdivide_s64_t *denom);
+static LIBDIVIDE_INLINE __m256i libdivide_u32_do_vec256(
+    __m256i numers, const struct libdivide_u32_t *denom);
+static LIBDIVIDE_INLINE __m256i libdivide_s32_do_vec256(
+    __m256i numers, const struct libdivide_s32_t *denom);
+static LIBDIVIDE_INLINE __m256i libdivide_u64_do_vec256(
+    __m256i numers, const struct libdivide_u64_t *denom);
+static LIBDIVIDE_INLINE __m256i libdivide_s64_do_vec256(
+    __m256i numers, const struct libdivide_s64_t *denom);
 
-static inline __m256i libdivide_u32_branchfree_do_vec256(
+static LIBDIVIDE_INLINE __m256i libdivide_u32_branchfree_do_vec256(
     __m256i numers, const struct libdivide_u32_branchfree_t *denom);
-static inline __m256i libdivide_s32_branchfree_do_vec256(
+static LIBDIVIDE_INLINE __m256i libdivide_s32_branchfree_do_vec256(
     __m256i numers, const struct libdivide_s32_branchfree_t *denom);
-static inline __m256i libdivide_u64_branchfree_do_vec256(
+static LIBDIVIDE_INLINE __m256i libdivide_u64_branchfree_do_vec256(
     __m256i numers, const struct libdivide_u64_branchfree_t *denom);
-static inline __m256i libdivide_s64_branchfree_do_vec256(
+static LIBDIVIDE_INLINE __m256i libdivide_s64_branchfree_do_vec256(
     __m256i numers, const struct libdivide_s64_branchfree_t *denom);
 
 //////// Internal Utility Functions
 
 // Implementation of _mm256_srai_epi64(v, 63) (from AVX512).
-static inline __m256i libdivide_s64_signbits(__m256i v) {
+static LIBDIVIDE_INLINE __m256i libdivide_s64_signbits(__m256i v) {
     __m256i hiBitsDuped = _mm256_shuffle_epi32(v, _MM_SHUFFLE(3, 3, 1, 1));
     __m256i signBits = _mm256_srai_epi32(hiBitsDuped, 31);
     return signBits;
 }
 
 // Implementation of _mm256_srai_epi64 (from AVX512).
-static inline __m256i libdivide_s64_shift_right_vec256(__m256i v, int amt) {
+static LIBDIVIDE_INLINE __m256i libdivide_s64_shift_right_vec256(__m256i v, int amt) {
     const int b = 64 - amt;
     __m256i m = _mm256_set1_epi64x(1ULL << (b - 1));
     __m256i x = _mm256_srli_epi64(v, amt);
@@ -1748,7 +1776,7 @@ static inline __m256i libdivide_s64_shift_right_vec256(__m256i v, int amt) {
 }
 
 // Here, b is assumed to contain one 32-bit value repeated.
-static inline __m256i libdivide_mullhi_u32_vec256(__m256i a, __m256i b) {
+static LIBDIVIDE_INLINE __m256i libdivide_mullhi_u32_vec256(__m256i a, __m256i b) {
     __m256i hi_product_0Z2Z = _mm256_srli_epi64(_mm256_mul_epu32(a, b), 32);
     __m256i a1X3X = _mm256_srli_epi64(a, 32);
     __m256i mask = _mm256_set_epi32(-1, 0, -1, 0, -1, 0, -1, 0);
@@ -1757,7 +1785,7 @@ static inline __m256i libdivide_mullhi_u32_vec256(__m256i a, __m256i b) {
 }
 
 // b is one 32-bit value repeated.
-static inline __m256i libdivide_mullhi_s32_vec256(__m256i a, __m256i b) {
+static LIBDIVIDE_INLINE __m256i libdivide_mullhi_s32_vec256(__m256i a, __m256i b) {
     __m256i hi_product_0Z2Z = _mm256_srli_epi64(_mm256_mul_epi32(a, b), 32);
     __m256i a1X3X = _mm256_srli_epi64(a, 32);
     __m256i mask = _mm256_set_epi32(-1, 0, -1, 0, -1, 0, -1, 0);
@@ -1766,7 +1794,7 @@ static inline __m256i libdivide_mullhi_s32_vec256(__m256i a, __m256i b) {
 }
 
 // Here, y is assumed to contain one 64-bit value repeated.
-static inline __m256i libdivide_mullhi_u64_vec256(__m256i x, __m256i y) {
+static LIBDIVIDE_INLINE __m256i libdivide_mullhi_u64_vec256(__m256i x, __m256i y) {
     // see m128i variant for comments.
     __m256i x0y0 = _mm256_mul_epu32(x, y);
     __m256i x0y0_hi = _mm256_srli_epi64(x0y0, 32);
@@ -1789,7 +1817,7 @@ static inline __m256i libdivide_mullhi_u64_vec256(__m256i x, __m256i y) {
 }
 
 // y is one 64-bit value repeated.
-static inline __m256i libdivide_mullhi_s64_vec256(__m256i x, __m256i y) {
+static LIBDIVIDE_INLINE __m256i libdivide_mullhi_s64_vec256(__m256i x, __m256i y) {
     __m256i p = libdivide_mullhi_u64_vec256(x, y);
     __m256i t1 = _mm256_and_si256(libdivide_s64_signbits(x), y);
     __m256i t2 = _mm256_and_si256(libdivide_s64_signbits(y), x);
@@ -1965,31 +1993,35 @@ __m256i libdivide_s64_branchfree_do_vec256(
 
 #if defined(LIBDIVIDE_SSE2)
 
-static inline __m128i libdivide_u32_do_vec128(__m128i numers, const struct libdivide_u32_t *denom);
-static inline __m128i libdivide_s32_do_vec128(__m128i numers, const struct libdivide_s32_t *denom);
-static inline __m128i libdivide_u64_do_vec128(__m128i numers, const struct libdivide_u64_t *denom);
-static inline __m128i libdivide_s64_do_vec128(__m128i numers, const struct libdivide_s64_t *denom);
+static LIBDIVIDE_INLINE __m128i libdivide_u32_do_vec128(
+    __m128i numers, const struct libdivide_u32_t *denom);
+static LIBDIVIDE_INLINE __m128i libdivide_s32_do_vec128(
+    __m128i numers, const struct libdivide_s32_t *denom);
+static LIBDIVIDE_INLINE __m128i libdivide_u64_do_vec128(
+    __m128i numers, const struct libdivide_u64_t *denom);
+static LIBDIVIDE_INLINE __m128i libdivide_s64_do_vec128(
+    __m128i numers, const struct libdivide_s64_t *denom);
 
-static inline __m128i libdivide_u32_branchfree_do_vec128(
+static LIBDIVIDE_INLINE __m128i libdivide_u32_branchfree_do_vec128(
     __m128i numers, const struct libdivide_u32_branchfree_t *denom);
-static inline __m128i libdivide_s32_branchfree_do_vec128(
+static LIBDIVIDE_INLINE __m128i libdivide_s32_branchfree_do_vec128(
     __m128i numers, const struct libdivide_s32_branchfree_t *denom);
-static inline __m128i libdivide_u64_branchfree_do_vec128(
+static LIBDIVIDE_INLINE __m128i libdivide_u64_branchfree_do_vec128(
     __m128i numers, const struct libdivide_u64_branchfree_t *denom);
-static inline __m128i libdivide_s64_branchfree_do_vec128(
+static LIBDIVIDE_INLINE __m128i libdivide_s64_branchfree_do_vec128(
     __m128i numers, const struct libdivide_s64_branchfree_t *denom);
 
 //////// Internal Utility Functions
 
 // Implementation of _mm_srai_epi64(v, 63) (from AVX512).
-static inline __m128i libdivide_s64_signbits(__m128i v) {
+static LIBDIVIDE_INLINE __m128i libdivide_s64_signbits(__m128i v) {
     __m128i hiBitsDuped = _mm_shuffle_epi32(v, _MM_SHUFFLE(3, 3, 1, 1));
     __m128i signBits = _mm_srai_epi32(hiBitsDuped, 31);
     return signBits;
 }
 
 // Implementation of _mm_srai_epi64 (from AVX512).
-static inline __m128i libdivide_s64_shift_right_vec128(__m128i v, int amt) {
+static LIBDIVIDE_INLINE __m128i libdivide_s64_shift_right_vec128(__m128i v, int amt) {
     const int b = 64 - amt;
     __m128i m = _mm_set1_epi64x(1ULL << (b - 1));
     __m128i x = _mm_srli_epi64(v, amt);
@@ -1998,7 +2030,7 @@ static inline __m128i libdivide_s64_shift_right_vec128(__m128i v, int amt) {
 }
 
 // Here, b is assumed to contain one 32-bit value repeated.
-static inline __m128i libdivide_mullhi_u32_vec128(__m128i a, __m128i b) {
+static LIBDIVIDE_INLINE __m128i libdivide_mullhi_u32_vec128(__m128i a, __m128i b) {
     __m128i hi_product_0Z2Z = _mm_srli_epi64(_mm_mul_epu32(a, b), 32);
     __m128i a1X3X = _mm_srli_epi64(a, 32);
     __m128i mask = _mm_set_epi32(-1, 0, -1, 0);
@@ -2009,7 +2041,7 @@ static inline __m128i libdivide_mullhi_u32_vec128(__m128i a, __m128i b) {
 // SSE2 does not have a signed multiplication instruction, but we can convert
 // unsigned to signed pretty efficiently. Again, b is just a 32 bit value
 // repeated four times.
-static inline __m128i libdivide_mullhi_s32_vec128(__m128i a, __m128i b) {
+static LIBDIVIDE_INLINE __m128i libdivide_mullhi_s32_vec128(__m128i a, __m128i b) {
     __m128i p = libdivide_mullhi_u32_vec128(a, b);
     // t1 = (a >> 31) & y, arithmetic shift
     __m128i t1 = _mm_and_si128(_mm_srai_epi32(a, 31), b);
@@ -2020,7 +2052,7 @@ static inline __m128i libdivide_mullhi_s32_vec128(__m128i a, __m128i b) {
 }
 
 // Here, y is assumed to contain one 64-bit value repeated.
-static inline __m128i libdivide_mullhi_u64_vec128(__m128i x, __m128i y) {
+static LIBDIVIDE_INLINE __m128i libdivide_mullhi_u64_vec128(__m128i x, __m128i y) {
     // full 128 bits product is:
     // x0*y0 + (x0*y1 << 32) + (x1*y0 << 32) + (x1*y1 << 64)
     // Note x0,y0,x1,y1 are all conceptually uint32, products are 32x32->64.
@@ -2053,7 +2085,7 @@ static inline __m128i libdivide_mullhi_u64_vec128(__m128i x, __m128i y) {
 }
 
 // y is one 64-bit value repeated.
-static inline __m128i libdivide_mullhi_s64_vec128(__m128i x, __m128i y) {
+static LIBDIVIDE_INLINE __m128i libdivide_mullhi_s64_vec128(__m128i x, __m128i y) {
     __m128i p = libdivide_mullhi_u64_vec128(x, y);
     __m128i t1 = _mm_and_si128(libdivide_s64_signbits(x), y);
     __m128i t2 = _mm_and_si128(libdivide_s64_signbits(y), x);
@@ -2264,45 +2296,52 @@ struct NeonVecFor<int64_t> {
 
 // Versions of our algorithms for SIMD.
 #if defined(LIBDIVIDE_NEON)
-#define LIBDIVIDE_DIVIDE_NEON(ALGO, INT_TYPE)                                                 \
-    typename NeonVecFor<INT_TYPE>::type divide(typename NeonVecFor<INT_TYPE>::type n) const { \
-        return libdivide_##ALGO##_do_vec128(n, &denom);                                       \
+#define LIBDIVIDE_DIVIDE_NEON(ALGO, INT_TYPE)                    \
+    LIBDIVIDE_INLINE typename NeonVecFor<INT_TYPE>::type divide( \
+        typename NeonVecFor<INT_TYPE>::type n) const {           \
+        return libdivide_##ALGO##_do_vec128(n, &denom);          \
     }
 #else
 #define LIBDIVIDE_DIVIDE_NEON(ALGO, INT_TYPE)
 #endif
 #if defined(LIBDIVIDE_SSE2)
-#define LIBDIVIDE_DIVIDE_SSE2(ALGO) \
-    __m128i divide(__m128i n) const { return libdivide_##ALGO##_do_vec128(n, &denom); }
+#define LIBDIVIDE_DIVIDE_SSE2(ALGO)                     \
+    LIBDIVIDE_INLINE __m128i divide(__m128i n) const {  \
+        return libdivide_##ALGO##_do_vec128(n, &denom); \
+    }
 #else
 #define LIBDIVIDE_DIVIDE_SSE2(ALGO)
 #endif
 
 #if defined(LIBDIVIDE_AVX2)
-#define LIBDIVIDE_DIVIDE_AVX2(ALGO) \
-    __m256i divide(__m256i n) const { return libdivide_##ALGO##_do_vec256(n, &denom); }
+#define LIBDIVIDE_DIVIDE_AVX2(ALGO)                     \
+    LIBDIVIDE_INLINE __m256i divide(__m256i n) const {  \
+        return libdivide_##ALGO##_do_vec256(n, &denom); \
+    }
 #else
 #define LIBDIVIDE_DIVIDE_AVX2(ALGO)
 #endif
 
 #if defined(LIBDIVIDE_AVX512)
-#define LIBDIVIDE_DIVIDE_AVX512(ALGO) \
-    __m512i divide(__m512i n) const { return libdivide_##ALGO##_do_vec512(n, &denom); }
+#define LIBDIVIDE_DIVIDE_AVX512(ALGO)                   \
+    LIBDIVIDE_INLINE __m512i divide(__m512i n) const {  \
+        return libdivide_##ALGO##_do_vec512(n, &denom); \
+    }
 #else
 #define LIBDIVIDE_DIVIDE_AVX512(ALGO)
 #endif
 
 // The DISPATCHER_GEN() macro generates C++ methods (for the given integer
 // and algorithm types) that redirect to libdivide's C API.
-#define DISPATCHER_GEN(T, ALGO)                                      \
-    libdivide_##ALGO##_t denom;                                      \
-    dispatcher() {}                                                  \
-    dispatcher(T d) : denom(libdivide_##ALGO##_gen(d)) {}            \
-    T divide(T n) const { return libdivide_##ALGO##_do(n, &denom); } \
-    T recover() const { return libdivide_##ALGO##_recover(&denom); } \
-    LIBDIVIDE_DIVIDE_NEON(ALGO, T)                                   \
-    LIBDIVIDE_DIVIDE_SSE2(ALGO)                                      \
-    LIBDIVIDE_DIVIDE_AVX2(ALGO)                                      \
+#define DISPATCHER_GEN(T, ALGO)                                                       \
+    libdivide_##ALGO##_t denom;                                                       \
+    LIBDIVIDE_INLINE dispatcher() {}                                                  \
+    LIBDIVIDE_INLINE dispatcher(T d) : denom(libdivide_##ALGO##_gen(d)) {}            \
+    LIBDIVIDE_INLINE T divide(T n) const { return libdivide_##ALGO##_do(n, &denom); } \
+    LIBDIVIDE_INLINE T recover() const { return libdivide_##ALGO##_recover(&denom); } \
+    LIBDIVIDE_DIVIDE_NEON(ALGO, T)                                                    \
+    LIBDIVIDE_DIVIDE_SSE2(ALGO)                                                       \
+    LIBDIVIDE_DIVIDE_AVX2(ALGO)                                                       \
     LIBDIVIDE_DIVIDE_AVX512(ALGO)
 
 // The dispatcher selects a specific division algorithm for a given
@@ -2355,10 +2394,10 @@ class divider {
     divider() {}
 
     // Constructor that takes the divisor as a parameter
-    divider(T d) : div(d) {}
+    LIBDIVIDE_INLINE divider(T d) : div(d) {}
 
     // Divides n by the divisor
-    T divide(T n) const { return div.divide(n); }
+    LIBDIVIDE_INLINE T divide(T n) const { return div.divide(n); }
 
     // Recovers the divisor, returns the value that was
     // used to initialize this divider object.
@@ -2374,16 +2413,16 @@ class divider {
     // (e.g. s32, u32, s64, u64) and divides each of them by the divider, returning the packed
     // quotients.
 #if defined(LIBDIVIDE_SSE2)
-    __m128i divide(__m128i n) const { return div.divide(n); }
+    LIBDIVIDE_INLINE __m128i divide(__m128i n) const { return div.divide(n); }
 #endif
 #if defined(LIBDIVIDE_AVX2)
-    __m256i divide(__m256i n) const { return div.divide(n); }
+    LIBDIVIDE_INLINE __m256i divide(__m256i n) const { return div.divide(n); }
 #endif
 #if defined(LIBDIVIDE_AVX512)
-    __m512i divide(__m512i n) const { return div.divide(n); }
+    LIBDIVIDE_INLINE __m512i divide(__m512i n) const { return div.divide(n); }
 #endif
 #if defined(LIBDIVIDE_NEON)
-    typename NeonVecFor<T>::type divide(typename NeonVecFor<T>::type n) const {
+    LIBDIVIDE_INLINE typename NeonVecFor<T>::type divide(typename NeonVecFor<T>::type n) const {
         return div.divide(n);
     }
 #endif
@@ -2395,13 +2434,13 @@ class divider {
 
 // Overload of operator / for scalar division
 template <typename T, Branching ALGO>
-T operator/(T n, const divider<T, ALGO> &div) {
+LIBDIVIDE_INLINE T operator/(T n, const divider<T, ALGO> &div) {
     return div.divide(n);
 }
 
 // Overload of operator /= for scalar division
 template <typename T, Branching ALGO>
-T &operator/=(T &n, const divider<T, ALGO> &div) {
+LIBDIVIDE_INLINE T &operator/=(T &n, const divider<T, ALGO> &div) {
     n = div.divide(n);
     return n;
 }
@@ -2409,36 +2448,36 @@ T &operator/=(T &n, const divider<T, ALGO> &div) {
 // Overloads for vector types.
 #if defined(LIBDIVIDE_SSE2)
 template <typename T, Branching ALGO>
-__m128i operator/(__m128i n, const divider<T, ALGO> &div) {
+LIBDIVIDE_INLINE __m128i operator/(__m128i n, const divider<T, ALGO> &div) {
     return div.divide(n);
 }
 
 template <typename T, Branching ALGO>
-__m128i operator/=(__m128i &n, const divider<T, ALGO> &div) {
+LIBDIVIDE_INLINE __m128i operator/=(__m128i &n, const divider<T, ALGO> &div) {
     n = div.divide(n);
     return n;
 }
 #endif
 #if defined(LIBDIVIDE_AVX2)
 template <typename T, Branching ALGO>
-__m256i operator/(__m256i n, const divider<T, ALGO> &div) {
+LIBDIVIDE_INLINE __m256i operator/(__m256i n, const divider<T, ALGO> &div) {
     return div.divide(n);
 }
 
 template <typename T, Branching ALGO>
-__m256i operator/=(__m256i &n, const divider<T, ALGO> &div) {
+LIBDIVIDE_INLINE __m256i operator/=(__m256i &n, const divider<T, ALGO> &div) {
     n = div.divide(n);
     return n;
 }
 #endif
 #if defined(LIBDIVIDE_AVX512)
 template <typename T, Branching ALGO>
-__m512i operator/(__m512i n, const divider<T, ALGO> &div) {
+LIBDIVIDE_INLINE __m512i operator/(__m512i n, const divider<T, ALGO> &div) {
     return div.divide(n);
 }
 
 template <typename T, Branching ALGO>
-__m512i operator/=(__m512i &n, const divider<T, ALGO> &div) {
+LIBDIVIDE_INLINE __m512i operator/=(__m512i &n, const divider<T, ALGO> &div) {
     n = div.divide(n);
     return n;
 }
@@ -2446,45 +2485,45 @@ __m512i operator/=(__m512i &n, const divider<T, ALGO> &div) {
 
 #if defined(LIBDIVIDE_NEON)
 template <Branching ALGO>
-uint32x4_t operator/(uint32x4_t n, const divider<uint32_t, ALGO> &div) {
+LIBDIVIDE_INLINE uint32x4_t operator/(uint32x4_t n, const divider<uint32_t, ALGO> &div) {
     return div.divide(n);
 }
 
 template <Branching ALGO>
-int32x4_t operator/(int32x4_t n, const divider<int32_t, ALGO> &div) {
+LIBDIVIDE_INLINE int32x4_t operator/(int32x4_t n, const divider<int32_t, ALGO> &div) {
     return div.divide(n);
 }
 
 template <Branching ALGO>
-uint64x2_t operator/(uint64x2_t n, const divider<uint64_t, ALGO> &div) {
+LIBDIVIDE_INLINE uint64x2_t operator/(uint64x2_t n, const divider<uint64_t, ALGO> &div) {
     return div.divide(n);
 }
 
 template <Branching ALGO>
-int64x2_t operator/(int64x2_t n, const divider<int64_t, ALGO> &div) {
+LIBDIVIDE_INLINE int64x2_t operator/(int64x2_t n, const divider<int64_t, ALGO> &div) {
     return div.divide(n);
 }
 
 template <Branching ALGO>
-uint32x4_t operator/=(uint32x4_t &n, const divider<uint32_t, ALGO> &div) {
+LIBDIVIDE_INLINE uint32x4_t operator/=(uint32x4_t &n, const divider<uint32_t, ALGO> &div) {
     n = div.divide(n);
     return n;
 }
 
 template <Branching ALGO>
-int32x4_t operator/=(int32x4_t &n, const divider<int32_t, ALGO> &div) {
+LIBDIVIDE_INLINE int32x4_t operator/=(int32x4_t &n, const divider<int32_t, ALGO> &div) {
     n = div.divide(n);
     return n;
 }
 
 template <Branching ALGO>
-uint64x2_t operator/=(uint64x2_t &n, const divider<uint64_t, ALGO> &div) {
+LIBDIVIDE_INLINE uint64x2_t operator/=(uint64x2_t &n, const divider<uint64_t, ALGO> &div) {
     n = div.divide(n);
     return n;
 }
 
 template <Branching ALGO>
-int64x2_t operator/=(int64x2_t &n, const divider<int64_t, ALGO> &div) {
+LIBDIVIDE_INLINE int64x2_t operator/=(int64x2_t &n, const divider<int64_t, ALGO> &div) {
     n = div.divide(n);
     return n;
 }
