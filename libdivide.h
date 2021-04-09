@@ -2,7 +2,7 @@
 // https://libdivide.com
 //
 // Copyright (C) 2010 - 2019 ridiculous_fish, <libdivide@ridiculousfish.com>
-// Copyright (C) 2016 - 2019 Kim Walisch, <kim.walisch@gmail.com>
+// Copyright (C) 2016 - 2021 Kim Walisch, <kim.walisch@gmail.com>
 //
 // libdivide is dual-licensed under the Boost or zlib licenses.
 // You may use libdivide under the terms of either of these.
@@ -11,8 +11,8 @@
 #ifndef LIBDIVIDE_H
 #define LIBDIVIDE_H
 
-#define LIBDIVIDE_VERSION "3.0"
-#define LIBDIVIDE_VERSION_MAJOR 3
+#define LIBDIVIDE_VERSION "4.0"
+#define LIBDIVIDE_VERSION_MAJOR 4
 #define LIBDIVIDE_VERSION_MINOR 0
 
 #include <stdint.h>
