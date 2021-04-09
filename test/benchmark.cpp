@@ -300,9 +300,9 @@ static uint64_t find_min(const uint64_t *vals, size_t cnt) {
 }
 
 template <typename IntT>
-NOINLINE struct TestResult test_one(const IntT *vals, IntT denom) {
+NOINLINE TestResult test_one(const IntT *vals, IntT denom) {
 #define TEST_COUNT 30
-    struct TestResult result;
+    TestResult result;
     memset(&result, 0, sizeof result);
     const bool testBranchfree = (denom != 1);
 
