@@ -1,7 +1,7 @@
 // libdivide.h - Optimized integer division
 // https://libdivide.com
 //
-// Copyright (C) 2010 - 2019 ridiculous_fish, <libdivide@ridiculousfish.com>
+// Copyright (C) 2010 - 2021 ridiculous_fish, <libdivide@ridiculousfish.com>
 // Copyright (C) 2016 - 2021 Kim Walisch, <kim.walisch@gmail.com>
 //
 // libdivide is dual-licensed under the Boost or zlib licenses.
@@ -361,88 +361,100 @@ static LIBDIVIDE_INLINE uint32_t libdivide_64_div_32_to_32(
 #endif
 }
 
-// libdivide_128_div_64_to_64: divides a 128-bit uint {u1, u0} by a 64-bit
-// uint {v}. The result must fit in 64 bits.
-// Returns the quotient directly and the remainder in *r
-static uint64_t libdivide_128_div_64_to_64(uint64_t u1, uint64_t u0, uint64_t v, uint64_t *r) {
+// libdivide_128_div_64_to_64: divides a 128-bit uint {numhi, numlo} by a 64-bit uint {den}. The
+// result must fit in 64 bits. Returns the quotient directly and the remainder in *r
+static uint64_t libdivide_128_div_64_to_64(
+    uint64_t numhi, uint64_t numlo, uint64_t den, uint64_t *r) {
     // N.B. resist the temptation to use __uint128_t here.
     // In LLVM compiler-rt, it performs a 128/128 -> 128 division which is many times slower than
     // necessary. In gcc it's better but still slower than the divlu implementation, perhaps because
     // it's not LIBDIVIDE_INLINEd.
 #if defined(LIBDIVIDE_X86_64) && defined(LIBDIVIDE_GCC_STYLE_ASM)
     uint64_t result;
-    __asm__("divq %[v]" : "=a"(result), "=d"(*r) : [v] "r"(v), "a"(u0), "d"(u1));
+    __asm__("divq %[v]" : "=a"(result), "=d"(*r) : [v] "r"(den), "a"(numlo), "d"(numhi));
     return result;
 #else
-    // Code taken from Hacker's Delight:
-    // http://www.hackersdelight.org/HDcode/divlu.c.
-    // License permits inclusion here per:
-    // http://www.hackersdelight.org/permissions.htm
+    // We work in base 2**32.
+    // A uint32 holds a single digit. A uint64 holds two digits.
+    // Our numerator is conceptually [num3, num2, num1, num0].
+    // Our denominator is [den1, den0].
+    const uint64_t b = (1ull << 32);
 
-    const uint64_t b = (1ULL << 32);  // Number base (32 bits)
-    uint64_t un1, un0;                // Norm. dividend LSD's
-    uint64_t vn1, vn0;                // Norm. divisor digits
-    uint64_t q1, q0;                  // Quotient digits
-    uint64_t un64, un21, un10;        // Dividend digit pairs
-    uint64_t rhat;                    // A remainder
-    int32_t s;                        // Shift amount for norm
+    // The high and low digits of our computed quotient.
+    uint32_t q1;
+    uint32_t q0;
 
-    // If overflow, set rem. to an impossible value,
-    // and return the largest possible quotient
-    if (u1 >= v) {
-        *r = (uint64_t)-1;
-        return (uint64_t)-1;
+    // The normalization shift factor.
+    int shift;
+
+    // The high and low digits of our denominator (after normalizing).
+    // Also the low 2 digits of our numerator (after normalizing).
+    uint32_t den1;
+    uint32_t den0;
+    uint32_t num1;
+    uint32_t num0;
+
+    // A partial remainder.
+    uint64_t rem;
+
+    // The estimated quotient, and its corresponding remainder (unrelated to true remainder).
+    uint64_t qhat;
+    uint64_t rhat;
+
+    // Variables used to correct the estimated quotient.
+    uint64_t c1;
+    uint64_t c2;
+
+    // Check for overflow and divide by 0.
+    if (numhi >= den) {
+        if (r != NULL) *r = ~0ull;
+        return ~0ull;
     }
 
-    // count leading zeros
-    s = libdivide_count_leading_zeros64(v);
-    if (s > 0) {
-        // Normalize divisor
-        v = v << s;
-        un64 = (u1 << s) | (u0 >> (64 - s));
-        un10 = u0 << s;  // Shift dividend left
-    } else {
-        // Avoid undefined behavior of (u0 >> 64).
-        // The behavior is undefined if the right operand is
-        // negative, or greater than or equal to the length
-        // in bits of the promoted left operand.
-        un64 = u1;
-        un10 = u0;
-    }
+    // Determine the normalization factor. We multiply den by this, so that its leading digit is at
+    // least half b. In binary this means just shifting left by the number of leading zeros, so that
+    // there's a 1 in the MSB.
+    // We also shift numer by the same amount. This cannot overflow because numhi < den.
+    // The expression (-shift & 63) is the same as (64 - shift), except it avoids the UB of shifting
+    // by 64. The funny bitwise 'and' ensures that numlo does not get shifted into numhi if shift is
+    // 0. clang 11 has an x86 codegen bug here: see LLVM bug 50118. The sequence below avoids it.
+    shift = libdivide_count_leading_zeros64(den);
+    den <<= shift;
+    numhi <<= shift;
+    numhi |= (numlo >> (-shift & 63)) & (-(int64_t)shift >> 63);
+    numlo <<= shift;
 
-    // Break divisor up into two 32-bit digits
-    vn1 = v >> 32;
-    vn0 = v & 0xFFFFFFFF;
+    // Extract the low digits of the numerator and both digits of the denominator.
+    num1 = (uint32_t)(numlo >> 32);
+    num0 = (uint32_t)(numlo & 0xFFFFFFFFu);
+    den1 = (uint32_t)(den >> 32);
+    den0 = (uint32_t)(den & 0xFFFFFFFFu);
 
-    // Break right half of dividend into two digits
-    un1 = un10 >> 32;
-    un0 = un10 & 0xFFFFFFFF;
+    // We wish to compute q1 = [n3 n2 n1] / [d1 d0].
+    // Estimate q1 as [n3 n2] / [d1], and then correct it.
+    // Note while qhat may be 2 digits, q1 is always 1 digit.
+    qhat = numhi / den1;
+    rhat = numhi % den1;
+    c1 = qhat * den0;
+    c2 = rhat * b + num1;
+    if (c1 > c2) qhat -= (c1 - c2 > den) ? 2 : 1;
+    q1 = (uint32_t)qhat;
 
-    // Compute the first quotient digit, q1
-    q1 = un64 / vn1;
-    rhat = un64 - q1 * vn1;
+    // Compute the true (partial) remainder.
+    rem = numhi * b + num1 - q1 * den;
 
-    while (q1 >= b || q1 * vn0 > b * rhat + un1) {
-        q1 = q1 - 1;
-        rhat = rhat + vn1;
-        if (rhat >= b) break;
-    }
+    // We wish to compute q0 = [rem1 rem0 n0] / [d1 d0].
+    // Estimate q0 as [rem1 rem0] / [d1] and correct it.
+    qhat = rem / den1;
+    rhat = rem % den1;
+    c1 = qhat * den0;
+    c2 = rhat * b + num0;
+    if (c1 > c2) qhat -= (c1 - c2 > den) ? 2 : 1;
+    q0 = (uint32_t)qhat;
 
-    // Multiply and subtract
-    un21 = un64 * b + un1 - q1 * v;
-
-    // Compute the second quotient digit
-    q0 = un21 / vn1;
-    rhat = un21 - q0 * vn1;
-
-    while (q0 >= b || q0 * vn0 > b * rhat + un0) {
-        q0 = q0 - 1;
-        rhat = rhat + vn1;
-        if (rhat >= b) break;
-    }
-
-    *r = (un21 * b + un0 - q0 * v) >> s;
-    return q1 * b + q0;
+    // Return remainder if requested.
+    if (r != NULL) *r = (rem * b + num0 - q0 * den) >> shift;
+    return ((uint64_t)q1 << 32) | q0;
 #endif
 }
 
