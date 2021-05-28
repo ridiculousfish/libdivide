@@ -16,12 +16,7 @@
 #define LIBDIVIDE_VERSION_MINOR 0
 
 #include <stdint.h>
-
-#if defined(__cplusplus)
-#include <cstdio>
-#include <cstdlib>
-#include <type_traits>
-#else
+#if !defined(__AVR__)
 #include <stdio.h>
 #include <stdlib.h>
 #endif
@@ -85,13 +80,17 @@
 #define LIBDIVIDE_INLINE inline
 #endif
 
+#if defined(__AVR__)
+#define LIBDIVIDE_ERROR(msg)
+#else
 #define LIBDIVIDE_ERROR(msg)                                                                     \
     do {                                                                                         \
         fprintf(stderr, "libdivide.h:%d: %s(): Error: %s\n", __LINE__, LIBDIVIDE_FUNCTION, msg); \
         abort();                                                                                 \
     } while (0)
+#endif
 
-#if defined(LIBDIVIDE_ASSERTIONS_ON)
+#if defined(LIBDIVIDE_ASSERTIONS_ON) && !defined(__AVR__)
 #define LIBDIVIDE_ASSERT(x)                                                           \
     do {                                                                              \
         if (!(x)) {                                                                   \
@@ -301,7 +300,10 @@ static LIBDIVIDE_INLINE int64_t libdivide_mullhi_s64(int64_t x, int64_t y) {
 }
 
 static LIBDIVIDE_INLINE int32_t libdivide_count_leading_zeros32(uint32_t val) {
-#if defined(__GNUC__) || __has_builtin(__builtin_clz)
+#if defined(__AVR__)
+   // Fast way to count leading zeros
+    return __builtin_clzl(val);
+#elif defined(__GNUC__) || __has_builtin(__builtin_clz)
     // Fast way to count leading zeros
     return __builtin_clz(val);
 #elif defined(LIBDIVIDE_VC)
@@ -2358,39 +2360,39 @@ struct NeonVecFor<int64_t> {
 
 // The dispatcher selects a specific division algorithm for a given
 // type and ALGO using partial template specialization.
-template <bool IS_INTEGRAL, bool IS_SIGNED, int SIZEOF, Branching ALGO>
+template <typename _IntT, Branching ALGO>
 struct dispatcher {};
 
 template <>
-struct dispatcher<true, true, sizeof(int32_t), BRANCHFULL> {
+struct dispatcher<int32_t, BRANCHFULL> {
     DISPATCHER_GEN(int32_t, s32)
 };
 template <>
-struct dispatcher<true, true, sizeof(int32_t), BRANCHFREE> {
+struct dispatcher<int32_t, BRANCHFREE> {
     DISPATCHER_GEN(int32_t, s32_branchfree)
 };
 template <>
-struct dispatcher<true, false, sizeof(uint32_t), BRANCHFULL> {
+struct dispatcher<uint32_t, BRANCHFULL> {
     DISPATCHER_GEN(uint32_t, u32)
 };
 template <>
-struct dispatcher<true, false, sizeof(uint32_t), BRANCHFREE> {
+struct dispatcher<uint32_t, BRANCHFREE> {
     DISPATCHER_GEN(uint32_t, u32_branchfree)
 };
 template <>
-struct dispatcher<true, true, sizeof(int64_t), BRANCHFULL> {
+struct dispatcher<int64_t, BRANCHFULL> {
     DISPATCHER_GEN(int64_t, s64)
 };
 template <>
-struct dispatcher<true, true, sizeof(int64_t), BRANCHFREE> {
+struct dispatcher<int64_t, BRANCHFREE> {
     DISPATCHER_GEN(int64_t, s64_branchfree)
 };
 template <>
-struct dispatcher<true, false, sizeof(uint64_t), BRANCHFULL> {
+struct dispatcher<uint64_t, BRANCHFULL> {
     DISPATCHER_GEN(uint64_t, u64)
 };
 template <>
-struct dispatcher<true, false, sizeof(uint64_t), BRANCHFREE> {
+struct dispatcher<uint64_t, BRANCHFREE> {
     DISPATCHER_GEN(uint64_t, u64_branchfree)
 };
 
@@ -2441,7 +2443,7 @@ class divider {
 
    private:
     // Storage for the actual divisor
-    dispatcher<std::is_integral<T>::value, std::is_signed<T>::value, sizeof(T), ALGO> div;
+    dispatcher<T, ALGO> div;
 };
 
 // Overload of operator / for scalar division
