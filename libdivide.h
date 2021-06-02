@@ -380,7 +380,7 @@ static uint64_t libdivide_128_div_64_to_64(
     // A uint32 holds a single digit. A uint64 holds two digits.
     // Our numerator is conceptually [num3, num2, num1, num0].
     // Our denominator is [den1, den0].
-    const uint64_t b = (1ull << 32);
+    const uint64_t b = ((uint64_t)1 << 32);
 
     // The high and low digits of our computed quotient.
     uint32_t q1;
@@ -596,13 +596,13 @@ static LIBDIVIDE_INLINE struct libdivide_u32_t libdivide_internal_u32_gen(
     } else {
         uint8_t more;
         uint32_t rem, proposed_m;
-        proposed_m = libdivide_64_div_32_to_32(1U << floor_log_2_d, 0, d, &rem);
+        proposed_m = libdivide_64_div_32_to_32((uint32_t)1 << floor_log_2_d, 0, d, &rem);
 
         LIBDIVIDE_ASSERT(rem > 0 && rem < d);
         const uint32_t e = d - rem;
 
         // This power works if e < 2**floor_log_2_d.
-        if (!branchfree && (e < (1U << floor_log_2_d))) {
+        if (!branchfree && (e < ((uint32_t)1 << floor_log_2_d))) {
             // This power works
             more = floor_log_2_d;
         } else {
@@ -670,14 +670,14 @@ uint32_t libdivide_u32_recover(const struct libdivide_u32_t *denom) {
     uint8_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
 
     if (!denom->magic) {
-        return 1U << shift;
+        return (uint32_t)1 << shift;
     } else if (!(more & LIBDIVIDE_ADD_MARKER)) {
         // We compute q = n/d = n*m / 2^(32 + shift)
         // Therefore we have d = 2^(32 + shift) / m
         // We need to ceil it.
         // We know d is not a power of 2, so m is not a power of 2,
         // so we can just add 1 to the floor
-        uint32_t hi_dividend = 1U << shift;
+        uint32_t hi_dividend = (uint32_t)1 << shift;
         uint32_t rem_ignored;
         return 1 + libdivide_64_div_32_to_32(hi_dividend, 0, denom->magic, &rem_ignored);
     } else {
@@ -686,8 +686,8 @@ uint32_t libdivide_u32_recover(const struct libdivide_u32_t *denom) {
         // Also note that shift may be as high as 31, so shift + 1 will
         // overflow. So we have to compute it as 2^(32+shift)/(m+2^32), and
         // then double the quotient and remainder.
-        uint64_t half_n = 1ULL << (32 + shift);
-        uint64_t d = (1ULL << 32) | denom->magic;
+        uint64_t half_n = (uint64_t)1 << (32 + shift);
+        uint64_t d = ((uint64_t)1 << 32) | denom->magic;
         // Note that the quotient is guaranteed <= 32 bits, but the remainder
         // may need 33!
         uint32_t half_q = (uint32_t)(half_n / d);
@@ -708,15 +708,15 @@ uint32_t libdivide_u32_branchfree_recover(const struct libdivide_u32_branchfree_
     uint8_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
 
     if (!denom->magic) {
-        return 1U << (shift + 1);
+        return (uint32_t)1 << (shift + 1);
     } else {
         // Here we wish to compute d = 2^(32+shift+1)/(m+2^32).
         // Notice (m + 2^32) is a 33 bit number. Use 64 bit division for now
         // Also note that shift may be as high as 31, so shift + 1 will
         // overflow. So we have to compute it as 2^(32+shift)/(m+2^32), and
         // then double the quotient and remainder.
-        uint64_t half_n = 1ULL << (32 + shift);
-        uint64_t d = (1ULL << 32) | denom->magic;
+        uint64_t half_n = (uint64_t)1 << (32 + shift);
+        uint64_t d = ((uint64_t)1 << 32) | denom->magic;
         // Note that the quotient is guaranteed <= 32 bits, but the remainder
         // may need 33!
         uint32_t half_q = (uint32_t)(half_n / d);
@@ -755,13 +755,13 @@ static LIBDIVIDE_INLINE struct libdivide_u64_t libdivide_internal_u64_gen(
         uint64_t proposed_m, rem;
         uint8_t more;
         // (1 << (64 + floor_log_2_d)) / d
-        proposed_m = libdivide_128_div_64_to_64(1ULL << floor_log_2_d, 0, d, &rem);
+        proposed_m = libdivide_128_div_64_to_64((uint64_t)1 << floor_log_2_d, 0, d, &rem);
 
         LIBDIVIDE_ASSERT(rem > 0 && rem < d);
         const uint64_t e = d - rem;
 
         // This power works if e < 2**floor_log_2_d.
-        if (!branchfree && e < (1ULL << floor_log_2_d)) {
+        if (!branchfree && e < ((uint64_t)1 << floor_log_2_d)) {
             // This power works
             more = floor_log_2_d;
         } else {
@@ -830,14 +830,14 @@ uint64_t libdivide_u64_recover(const struct libdivide_u64_t *denom) {
     uint8_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
 
     if (!denom->magic) {
-        return 1ULL << shift;
+        return (uint64_t)1 << shift;
     } else if (!(more & LIBDIVIDE_ADD_MARKER)) {
         // We compute q = n/d = n*m / 2^(64 + shift)
         // Therefore we have d = 2^(64 + shift) / m
         // We need to ceil it.
         // We know d is not a power of 2, so m is not a power of 2,
         // so we can just add 1 to the floor
-        uint64_t hi_dividend = 1ULL << shift;
+        uint64_t hi_dividend = (uint64_t)1 << shift;
         uint64_t rem_ignored;
         return 1 + libdivide_128_div_64_to_64(hi_dividend, 0, denom->magic, &rem_ignored);
     } else {
@@ -849,7 +849,7 @@ uint64_t libdivide_u64_recover(const struct libdivide_u64_t *denom) {
         // Full n is a (potentially) 129 bit value
         // half_n is a 128 bit value
         // Compute the hi half of half_n. Low half is 0.
-        uint64_t half_n_hi = 1ULL << shift, half_n_lo = 0;
+        uint64_t half_n_hi = (uint64_t)1 << shift, half_n_lo = 0;
         // d is a 65 bit value. The high bit is always set to 1.
         const uint64_t d_hi = 1, d_lo = denom->magic;
         // Note that the quotient is guaranteed <= 64 bits,
@@ -874,7 +874,7 @@ uint64_t libdivide_u64_branchfree_recover(const struct libdivide_u64_branchfree_
     uint8_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
 
     if (!denom->magic) {
-        return 1ULL << (shift + 1);
+        return (uint64_t)1 << (shift + 1);
     } else {
         // Here we wish to compute d = 2^(64+shift+1)/(m+2^64).
         // Notice (m + 2^64) is a 65 bit number. This gets hairy. See
@@ -884,7 +884,7 @@ uint64_t libdivide_u64_branchfree_recover(const struct libdivide_u64_branchfree_
         // Full n is a (potentially) 129 bit value
         // half_n is a 128 bit value
         // Compute the hi half of half_n. Low half is 0.
-        uint64_t half_n_hi = 1ULL << shift, half_n_lo = 0;
+        uint64_t half_n_hi = (uint64_t)1 << shift, half_n_lo = 0;
         // d is a 65 bit value. The high bit is always set to 1.
         const uint64_t d_hi = 1, d_lo = denom->magic;
         // Note that the quotient is guaranteed <= 64 bits,
@@ -936,12 +936,12 @@ static LIBDIVIDE_INLINE struct libdivide_s32_t libdivide_internal_s32_gen(
         // the dividend here is 2**(floor_log_2_d + 31), so the low 32 bit word
         // is 0 and the high word is floor_log_2_d - 1
         uint32_t rem, proposed_m;
-        proposed_m = libdivide_64_div_32_to_32(1U << (floor_log_2_d - 1), 0, absD, &rem);
+        proposed_m = libdivide_64_div_32_to_32((uint32_t)1 << (floor_log_2_d - 1), 0, absD, &rem);
         const uint32_t e = absD - rem;
 
         // We are going to start with a power of floor_log_2_d - 1.
         // This works if works if e < 2**floor_log_2_d.
-        if (!branchfree && e < (1U << floor_log_2_d)) {
+        if (!branchfree && e < ((uint32_t)1 << floor_log_2_d)) {
             // This power works
             more = floor_log_2_d - 1;
         } else {
@@ -988,7 +988,7 @@ int32_t libdivide_s32_do(int32_t numer, const struct libdivide_s32_t *denom) {
 
     if (!denom->magic) {
         uint32_t sign = (int8_t)more >> 7;
-        uint32_t mask = (1U << shift) - 1;
+        uint32_t mask = ((uint32_t)1 << shift) - 1;
         uint32_t uq = numer + ((numer >> 31) & mask);
         int32_t q = (int32_t)uq;
         q >>= shift;
@@ -1024,7 +1024,7 @@ int32_t libdivide_s32_branchfree_do(int32_t numer, const struct libdivide_s32_br
     // 2, or (2**shift) if it is not a power of 2
     uint32_t is_power_of_2 = (magic == 0);
     uint32_t q_sign = (uint32_t)(q >> 31);
-    q += q_sign & ((1U << shift) - is_power_of_2);
+    q += q_sign & (((uint32_t)1 << shift) - is_power_of_2);
 
     // Now arithmetic right shift
     q >>= shift;
@@ -1038,7 +1038,7 @@ int32_t libdivide_s32_recover(const struct libdivide_s32_t *denom) {
     uint8_t more = denom->more;
     uint8_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
     if (!denom->magic) {
-        uint32_t absD = 1U << shift;
+        uint32_t absD = (uint32_t)1 << shift;
         if (more & LIBDIVIDE_NEGATIVE_DIVISOR) {
             absD = -absD;
         }
@@ -1056,12 +1056,12 @@ int32_t libdivide_s32_recover(const struct libdivide_s32_t *denom) {
 
         // Handle the power of 2 case (including branchfree)
         if (denom->magic == 0) {
-            int32_t result = 1U << shift;
+            int32_t result = (uint32_t)1 << shift;
             return negative_divisor ? -result : result;
         }
 
         uint32_t d = (uint32_t)(magic_was_negated ? -denom->magic : denom->magic);
-        uint64_t n = 1ULL << (32 + shift);  // this shift cannot exceed 30
+        uint64_t n = (uint64_t)1 << (32 + shift);  // this shift cannot exceed 30
         uint32_t q = (uint32_t)(n / d);
         int32_t result = (int32_t)q;
         result += 1;
@@ -1103,12 +1103,12 @@ static LIBDIVIDE_INLINE struct libdivide_s64_t libdivide_internal_s64_gen(
         // is 0 and the high word is floor_log_2_d - 1
         uint8_t more;
         uint64_t rem, proposed_m;
-        proposed_m = libdivide_128_div_64_to_64(1ULL << (floor_log_2_d - 1), 0, absD, &rem);
+        proposed_m = libdivide_128_div_64_to_64((uint64_t)1 << (floor_log_2_d - 1), 0, absD, &rem);
         const uint64_t e = absD - rem;
 
         // We are going to start with a power of floor_log_2_d - 1.
         // This works if works if e < 2**floor_log_2_d.
-        if (!branchfree && e < (1ULL << floor_log_2_d)) {
+        if (!branchfree && e < ((uint64_t)1 << floor_log_2_d)) {
             // This power works
             more = floor_log_2_d - 1;
         } else {
@@ -1156,7 +1156,7 @@ int64_t libdivide_s64_do(int64_t numer, const struct libdivide_s64_t *denom) {
     uint8_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
 
     if (!denom->magic) {  // shift path
-        uint64_t mask = (1ULL << shift) - 1;
+        uint64_t mask = ((uint64_t)1 << shift) - 1;
         uint64_t uq = numer + ((numer >> 63) & mask);
         int64_t q = (int64_t)uq;
         q >>= shift;
@@ -1194,7 +1194,7 @@ int64_t libdivide_s64_branchfree_do(int64_t numer, const struct libdivide_s64_br
     // 2, or (2**shift) if it is not a power of 2.
     uint64_t is_power_of_2 = (magic == 0);
     uint64_t q_sign = (uint64_t)(q >> 63);
-    q += q_sign & ((1ULL << shift) - is_power_of_2);
+    q += q_sign & (((uint64_t)1 << shift) - is_power_of_2);
 
     // Arithmetic right shift
     q >>= shift;
@@ -1208,7 +1208,7 @@ int64_t libdivide_s64_recover(const struct libdivide_s64_t *denom) {
     uint8_t more = denom->more;
     uint8_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
     if (denom->magic == 0) {  // shift path
-        uint64_t absD = 1ULL << shift;
+        uint64_t absD = (uint64_t)1 << shift;
         if (more & LIBDIVIDE_NEGATIVE_DIVISOR) {
             absD = -absD;
         }
@@ -1219,7 +1219,7 @@ int64_t libdivide_s64_recover(const struct libdivide_s64_t *denom) {
         int magic_was_negated = (more & LIBDIVIDE_ADD_MARKER) ? denom->magic > 0 : denom->magic < 0;
 
         uint64_t d = (uint64_t)(magic_was_negated ? -denom->magic : denom->magic);
-        uint64_t n_hi = 1ULL << shift, n_lo = 0;
+        uint64_t n_hi = (uint64_t)1 << shift, n_lo = 0;
         uint64_t rem_ignored;
         uint64_t q = libdivide_128_div_64_to_64(n_hi, n_lo, d, &rem_ignored);
         int64_t result = (int64_t)(q + 1);
@@ -1398,7 +1398,7 @@ int32x4_t libdivide_s32_do_vec128(int32x4_t numers, const struct libdivide_s32_t
     uint8_t more = denom->more;
     if (!denom->magic) {
         uint8_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
-        uint32_t mask = (1U << shift) - 1;
+        uint32_t mask = ((uint32_t)1 << shift) - 1;
         int32x4_t roundToZeroTweak = vdupq_n_s32((int)mask);
         // q = numer + ((numer >> 31) & roundToZeroTweak);
         int32x4_t q = vaddq_s32(numers, vandq_s32(vshrq_n_s32(numers, 31), roundToZeroTweak));
@@ -1438,7 +1438,7 @@ int32x4_t libdivide_s32_branchfree_do_vec128(
     // a power of 2, or (2**shift) if it is not a power of 2
     uint32_t is_power_of_2 = (magic == 0);
     int32x4_t q_sign = vshrq_n_s32(q, 31);  // q_sign = q >> 31
-    int32x4_t mask = vdupq_n_s32((1U << shift) - is_power_of_2);
+    int32x4_t mask = vdupq_n_s32(((uint32_t)1 << shift) - is_power_of_2);
     q = vaddq_s32(q, vandq_s32(q_sign, mask));  // q = q + (q_sign & mask)
     q = libdivide_s32_neon_sra(q, shift);       // q >>= shift
     q = vsubq_s32(veorq_s32(q, sign), sign);    // q = (q ^ sign) - sign
@@ -1452,7 +1452,7 @@ int64x2_t libdivide_s64_do_vec128(int64x2_t numers, const struct libdivide_s64_t
     int64_t magic = denom->magic;
     if (magic == 0) {  // shift path
         uint8_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
-        uint64_t mask = (1ULL << shift) - 1;
+        uint64_t mask = ((uint64_t)1 << shift) - 1;
         int64x2_t roundToZeroTweak = vdupq_n_s64(mask);  // TODO: no need to sign extend
         // q = numer + ((numer >> 63) & roundToZeroTweak);
         int64x2_t q =
@@ -1495,7 +1495,7 @@ int64x2_t libdivide_s64_branchfree_do_vec128(
     // a power of 2, or (2**shift) if it is not a power of 2.
     uint32_t is_power_of_2 = (magic == 0);
     int64x2_t q_sign = libdivide_s64_signbits(q);  // q_sign = q >> 63
-    int64x2_t mask = vdupq_n_s64((1ULL << shift) - is_power_of_2);
+    int64x2_t mask = vdupq_n_s64(((uint64_t)1 << shift) - is_power_of_2);
     q = vaddq_s64(q, vandq_s64(q_sign, mask));  // q = q + (q_sign & mask)
     q = libdivide_s64_neon_sra(q, shift);       // q >>= shift
     q = vsubq_s64(veorq_s64(q, sign), sign);    // q = (q ^ sign) - sign
@@ -1646,7 +1646,7 @@ __m512i libdivide_s32_do_vec512(__m512i numers, const struct libdivide_s32_t *de
     uint8_t more = denom->more;
     if (!denom->magic) {
         uint32_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
-        uint32_t mask = (1U << shift) - 1;
+        uint32_t mask = ((uint32_t)1 << shift) - 1;
         __m512i roundToZeroTweak = _mm512_set1_epi32(mask);
         // q = numer + ((numer >> 31) & roundToZeroTweak);
         __m512i q = _mm512_add_epi32(
@@ -1686,7 +1686,7 @@ __m512i libdivide_s32_branchfree_do_vec512(
     // a power of 2, or (2**shift) if it is not a power of 2
     uint32_t is_power_of_2 = (magic == 0);
     __m512i q_sign = _mm512_srai_epi32(q, 31);  // q_sign = q >> 31
-    __m512i mask = _mm512_set1_epi32((1U << shift) - is_power_of_2);
+    __m512i mask = _mm512_set1_epi32(((uint32_t)1 << shift) - is_power_of_2);
     q = _mm512_add_epi32(q, _mm512_and_si512(q_sign, mask));  // q = q + (q_sign & mask)
     q = _mm512_srai_epi32(q, shift);                          // q >>= shift
     q = _mm512_sub_epi32(_mm512_xor_si512(q, sign), sign);    // q = (q ^ sign) - sign
@@ -1700,7 +1700,7 @@ __m512i libdivide_s64_do_vec512(__m512i numers, const struct libdivide_s64_t *de
     int64_t magic = denom->magic;
     if (magic == 0) {  // shift path
         uint32_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
-        uint64_t mask = (1ULL << shift) - 1;
+        uint64_t mask = ((uint64_t)1 << shift) - 1;
         __m512i roundToZeroTweak = _mm512_set1_epi64(mask);
         // q = numer + ((numer >> 63) & roundToZeroTweak);
         __m512i q = _mm512_add_epi64(
@@ -1742,7 +1742,7 @@ __m512i libdivide_s64_branchfree_do_vec512(
     // a power of 2, or (2**shift) if it is not a power of 2.
     uint32_t is_power_of_2 = (magic == 0);
     __m512i q_sign = libdivide_s64_signbits(q);  // q_sign = q >> 63
-    __m512i mask = _mm512_set1_epi64((1ULL << shift) - is_power_of_2);
+    __m512i mask = _mm512_set1_epi64(((uint64_t)1 << shift) - is_power_of_2);
     q = _mm512_add_epi64(q, _mm512_and_si512(q_sign, mask));  // q = q + (q_sign & mask)
     q = libdivide_s64_shift_right_vec512(q, shift);           // q >>= shift
     q = _mm512_sub_epi64(_mm512_xor_si512(q, sign), sign);    // q = (q ^ sign) - sign
@@ -1783,7 +1783,7 @@ static LIBDIVIDE_INLINE __m256i libdivide_s64_signbits(__m256i v) {
 // Implementation of _mm256_srai_epi64 (from AVX512).
 static LIBDIVIDE_INLINE __m256i libdivide_s64_shift_right_vec256(__m256i v, int amt) {
     const int b = 64 - amt;
-    __m256i m = _mm256_set1_epi64x(1ULL << (b - 1));
+    __m256i m = _mm256_set1_epi64x((uint64_t)1 << (b - 1));
     __m256i x = _mm256_srli_epi64(v, amt);
     __m256i result = _mm256_sub_epi64(_mm256_xor_si256(x, m), m);
     return result;
@@ -1900,7 +1900,7 @@ __m256i libdivide_s32_do_vec256(__m256i numers, const struct libdivide_s32_t *de
     uint8_t more = denom->more;
     if (!denom->magic) {
         uint32_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
-        uint32_t mask = (1U << shift) - 1;
+        uint32_t mask = ((uint32_t)1 << shift) - 1;
         __m256i roundToZeroTweak = _mm256_set1_epi32(mask);
         // q = numer + ((numer >> 31) & roundToZeroTweak);
         __m256i q = _mm256_add_epi32(
@@ -1940,7 +1940,7 @@ __m256i libdivide_s32_branchfree_do_vec256(
     // a power of 2, or (2**shift) if it is not a power of 2
     uint32_t is_power_of_2 = (magic == 0);
     __m256i q_sign = _mm256_srai_epi32(q, 31);  // q_sign = q >> 31
-    __m256i mask = _mm256_set1_epi32((1U << shift) - is_power_of_2);
+    __m256i mask = _mm256_set1_epi32(((uint32_t)1 << shift) - is_power_of_2);
     q = _mm256_add_epi32(q, _mm256_and_si256(q_sign, mask));  // q = q + (q_sign & mask)
     q = _mm256_srai_epi32(q, shift);                          // q >>= shift
     q = _mm256_sub_epi32(_mm256_xor_si256(q, sign), sign);    // q = (q ^ sign) - sign
@@ -1954,7 +1954,7 @@ __m256i libdivide_s64_do_vec256(__m256i numers, const struct libdivide_s64_t *de
     int64_t magic = denom->magic;
     if (magic == 0) {  // shift path
         uint32_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
-        uint64_t mask = (1ULL << shift) - 1;
+        uint64_t mask = ((uint64_t)1 << shift) - 1;
         __m256i roundToZeroTweak = _mm256_set1_epi64x(mask);
         // q = numer + ((numer >> 63) & roundToZeroTweak);
         __m256i q = _mm256_add_epi64(
@@ -1996,7 +1996,7 @@ __m256i libdivide_s64_branchfree_do_vec256(
     // a power of 2, or (2**shift) if it is not a power of 2.
     uint32_t is_power_of_2 = (magic == 0);
     __m256i q_sign = libdivide_s64_signbits(q);  // q_sign = q >> 63
-    __m256i mask = _mm256_set1_epi64x((1ULL << shift) - is_power_of_2);
+    __m256i mask = _mm256_set1_epi64x(((uint64_t)1 << shift) - is_power_of_2);
     q = _mm256_add_epi64(q, _mm256_and_si256(q_sign, mask));  // q = q + (q_sign & mask)
     q = libdivide_s64_shift_right_vec256(q, shift);           // q >>= shift
     q = _mm256_sub_epi64(_mm256_xor_si256(q, sign), sign);    // q = (q ^ sign) - sign
@@ -2037,7 +2037,7 @@ static LIBDIVIDE_INLINE __m128i libdivide_s64_signbits(__m128i v) {
 // Implementation of _mm_srai_epi64 (from AVX512).
 static LIBDIVIDE_INLINE __m128i libdivide_s64_shift_right_vec128(__m128i v, int amt) {
     const int b = 64 - amt;
-    __m128i m = _mm_set1_epi64x(1ULL << (b - 1));
+    __m128i m = _mm_set1_epi64x((uint64_t)1 << (b - 1));
     __m128i x = _mm_srli_epi64(v, amt);
     __m128i result = _mm_sub_epi64(_mm_xor_si128(x, m), m);
     return result;
@@ -2168,7 +2168,7 @@ __m128i libdivide_s32_do_vec128(__m128i numers, const struct libdivide_s32_t *de
     uint8_t more = denom->more;
     if (!denom->magic) {
         uint32_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
-        uint32_t mask = (1U << shift) - 1;
+        uint32_t mask = ((uint32_t)1 << shift) - 1;
         __m128i roundToZeroTweak = _mm_set1_epi32(mask);
         // q = numer + ((numer >> 31) & roundToZeroTweak);
         __m128i q =
@@ -2208,7 +2208,7 @@ __m128i libdivide_s32_branchfree_do_vec128(
     // a power of 2, or (2**shift) if it is not a power of 2
     uint32_t is_power_of_2 = (magic == 0);
     __m128i q_sign = _mm_srai_epi32(q, 31);  // q_sign = q >> 31
-    __m128i mask = _mm_set1_epi32((1U << shift) - is_power_of_2);
+    __m128i mask = _mm_set1_epi32(((uint32_t)1 << shift) - is_power_of_2);
     q = _mm_add_epi32(q, _mm_and_si128(q_sign, mask));  // q = q + (q_sign & mask)
     q = _mm_srai_epi32(q, shift);                       // q >>= shift
     q = _mm_sub_epi32(_mm_xor_si128(q, sign), sign);    // q = (q ^ sign) - sign
@@ -2222,7 +2222,7 @@ __m128i libdivide_s64_do_vec128(__m128i numers, const struct libdivide_s64_t *de
     int64_t magic = denom->magic;
     if (magic == 0) {  // shift path
         uint32_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
-        uint64_t mask = (1ULL << shift) - 1;
+        uint64_t mask = ((uint64_t)1 << shift) - 1;
         __m128i roundToZeroTweak = _mm_set1_epi64x(mask);
         // q = numer + ((numer >> 63) & roundToZeroTweak);
         __m128i q =
@@ -2264,7 +2264,7 @@ __m128i libdivide_s64_branchfree_do_vec128(
     // a power of 2, or (2**shift) if it is not a power of 2.
     uint32_t is_power_of_2 = (magic == 0);
     __m128i q_sign = libdivide_s64_signbits(q);  // q_sign = q >> 63
-    __m128i mask = _mm_set1_epi64x((1ULL << shift) - is_power_of_2);
+    __m128i mask = _mm_set1_epi64x(((uint64_t)1 << shift) - is_power_of_2);
     q = _mm_add_epi64(q, _mm_and_si128(q_sign, mask));  // q = q + (q_sign & mask)
     q = libdivide_s64_shift_right_vec128(q, shift);     // q >>= shift
     q = _mm_sub_epi64(_mm_xor_si128(q, sign), sign);    // q = (q ^ sign) - sign
