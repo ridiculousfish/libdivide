@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <limits>
 #include <random>
@@ -93,19 +94,14 @@ class DivideTest {
 
     template <typename VecType, Branching ALGO>
     void test_vec(const T *numers, T denom, const divider<T, ALGO> &div) {
-        // Align memory to 64 byte boundary for AVX512
-        char mem[16 * sizeof(T) + 64];
-        size_t offset = 64 - (size_t)&mem % 64;
-        T *results = (T *)&mem[offset];
-
         size_t iters = 64 / sizeof(VecType);
-        size_t size = sizeof(VecType) / sizeof(T);
+        const size_t size = sizeof(VecType) / sizeof(T);
 
         for (size_t j = 0; j < iters; j++, numers += size) {
             VecType x = *((const VecType *)numers);
             VecType resultVector = x / div;
-            results = (T *)&resultVector;
-
+            T results[sizeof(VecType) / sizeof(T)];
+            memcpy(&results, &resultVector, sizeof resultVector);
             for (size_t i = 0; i < size; i++) {
                 T numer = numers[i];
                 T result = results[i];
