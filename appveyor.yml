@@ -93,9 +93,15 @@ for:
     environment:
       CFLAGS: "/W3 /WX /DLIBDIVIDE_ASSERTIONS_ON"
       CXXFLAGS: "/W3 /WX /DLIBDIVIDE_ASSERTIONS_ON"
+    install:
+      - cmd: SET PATH=C:\Python39;C:\Python39\Scripts;%PATH%
+      - cmd: pip install -U platformio
     build_script:
       - cmake . -G "Visual Studio 16 2019"
       - cmake --build . --config Release
+      - cd test/avr
+      - ps: Get-Content -Path .\platformio.ini | Where-Object { $_.StartsWith("[env:") } | ForEach-Object { & pio run -e $_.SubString(5, $_.Length-6) }
+      - cd ../..
     test_script:
       - cd Release
       - tester.exe
