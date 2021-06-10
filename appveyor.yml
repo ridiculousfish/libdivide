@@ -96,6 +96,7 @@ for:
     install:
       - cmd: SET PATH=C:\Python39;C:\Python39\Scripts;%PATH%
       - cmd: pip install -U platformio
+      - cmd: pio platform install atmelavr --with-package=tool-simavr
     build_script:
       - cmake . -G "Visual Studio 16 2019"
       - cmake --build . --config Release
@@ -106,3 +107,5 @@ for:
       - cd Release
       - tester.exe
       - benchmark_branchfree.exe
+      - cd ../test/avr
+      - pio run -t Simulate -e megaatmega2560_TestFast

@@ -30,9 +30,8 @@ class DivideTest {
 
     int32_t get_loop_increment(int32_t range_min, int32_t range_max)
     {
-#if defined(TEST_FAST)
-        const uint8_t min_iterations = 50;
-        return (range_max - range_min)/min_iterations;
+#if defined(TEST_MIN_ITERATIONS)
+        return (range_max - range_min)/TEST_MIN_ITERATIONS;
 #else
         UNUSED(range_min);
         UNUSED(range_max);
