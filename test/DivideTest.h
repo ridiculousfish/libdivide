@@ -93,17 +93,17 @@ class DivideTest {
         T result = numer / the_divider;
 
         if (result != expect) {
-            PRINT_ERROR("Failure for ");
+            PRINT_ERROR(F("Failure for "));
             PRINT_ERROR(testcase_name(ALGO));
-            PRINT_ERROR(": ");
+            PRINT_ERROR(F(": "));
             PRINT_ERROR(numer);
-            PRINT_ERROR(" / ");
+            PRINT_ERROR(F(" / "));
             PRINT_ERROR(denom);
-            PRINT_ERROR(" = ");
+            PRINT_ERROR(F(" = "));
             PRINT_ERROR(expect);
-            PRINT_ERROR(", but got ");
+            PRINT_ERROR(F(", but got "));
             PRINT_ERROR(result);
-            PRINT_ERROR("\n");            
+            PRINT_ERROR(F("\n"));            
             exit(1);
         }
     }
@@ -129,17 +129,17 @@ class DivideTest {
                 T expect = numer / denom;
 
                 if (result != expect) {
-                    PRINT_ERROR("Vector failure for: ");
+                    PRINT_ERROR(F("Vector failure for: "));
                     PRINT_ERROR(testcase_name(ALGO));
-                    PRINT_ERROR(": ");
+                    PRINT_ERROR(F(": "));
                     PRINT_ERROR(numer);
-                    PRINT_ERROR(" / ");
+                    PRINT_ERROR(F(" / "));
                     PRINT_ERROR(denom);
-                    PRINT_ERROR(" = ");
+                    PRINT_ERROR(F(" = "));
                     PRINT_ERROR(expect );
-                    PRINT_ERROR(", but got ");
+                    PRINT_ERROR(F(", but got "));
                     PRINT_ERROR(result);
-                    PRINT_ERROR("\n");
+                    PRINT_ERROR(F("\n"));
                     exit(1);
                 } else {
     #if 0
@@ -160,13 +160,13 @@ class DivideTest {
         const divider<T, ALGO> the_divider = divider<T, ALGO>(denom);
         T recovered = the_divider.recover();
         if (recovered != denom) {
-            PRINT_ERROR("Failed to recover divisor for ");
+            PRINT_ERROR(F("Failed to recover divisor for "));
             PRINT_ERROR(testcase_name(ALGO));
-            PRINT_ERROR(": ");
+            PRINT_ERROR(F(": "));
             PRINT_ERROR(denom);
-            PRINT_ERROR(", but got ");
+            PRINT_ERROR(F(", but got "));
             PRINT_ERROR(recovered);
-            PRINT_ERROR("\n");
+            PRINT_ERROR(F("\n"));
             exit(1);
         }
 
@@ -344,9 +344,9 @@ class DivideTest {
     }
 
     void test_all_algorithms(T denom) {
-        PRINT_PROGRESS_MSG("Testing deom ");
+        PRINT_PROGRESS_MSG(F("Testing deom "));
         PRINT_PROGRESS_MSG(denom);
-        PRINT_PROGRESS_MSG("\n");
+        PRINT_PROGRESS_MSG(F("\n"));
         test_many<BRANCHFULL>(denom);
         test_many<BRANCHFREE>(denom);        
     }
@@ -370,15 +370,15 @@ public:
         }
 
         if (limits::is_signed) {
-            PRINT_PROGRESS_MSG("Testing minimum\n");
+            PRINT_PROGRESS_MSG(F("Testing minimum\n"));
             test_all_algorithms((limits::min)());
         }
 
-        PRINT_PROGRESS_MSG("Testing maximum\n");
+        PRINT_PROGRESS_MSG(F("Testing maximum\n"));
         test_all_algorithms((limits::max)());
 
         // test power of 2 denoms: 2^i-1, 2^i, 2^i+1
-        PRINT_PROGRESS_MSG("Testing powers of 2\n");
+        PRINT_PROGRESS_MSG(F("Testing powers of 2\n"));
         for (int i = 1; i < limits::digits; i++) {
             for (int j = -1; j <= 1; j++) {
                 T denom = ((T)1 << i) + j;
@@ -393,13 +393,13 @@ public:
 
         // test all bits set:
         // 11111111, 11111110, 11111100, ...
-        PRINT_PROGRESS_MSG("Testing all bits set\n");
+        PRINT_PROGRESS_MSG(F("Testing all bits set\n"));
         for (UT bits = (UT)~0ull; bits != 0; bits <<= 1) {
             test_all_algorithms((T)bits);
         }
 
         // Test random denominators
-        PRINT_PROGRESS_MSG("Test random denominators\n");        
+        PRINT_PROGRESS_MSG(F("Test random denominators\n"));        
         increment = get_loop_increment(0, 10000);
         for (int i = 0; i < 10000; i+=increment) {
             T denom = random_denominator();
@@ -411,9 +411,9 @@ public:
 
 template <typename T>
 void run_test() {
-    PRINT_INFO("Testing ");
+    PRINT_INFO(F("Testing "));
     PRINT_INFO(type_name<T>::get_name());
-    PRINT_INFO("\n");
+    PRINT_INFO(F("\n"));
     DivideTest<T> dt;
     dt.run();
 }

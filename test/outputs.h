@@ -45,6 +45,7 @@ void print_serial(const int64_t &item)
 
 #define PRINT_ERROR(item) std::cerr << item
 #define PRINT_INFO(item) std::cout << item
+#define F(item) item
 
 #endif
 
