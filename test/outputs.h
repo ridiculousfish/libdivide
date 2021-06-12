@@ -1,5 +1,11 @@
 #pragma once
 
+// Silence MSVC sprintf unsafe warnings
+#define _CRT_SECURE_NO_WARNINGS
+
+#include <inttypes.h>
+#include <stdio.h>
+
 #if defined(__AVR__)
 #include <Arduino.h>
 

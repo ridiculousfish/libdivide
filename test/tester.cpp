@@ -8,6 +8,9 @@
 // division to hardware division. It may take a long time to run, but it
 // will output as soon as it finds a discrepancy.
 
+// Silence MSVC sprintf unsafe warnings
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <iostream>
 #include <string>
 #include <thread>

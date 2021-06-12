@@ -7,6 +7,7 @@
 #include "avr_type_helpers.h"
 #else
 #include <type_traits>
+#include <algorithm>
 #endif
 
 #if defined(_WIN32) || defined(WIN32)
@@ -17,11 +18,11 @@
 #define LIBDIVIDE_WINDOWS
 #endif
 
-#include "..\libdivide.h"
+#include "libdivide.h"
 #include "type_mappings.h"
 #include "outputs.h"
 #include "timer.hpp"
-#include "random_data.hpp"
+#include "random_numerators.hpp"
 
 using namespace libdivide;
 
@@ -64,7 +65,7 @@ inline uint64_t unsigned_sum_vals(const IntT *vals, size_t count) {
 }
 
 template <typename IntT, typename Divisor>
-NOINLINE uint64_t sum_quotients(const random_data<IntT> &vals, const Divisor &div) {
+NOINLINE uint64_t sum_quotients(const random_numerators<IntT> &vals, const Divisor &div) {
     uint64_t sum = 0;
     auto end = vals.end();
     for (auto pNumerator = vals.begin(); pNumerator != end; pNumerator++) {
@@ -75,7 +76,7 @@ NOINLINE uint64_t sum_quotients(const random_data<IntT> &vals, const Divisor &di
 
 #ifdef x86_VECTOR_TYPE
 template <typename IntT, typename Divisor>
-NOINLINE uint64_t sum_quotients_vec(const random_data<IntT> &vals, const Divisor &div) {
+NOINLINE uint64_t sum_quotients_vec(const random_numerators<IntT> &vals, const Divisor &div) {
     size_t count = sizeof(x86_VECTOR_TYPE) / sizeof(IntT);
     x86_VECTOR_TYPE sumX4 = SETZERO_SI();
     for (auto iter = vals.begin(); iter != vals.end(); iter += count) {
@@ -117,11 +118,11 @@ template <> struct NeonVecFuncs<int64_t> {
 };
 
 template <typename IntT, typename Divisor>
-NOINLINE uint64_t sum_quotients_vec(const random_data<IntT> &vals, const Divisor &div) {
+NOINLINE uint64_t sum_quotients_vec(const random_numerators<IntT> &vals, const Divisor &div) {
     typedef typename NeonVecFor<IntT>::type NeonVectorType;
     size_t count = sizeof(NeonVectorType) / sizeof(IntT);
     NeonVectorType sumX4 = NeonVecFuncs<IntT>::dup(0);
-    for (random_data<IntT>::const_iterator iter = vals.begin(); iter != vals.end(); iter += count) {
+    for (auto iter = vals.begin(); iter != vals.end(); iter += count) {
         NeonVectorType numers = *(NeonVectorType *)iter;
         numers = numers / div;
         sumX4 = NeonVecFuncs<IntT>::add(sumX4, numers);
@@ -138,7 +139,7 @@ NOINLINE divider<IntT> generate_1_divisor(IntT d) {
 }
 
 template <typename IntT>
-NOINLINE void generate_divisor(const random_data<IntT> &vals, IntT denom) {
+NOINLINE void generate_divisor(const random_numerators<IntT> &vals, IntT denom) {
     for (size_t iter = 0; iter < vals.length(); iter++) {
         (void)generate_1_divisor(denom);
     }
@@ -150,10 +151,10 @@ struct time_double {
 };
 
 template<typename IntT, class DenomT>
-using pFuncToTime = uint64_t(*)(const random_data<IntT> &, const DenomT &);
+using pFuncToTime = uint64_t(*)(const random_numerators<IntT> &, const DenomT &);
 
 template<typename IntT, class DenomT>
-NOINLINE static time_double time_function(const random_data<IntT> &vals, DenomT denom, pFuncToTime<IntT, DenomT> timeFunc) {
+NOINLINE static time_double time_function(const random_numerators<IntT> &vals, DenomT denom, pFuncToTime<IntT, DenomT> timeFunc) {
     time_double tresult;
 
     timer t;
@@ -185,7 +186,7 @@ struct TestResult {
     } while (0)
 
 template <typename IntT>
-NOINLINE TestResult test_one(const random_data<IntT> &vals, IntT denom) {
+NOINLINE TestResult test_one(const random_numerators<IntT> &vals, IntT denom) {
     const bool testBranchfree = (denom != 1);
     divider<IntT, BRANCHFULL> div_bfull(denom);
     divider<IntT, BRANCHFREE> div_bfree(testBranchfree ? denom : 2);
@@ -256,7 +257,7 @@ int32_t get_algorithm(_IntT d)
 }
 
 template <typename _IntT>
-NOINLINE struct TestResult test_one(_IntT d, const random_data<_IntT> &data) {
+NOINLINE TestResult test_one(_IntT d, const random_numerators<_IntT> &data) {
     struct TestResult result = test_one(data, d);
     result.algo = get_algorithm(d);
     return result;
@@ -300,7 +301,7 @@ template <typename _IntT>
 void test_many() {
     print_banner<_IntT>();
     print_report_header();
-    random_data<_IntT> data;
+    random_numerators<_IntT> data;
     _IntT d = 1;
     while (true) {
         print_report_result(d, test_one(d, data));

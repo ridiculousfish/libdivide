@@ -2,8 +2,15 @@
 
 #include <inttypes.h>
 
-#if !defined(LIBDIVIDE_WINDOWS) && !defined(__AVR__)
-#include <time.h>
+#if defined(_WIN32) || defined(WIN32)
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#define VC_EXTRALEAN
+#include <windows.h>
+#elif defined(__AVR__)
+#include <Arduino.h>
+#else
+#include <sys/time.h>
 #endif
 
 #define MILLIS_PER_SEC 1000ULL

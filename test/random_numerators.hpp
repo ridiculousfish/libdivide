@@ -13,7 +13,7 @@ int freeRAM()
 
 // A READONLY buffer of RANDOM LENGTH and RANDOM CONTENT
 template <typename T>
-class random_data {
+class random_numerators {
 private:
 
     uint32_t *_pData;
@@ -71,7 +71,7 @@ public:
     using const_reference = const T&;
     using const_iterator  = const_pointer;
 
-    random_data() {
+    random_numerators() {
 #if defined(__AVR__)
         // Using 1/8 of free RAM should be enough to fool the 
         // compiler optimizer and give enough test iterations on
@@ -91,7 +91,7 @@ public:
         randomize_buffer();
     }
 
-    ~random_data() {
+    ~random_numerators() {
         deallocate(_pData);
     }
 
