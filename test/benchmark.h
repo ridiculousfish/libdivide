@@ -53,9 +53,6 @@ using namespace libdivide;
 #define ADD_EPI32 _mm_add_epi32
 #endif
 
-
-volatile uint64_t sGlobalUInt64;
-
 // Helper - given a vector of some type, convert it to unsigned and sum it
 template <typename IntT>
 inline uint64_t unsigned_sum_vals(const IntT *vals, size_t count) {
@@ -67,7 +64,7 @@ inline uint64_t unsigned_sum_vals(const IntT *vals, size_t count) {
 }
 
 template <typename IntT, typename Divisor>
-NOINLINE uint64_t sum_quotients(const random_data<IntT> &vals, Divisor div) {
+NOINLINE uint64_t sum_quotients(const random_data<IntT> &vals, const Divisor &div) {
     uint64_t sum = 0;
     auto end = vals.end();
     for (auto pNumerator = vals.begin(); pNumerator != end; pNumerator++) {
@@ -78,7 +75,7 @@ NOINLINE uint64_t sum_quotients(const random_data<IntT> &vals, Divisor div) {
 
 #ifdef x86_VECTOR_TYPE
 template <typename IntT, typename Divisor>
-NOINLINE uint64_t sum_quotients_vec(const random_data<IntT> &vals, Divisor div) {
+NOINLINE uint64_t sum_quotients_vec(const random_data<IntT> &vals, const Divisor &div) {
     size_t count = sizeof(x86_VECTOR_TYPE) / sizeof(IntT);
     x86_VECTOR_TYPE sumX4 = SETZERO_SI();
     for (auto iter = vals.begin(); iter != vals.end(); iter += count) {
@@ -96,59 +93,38 @@ NOINLINE uint64_t sum_quotients_vec(const random_data<IntT> &vals, Divisor div) 
 }
 #elif defined(LIBDIVIDE_NEON)
 
-template <typename Divisor>
-NOINLINE uint64_t sum_quotients_vec(const random_data<uint32_t> &vals, Divisor div) {
-    typedef uint32_t IntT;
-    typedef typename NeonVecFor<IntT>::type NeonVectorType;
-    size_t count = sizeof(NeonVectorType) / sizeof(IntT);
-    NeonVectorType sumX4 = vdupq_n_u32(0);
-    for (random_data<uint32_t>::const_iterator iter = vals.begin(); iter != vals.end(); iter += count) {
-        NeonVectorType numers = *(NeonVectorType *)iter;
-        numers = numers / div;
-        sumX4 = vaddq_u32(sumX4, numers);
-    }
-    return unsigned_sum_vals((const IntT *)&sumX4, count);
-}
+// Helper to deduce NEON vector type for integral type.
+template <typename T> struct NeonVecFuncs {};
 
-template <typename Divisor>
-NOINLINE uint64_t sum_quotients_vec(const random_data<int32_t> &vals, Divisor div) {
-    typedef int32_t IntT;
-    typedef typename NeonVecFor<IntT>::type NeonVectorType;
-    size_t count = sizeof(NeonVectorType) / sizeof(IntT);
-    NeonVectorType sumX4 = vdupq_n_s32(0);
-    for (random_data<int32_t>::const_iterator iter = vals.begin(); iter != vals.end(); iter += count) {
-        NeonVectorType numers = *(NeonVectorType *)iter;
-        numers = numers / div;
-        sumX4 = vaddq_s32(sumX4, numers);
-    }
-    return unsigned_sum_vals((const IntT *)&sumX4, count);
-}
+template <> struct NeonVecFuncs<uint32_t> {
+    inline uint32x4_t dup(uint32_t value) { return vdupq_n_u32(value); }
+    inline uint32x4_t add(uint32x4_t a, uint32x4_t b) { return vaddq_u32(a, b); }
+};
 
-template <typename Divisor>
-NOINLINE uint64_t sum_quotients_vec(const random_data<uint64_t> &vals, Divisor div) {
-    typedef uint64_t IntT;
-    typedef typename NeonVecFor<IntT>::type NeonVectorType;
-    size_t count = sizeof(NeonVectorType) / sizeof(IntT);
-    NeonVectorType sumX4 = vdupq_n_u64(0);
-    for (random_data<uint64_t>::const_iterator iter = vals.begin(); iter != vals.end(); iter += count) {
-        NeonVectorType numers = *(NeonVectorType *)iter;
-        numers = numers / div;
-        sumX4 = vaddq_u64(sumX4, numers);
-    }
-    return unsigned_sum_vals((const IntT *)&sumX4, count);
-}
+template <> struct NeonVecFuncs<int32_t> { 
+    inline int32x4_t dup(int32_t value) { return vdupq_n_s32(value); }
+    inline int32x4_t add(int32x4_t a, int32x4_t b) { return vaddq_s32(a, b); }
+};
 
-template <typename Divisor>
-NOINLINE uint64_t sum_quotients_vec(const random_data<int64_t> &vals, Divisor div) {
-    typedef int64_t IntT;
+template <> struct NeonVecFuncs<uint64_t> {
+    inline uint64x2_t dup(uint64_t value) { return vdupq_n_u64(value); }
+    inline uint64x2_t add(uint64x2_t a, uint64x2_t b) { return vaddq_u64(a, b); }
+};
+
+template <> struct NeonVecFuncs<int64_t> {
+    inline int64x2_t dup(int64_t value) { return vdupq_n_s64(value); }
+    inline int64x2_t add(int64x2_t a, int64x2_t b) { return vaddq_s64(a, b); }
+};
+
+template <typename IntT, typename Divisor>
+NOINLINE uint64_t sum_quotients_vec(const random_data<IntT> &vals, const Divisor &div) {
     typedef typename NeonVecFor<IntT>::type NeonVectorType;
     size_t count = sizeof(NeonVectorType) / sizeof(IntT);
-    const uint64x2_t zeros = vdupq_n_u64(0);
-    NeonVectorType sumX4 = *reinterpret_cast<const NeonVectorType *>(&zeros);
-    for (random_data<int64_t>::const_iterator iter = vals.begin(); iter != vals.end(); iter += count) {
+    NeonVectorType sumX4 = NeonVecFuncs<IntT>::dup(0);
+    for (random_data<IntT>::const_iterator iter = vals.begin(); iter != vals.end(); iter += count) {
         NeonVectorType numers = *(NeonVectorType *)iter;
         numers = numers / div;
-        sumX4 = vaddq_s64(sumX4, numers);
+        sumX4 = NeonVecFuncs<IntT>::add(sumX4, numers);
     }
     return unsigned_sum_vals((const IntT *)&sumX4, count);
 }
@@ -173,55 +149,18 @@ struct time_double {
     uint64_t result;
 };
 
-enum which_function_t {
-    func_hardware,
-    func_scalar_branchfull,
-    func_scalar_branchfree,
-    func_vec_branchfull,
-    func_vec_branchfree,
-    func_generate
-};
+template<typename IntT, class DenomT>
+using pFuncToTime = uint64_t(*)(const random_data<IntT> &, const DenomT &);
 
-template <which_function_t Which, typename IntT>
-NOINLINE static time_double time_function(const random_data<IntT> &vals, IntT denom) {
-    uint64_t result = 0;
-    divider<IntT, BRANCHFULL> div_bfull(denom);
-    divider<IntT, BRANCHFREE> div_bfree(denom != 1 ? denom : 2);
+template<typename IntT, class DenomT>
+NOINLINE static time_double time_function(const random_data<IntT> &vals, DenomT denom, pFuncToTime<IntT, DenomT> timeFunc) {
+    time_double tresult;
 
     timer t;
     t.start();
-
-    switch (Which) {
-        case func_hardware:
-            result = sum_quotients(vals, denom);
-            break;
-        case func_scalar_branchfull:
-            result = sum_quotients(vals, div_bfull);
-            break;
-        case func_scalar_branchfree:
-            result = sum_quotients(vals, div_bfree);
-            break;
-#if defined(x86_VECTOR_TYPE) || defined(LIBDIVIDE_NEON)
-        case func_vec_branchfull:
-            result = sum_quotients_vec(vals, div_bfull);
-            break;
-        case func_vec_branchfree:
-            result = sum_quotients_vec(vals, div_bfree);
-            break;
-#endif
-        case func_generate:
-            generate_divisor(vals, denom);
-            break;
-        default:
-            abort();
-    }
+    tresult.result = timeFunc(vals, denom);
     t.stop();
-
-    sGlobalUInt64 += result;
-
-    time_double tresult;
     tresult.time = t.duration_nano();
-    tresult.result = result;
     return tresult;
 }
 
@@ -248,28 +187,34 @@ struct TestResult {
 template <typename IntT>
 NOINLINE TestResult test_one(const random_data<IntT> &vals, IntT denom) {
     const bool testBranchfree = (denom != 1);
+    divider<IntT, BRANCHFULL> div_bfull(denom);
+    divider<IntT, BRANCHFREE> div_bfree(testBranchfree ? denom : 2);
 
     uint64_t min_my_time = INT64_MAX, min_my_time_branchfree = INT64_MAX, min_my_time_vector = INT64_MAX,
         min_my_time_vector_branchfree = INT64_MAX, min_his_time = INT64_MAX, min_gen_time = INT64_MAX;
     time_double tresult;
     for (size_t iter = 0; iter < TEST_COUNT; iter++) {
-        tresult = time_function<func_hardware>(vals, denom);
+        tresult = time_function(vals, denom, sum_quotients<IntT, IntT>);
         min_his_time = (std::min)(min_his_time, tresult.time);
         const uint64_t expected = tresult.result;
-        tresult = time_function<func_scalar_branchfull>(vals, denom);
+
+        tresult = time_function(vals, div_bfull, sum_quotients<IntT, divider<IntT, BRANCHFULL>>);
         min_my_time = (std::min)(min_my_time, tresult.time);
         CHECK(tresult.result, expected);
+
         if (testBranchfree) {
-            tresult = time_function<func_scalar_branchfree>(vals, denom);
+            tresult = time_function(vals, div_bfree, sum_quotients<IntT, divider<IntT, BRANCHFREE>>);
             min_my_time_branchfree = (std::min)(min_my_time_branchfree, tresult.time);
             CHECK(tresult.result, expected);
         }
+
 #if defined(x86_VECTOR_TYPE) || defined(LIBDIVIDE_NEON)
-        tresult = time_function<func_vec_branchfull>(vals, denom);
+        tresult = time_function(vals, div_bfull, sum_quotients_vec<IntT, divider<IntT, BRANCHFULL>>);
         min_my_time_vector = (std::min)(min_my_time_vector, tresult.time);
         CHECK(tresult.result, expected);
+
         if (testBranchfree) {
-            tresult = time_function<func_vec_branchfree>(vals, denom);
+            tresult = time_function(vals, div_bfree, sum_quotients_vec<IntT, divider<IntT, BRANCHFREE>>);
             min_my_time_vector_branchfree = (std::min)(min_my_time_vector_branchfree, tresult.time);
             CHECK(tresult.result, expected);
         }
@@ -277,8 +222,14 @@ NOINLINE TestResult test_one(const random_data<IntT> &vals, IntT denom) {
         min_my_time_vector = 0;
         min_my_time_vector_branchfree = 0;
 #endif
-        tresult = time_function<func_generate>(vals, denom);
-        min_gen_time = (std::min)(min_gen_time, tresult.time);
+
+        {
+            timer t;
+            t.start();
+            generate_divisor(vals, denom);
+            t.stop();
+            min_gen_time = (std::min)(min_gen_time, t.duration_nano());
+        }
     }
 
     TestResult result;
@@ -286,7 +237,7 @@ NOINLINE TestResult test_one(const random_data<IntT> &vals, IntT denom) {
     result.base_time = min_my_time / (double)vals.length();
     result.branchfree_time = testBranchfree ? min_my_time_branchfree / (double)vals.length() : -1;
     result.vector_time = min_my_time_vector / (double)vals.length();
-    result.vector_branchfree_time = min_my_time_vector_branchfree / (double)vals.length();
+    result.vector_branchfree_time = testBranchfree ? min_my_time_vector_branchfree / (double)vals.length() : -1;
     result.hardware_time = min_his_time / (double)vals.length();
     return result;
 }
@@ -314,7 +265,7 @@ NOINLINE struct TestResult test_one(_IntT d, const random_data<_IntT> &data) {
 // Result column width
 #define PRIcw "10"
 
-static void report_header(void) {
+static void print_report_header(void) {
     char buffer[256];
     sprintf(buffer, "%6s %" PRIcw "s %" PRIcw "s %" PRIcw "s %" PRIcw "s %" PRIcw "s %" PRIcw "s %6s\n", "#", "system", "scalar", "scl_bf", "vector", "vec_bf",
         "gener", "algo");
@@ -325,7 +276,7 @@ static void report_header(void) {
 #define PRIrc PRIcw ".3f"
 
 template <typename _IntT>
-static void report_result(_IntT d, struct TestResult result) {
+static void print_report_result(_IntT d, struct TestResult result) {
     char denom_buff[32];
     char *pDenom = to_str(denom_buff, d);
 
@@ -348,11 +299,11 @@ static void print_banner() {
 template <typename _IntT>
 void test_many() {
     print_banner<_IntT>();
-    report_header();
+    print_report_header();
     random_data<_IntT> data;
     _IntT d = 1;
     while (true) {
-        report_result(d, test_one(d, data));
+        print_report_result(d, test_one(d, data));
 
         if (std::numeric_limits<_IntT>::is_signed) {
             d = -d;
