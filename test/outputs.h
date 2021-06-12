@@ -3,6 +3,9 @@
 #if defined(__AVR__)
 #include <Arduino.h>
 
+// AVR doesn't support (s)printf() of 64-bit numbers.
+// PRId64 is undefined & GCC will issue a warning
+// So manually convert
 char *to_str(char *buffer, uint64_t n) {
     buffer += 20;
     *buffer-- = 0;
@@ -22,7 +25,7 @@ char *to_str(char *buffer, int64_t n) {
 }
 
 template <typename _T>
-void print_serial(const _T &item) { Serial.print(item); Serial.flush(); }
+void print_serial(const _T &item) { Serial.print(item); }
 template <>
 void print_serial(const uint64_t &item) 
 { 
@@ -41,6 +44,15 @@ void print_serial(const int64_t &item)
 
 #else
 
+char *to_str(char *buffer, uint64_t n) {
+    sprintf(buffer, "%" PRIu64, n);
+    return buffer;
+}
+char *to_str(char *buffer, int64_t n) {
+    sprintf(buffer, "%" PRId64, n);
+    return buffer;
+}
+
 #include <iostream>
 
 #define PRINT_ERROR(item) std::cerr << item
@@ -54,3 +66,12 @@ void print_serial(const int64_t &item)
 #else
 #define PRINT_PROGRESS_MSG(item)
 #endif
+
+char *to_str(char *buffer, uint32_t n) {
+    sprintf(buffer, "%" PRIu32, n);
+    return buffer;
+}
+char *to_str(char *buffer, int32_t n) {
+    sprintf(buffer, "%" PRId32, n);
+    return buffer;
+}

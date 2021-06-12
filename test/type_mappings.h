@@ -22,3 +22,22 @@ template <typename _IntT> struct type_name {};
         static const char * get_name() { return #type; } \
     };
 LIB_DIVIDE_GENERATOR(DECLARE_NAME_TYPE, NULL)
+
+template <typename _IntT> struct struct_selector {};
+#define DECLARE_STRUCT_SELECTOR(type, tag, ...) \
+    template <> struct struct_selector<type> { \
+        typedef libdivide::libdivide_ ##tag ##_t struct_t; \
+    };
+LIB_DIVIDE_GENERATOR(DECLARE_STRUCT_SELECTOR, NULL)
+
+template <typename _IntT>
+typename struct_selector<_IntT>::struct_t libdivide_gen(_IntT d)
+{
+}
+#define LIBDIVDE_GEN(type, tag, ...) \
+    template <> \
+    typename struct_selector<type>::struct_t libdivide_gen(type d) \
+    { \
+        return libdivide::libdivide_ ## tag ## _gen(d);\
+    }
+LIB_DIVIDE_GENERATOR(LIBDIVDE_GEN, NULL)

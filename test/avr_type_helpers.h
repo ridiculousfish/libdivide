@@ -6,6 +6,14 @@
 
 namespace std
 {
+    template< class T >
+    const T& (min)( const T& a, const T& b ) {
+        return min(a, b);
+    }
+    template< class T >
+    const T& (max)( const T& a, const T& b ) {
+        return max(a, b);
+    }
     template <typename _IntT>
     struct make_unsigned {
         typedef _IntT type;  
