@@ -3,6 +3,8 @@
 #include <stdint.h>
 
 #define LIB_DIVIDE_GENERATOR(GENERATOR, ...) \
+    GENERATOR(uint16_t, u16, __VA_ARGS__) \
+    GENERATOR(int16_t, s16, __VA_ARGS__) \
     GENERATOR(uint32_t, u32, __VA_ARGS__) \
     GENERATOR(int32_t, s32, __VA_ARGS__) \
     GENERATOR(uint64_t, u64, __VA_ARGS__) \

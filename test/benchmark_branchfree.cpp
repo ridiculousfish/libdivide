@@ -14,8 +14,14 @@
 #include <string>
 #include <typeinfo>
 #include <vector>
+#if defined(__AVR__)
+#include "avr_type_helpers.h"
+#else
+#include <type_traits>
+#endif
 
 #include "libdivide.h"
+#include "type_mappings.h"
 
 #if defined(__GNUC__)
 #define NOINLINE __attribute__((__noinline__))
@@ -80,14 +86,16 @@ NOINLINE result_t benchmark_sum_dividers(const D& dividers, size_t iters) {
 }
 
 enum {
-    TEST_U32 = 1 << 0,
-    TEST_U64 = 1 << 1,
-    TEST_S32 = 1 << 2,
-    TEST_S64 = 1 << 3,
-    TEST_ALL_TYPES = (TEST_U32 | TEST_U64 | TEST_S32 | TEST_S64),
-    TEST_SYSTEM = 1 << 4,
-    TEST_BRANCHFREE = 1 << 5,
-    TEST_BRANCHFULL = 1 << 6,
+    TEST_U16 = 1 << 0,
+    TEST_U32 = 1 << 1,
+    TEST_U64 = 1 << 2,
+    TEST_S16 = 1 << 3,
+    TEST_S32 = 1 << 4,
+    TEST_S64 = 1 << 5,
+    TEST_ALL_TYPES = (TEST_U16 | TEST_U32 | TEST_U64 | TEST_S16 | TEST_S32 | TEST_S64),
+    TEST_SYSTEM = 1 << 6,
+    TEST_BRANCHFREE = 1 << 7,
+    TEST_BRANCHFULL = 1 << 8,
     TEST_ALL_ALGOS = (TEST_SYSTEM | TEST_BRANCHFREE | TEST_BRANCHFULL),
 };
 
@@ -95,6 +103,8 @@ using tasks_t = unsigned int;
 
 template <typename T>
 void benchmark(tasks_t tasks, size_t max, size_t iters) {
+    std::cout << "----- " << type_tag<T>::get_tag() << " -----" << std::endl;
+
     bool test_system = !!(tasks & TEST_SYSTEM);
     bool test_branchfull = !!(tasks & TEST_BRANCHFULL);
     bool test_branchfree = !!(tasks & TEST_BRANCHFREE);
@@ -103,23 +113,25 @@ void benchmark(tasks_t tasks, size_t max, size_t iters) {
     result_t branchfull = {0, 0};
     result_t branchfree = {0, 0};
 
+    T t_max = (T)std::min(max, (size_t)std::numeric_limits<T>::max());
+    iters = iters * (max/t_max);
     if (test_system) {
         using divider_type = T;
-        auto dividers = get_primes<divider_type>((T)max);
+        auto dividers = get_primes<divider_type>(t_max);
         sys = benchmark_sum_dividers<T>(dividers, iters);
         std::cout << '.' << std::flush;
     }
 
     if (test_branchfull) {
         using divider_type = libdivide::divider<T>;
-        auto dividers = get_primes<divider_type>((T)max);
+        auto dividers = get_primes<divider_type>(t_max);
         branchfull = benchmark_sum_dividers<T>(dividers, iters);
         std::cout << '.' << std::flush;
     }
 
     if (test_branchfree) {
         using divider_type = libdivide::branchfree_divider<T>;
-        auto dividers = get_primes<divider_type>((T)max);
+        auto dividers = get_primes<divider_type>(t_max);
         branchfree = benchmark_sum_dividers<T>(dividers, iters);
         std::cout << '.' << std::endl;
     }
@@ -146,7 +158,7 @@ void benchmark(tasks_t tasks, size_t max, size_t iters) {
 }
 
 void usage() {
-    std::cout << "Usage: benchmark_branchfree [u32] [u64] [s32] [s64] [branchfree] [branchfull] "
+    std::cout << "Usage: benchmark_branchfree [uu16] [u32] [u64] [s16] [s32] [s64] [branchfree] [branchfull] "
                  "[sys|system]\n"
                  "\n"
                  "The branchfree benchmark iterates over an array of dividers and computes\n"
@@ -163,13 +175,17 @@ int main(int argc, const char* argv[]) {
     for (int i = 1; i < argc; i++) {
         std::string arg(argv[i]);
 
-        if (arg == "u32") {
+        if (arg == type_tag<uint16_t>::get_tag()) {
+            tasks |= TEST_U16;
+        } else if (arg == type_tag<int16_t>::get_tag()) {
+            tasks |= TEST_S16;
+        } else if (arg == type_tag<uint32_t>::get_tag()) {
             tasks |= TEST_U32;
-        } else if (arg == "s32") {
+        } else if (arg == type_tag<int32_t>::get_tag()) {
             tasks |= TEST_S32;
-        } else if (arg == "u64") {
+        } else if (arg == type_tag<uint64_t>::get_tag()) {
             tasks |= TEST_U64;
-        } else if (arg == "s64") {
+        } else if (arg == type_tag<int64_t>::get_tag()) {
             tasks |= TEST_S64;
         } else if (arg == "branchfree") {
             tasks |= TEST_BRANCHFREE;
@@ -194,23 +210,27 @@ int main(int argc, const char* argv[]) {
     size_t iters = 3000;
     size_t max_divider = 1 << 22;
 
+    if (tasks & TEST_U16) {
+        benchmark<uint16_t>(tasks, max_divider, iters);
+    }
+
+    if (tasks & TEST_S16) {
+        benchmark<int16_t>(tasks, max_divider, iters);
+    }
+
     if (tasks & TEST_U32) {
-        std::cout << "----- u32 -----" << std::endl;
         benchmark<uint32_t>(tasks, max_divider, iters);
     }
 
     if (tasks & TEST_S32) {
-        std::cout << "----- s32 -----" << std::endl;
         benchmark<int32_t>(tasks, max_divider, iters);
     }
 
     if (tasks & TEST_U64) {
-        std::cout << "----- u64 -----" << std::endl;
         benchmark<uint64_t>(tasks, max_divider, iters);
     }
 
     if (tasks & TEST_S64) {
-        std::cout << "----- s64 -----" << std::endl;
         benchmark<int64_t>(tasks, max_divider, iters);
     }
 

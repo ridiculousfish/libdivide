@@ -19,6 +19,8 @@
 #include "libdivide.h"
 
 enum TestType {
+    type_s16,
+    type_u16,
     type_s32,
     type_u32,
     type_s64,
@@ -27,11 +29,15 @@ enum TestType {
 
 int main(int argc, char *argv[]) {
     bool default_do_test = (argc <= 1);
-    std::vector<bool> do_tests(4, default_do_test);
+    std::vector<bool> do_tests(6, default_do_test);
 
     for (int i = 1; i < argc; i++) {
         const std::string arg(argv[i]);
-        if (arg == type_tag<int32_t>::get_tag())
+        if (arg == type_tag<int16_t>::get_tag())
+            do_tests[type_s16] = true;
+        else if (arg == type_tag<uint16_t>::get_tag())
+            do_tests[type_u16] = true;
+        else if (arg == type_tag<int32_t>::get_tag())
             do_tests[type_s32] = true;
         else if (arg == type_tag<uint32_t>::get_tag())
             do_tests[type_u32] = true;
@@ -76,6 +82,12 @@ int main(int argc, char *argv[]) {
 
     // Run tests in threads.
     std::vector<std::thread> test_threads;
+    if (do_tests[type_s16]) {
+        test_threads.emplace_back(run_test<int16_t>);
+    }
+    if (do_tests[type_u16]) {
+        test_threads.emplace_back(run_test<uint16_t>);
+    }
     if (do_tests[type_s32]) {
         test_threads.emplace_back(run_test<int32_t>);
     }

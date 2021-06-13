@@ -191,8 +191,11 @@ inline void check_result(uint64_t expected, uint64_t actual, uint32_t line_no) {
 template <typename IntT>
 NOINLINE TestResult test_one(const random_numerators<IntT> &vals, IntT denom) {
     const bool testBranchfree = (denom != 1);
-    divider<IntT, BRANCHFULL> div_bfull(denom);
-    divider<IntT, BRANCHFREE> div_bfree(testBranchfree ? denom : 2);
+
+    typedef divider<IntT, BRANCHFULL> divider_full_t;
+    typedef divider<IntT, BRANCHFREE> divider_free_t;
+    divider_full_t div_bfull(denom);
+    divider_free_t div_bfree(testBranchfree ? denom : 2);
 
     uint64_t min_my_time = INT64_MAX, min_my_time_branchfree = INT64_MAX, min_my_time_vector = INT64_MAX,
         min_my_time_vector_branchfree = INT64_MAX, min_his_time = INT64_MAX, min_gen_time = INT64_MAX;
@@ -212,15 +215,28 @@ NOINLINE TestResult test_one(const random_numerators<IntT> &vals, IntT denom) {
             check_result(tresult.result, expected, __LINE__);
         }
 
+#if defined(LIBDIVIDE_SSE2)
+        if (divider_full_t::supports_sse2()) {
+#elif defined(LIBDIVIDE_AVX2)
+        if (divider_full_t::supports_avx2()) {
+#elif defined(LIBDIVIDE_AVX512)
+        if (divider_full_t::supports_avx512()) {
+#elif defined(LIBDIVIDE_NEON)
+        if (divider_full_t::supports_neon()) {
+#endif
 #if defined(x86_VECTOR_TYPE) || defined(LIBDIVIDE_NEON)
-        tresult = time_function(vals, div_bfull, sum_quotients_vec);
-        min_my_time_vector = (std::min)(min_my_time_vector, tresult.time);
-        check_result(tresult.result, expected, __LINE__);
-
-        if (testBranchfree) {
-            tresult = time_function(vals, div_bfree, sum_quotients_vec);
-            min_my_time_vector_branchfree = (std::min)(min_my_time_vector_branchfree, tresult.time);
+            tresult = time_function(vals, div_bfull, sum_quotients_vec);
+            min_my_time_vector = (std::min)(min_my_time_vector, tresult.time);
             check_result(tresult.result, expected, __LINE__);
+
+            if (testBranchfree) {
+                tresult = time_function(vals, div_bfree, sum_quotients_vec);
+                min_my_time_vector_branchfree = (std::min)(min_my_time_vector_branchfree, tresult.time);
+                check_result(tresult.result, expected, __LINE__);
+            }
+        } else {
+            min_my_time_vector = 0;
+            min_my_time_vector_branchfree = 0;
         }
 #else
         min_my_time_vector = 0;

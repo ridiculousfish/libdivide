@@ -81,3 +81,12 @@ char *to_str(char *buffer, int32_t n) {
     sprintf(buffer, "%" PRId32, n);
     return buffer;
 }
+
+char *to_str(char *buffer, uint16_t n) {
+    sprintf(buffer, "%" PRIu16, n);
+    return buffer;
+}
+char *to_str(char *buffer, int16_t n) {
+    sprintf(buffer, "%" PRId16, n);
+    return buffer;
+}

@@ -156,7 +156,8 @@ class DivideTest {
             return;
         }
 
-        const divider<T, ALGO> the_divider = divider<T, ALGO>(denom);
+        typedef divider<T, ALGO> divider_t;
+        const divider_t the_divider = divider<T, ALGO>(denom);
         T recovered = the_divider.recover();
         if (recovered != denom) {
             PRINT_ERROR(F("Failed to recover divisor for "));
@@ -317,16 +318,24 @@ class DivideTest {
                 test_one(numers[j], denom, the_divider);
             }
 #ifdef LIBDIVIDE_SSE2
+        if (divider_t::supports_sse2()) {
             test_vec<__m128i>(numers, denom, the_divider);
+        }
 #endif
 #ifdef LIBDIVIDE_AVX2
+        if (divider_t::supports_avx2()) {
             test_vec<__m256i>(numers, denom, the_divider);
+        }
 #endif
 #ifdef LIBDIVIDE_AVX512
+        if (divider_t::supports_avx512()) {
             test_vec<__m512i>(numers, denom, the_divider);
+        }
 #endif
 #ifdef LIBDIVIDE_NEON
+        if (divider_t::supports_neon()) {
             test_vec<typename NeonVecFor<T>::type>(numers, denom, the_divider);
+        }
 #endif
         }
     }
