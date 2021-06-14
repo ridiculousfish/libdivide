@@ -54,24 +54,27 @@ using namespace libdivide;
 #define ADD_EPI32 _mm_add_epi32
 #endif
 
-// Helper - given a vector of some type, convert it to unsigned and sum it
+// Helper - given a vector of some type, convert it to unsigned and sum it.
+// This is factored out in this funny way to avoid signed integer overflow.
 template <typename IntT>
 inline uint64_t unsigned_sum_vals(const IntT *vals, size_t count) {
-    uint64_t sum = 0;
+    typedef typename std::make_unsigned<IntT>::type UIntT;
+    UIntT sum = 0;
     for (size_t i=0; i < count; i++) {
-        sum += static_cast<uint64_t>(vals[i]);
+        sum += static_cast<UIntT>(vals[i]);
     }
     return sum;
 }
 
 template <typename IntT, typename Divisor>
 NOINLINE uint64_t sum_quotients(const random_numerators<IntT> &vals, const Divisor &div) {
-    uint64_t sum = 0;
-    auto end = vals.end();
-    for (auto pNumerator = vals.begin(); pNumerator != end; pNumerator++) {
-        sum += (uint64_t)(*pNumerator / div);
+    // Need to use unsigned to avoid signed integer overlow.
+    typedef typename std::make_unsigned<IntT>::type UIntT;
+    UIntT sum = 0;
+    for (auto iter = vals.begin(); iter != vals.end(); ++iter) {
+        sum += (UIntT)(*iter / div);
     }
-    return sum;
+    return (uint64_t)sum;
 }
 
 #ifdef x86_VECTOR_TYPE
@@ -176,14 +179,14 @@ struct TestResult {
 };
 
 #define TEST_COUNT 30
-#define CHECK(actual, expected)              \
-    do {                                     \
-        if ((actual) != (expected)) {        \
-            PRINT_ERROR("Failure on line "); \
-            PRINT_ERROR(__LINE__);           \
-            PRINT_ERROR("\n");               \
-        }                                    \
-    } while (0)
+
+inline void check_result(uint64_t expected, uint64_t actual, uint32_t line_no) {
+    if ((actual) != (expected)) {
+        PRINT_ERROR("Failure on line ");
+        PRINT_ERROR(line_no);
+        PRINT_ERROR("\n");
+    }
+}
 
 template <typename IntT>
 NOINLINE TestResult test_one(const random_numerators<IntT> &vals, IntT denom) {
@@ -195,29 +198,29 @@ NOINLINE TestResult test_one(const random_numerators<IntT> &vals, IntT denom) {
         min_my_time_vector_branchfree = INT64_MAX, min_his_time = INT64_MAX, min_gen_time = INT64_MAX;
     time_double tresult;
     for (size_t iter = 0; iter < TEST_COUNT; iter++) {
-        tresult = time_function(vals, denom, sum_quotients<IntT, IntT>);
+        tresult = time_function(vals, denom, sum_quotients);
         min_his_time = (std::min)(min_his_time, tresult.time);
         const uint64_t expected = tresult.result;
 
-        tresult = time_function(vals, div_bfull, sum_quotients<IntT, divider<IntT, BRANCHFULL>>);
+        tresult = time_function(vals, div_bfull, sum_quotients);
         min_my_time = (std::min)(min_my_time, tresult.time);
-        CHECK(tresult.result, expected);
+        check_result(tresult.result, expected, __LINE__);
 
         if (testBranchfree) {
-            tresult = time_function(vals, div_bfree, sum_quotients<IntT, divider<IntT, BRANCHFREE>>);
+            tresult = time_function(vals, div_bfree, sum_quotients);
             min_my_time_branchfree = (std::min)(min_my_time_branchfree, tresult.time);
-            CHECK(tresult.result, expected);
+            check_result(tresult.result, expected, __LINE__);
         }
 
 #if defined(x86_VECTOR_TYPE) || defined(LIBDIVIDE_NEON)
-        tresult = time_function(vals, div_bfull, sum_quotients_vec<IntT, divider<IntT, BRANCHFULL>>);
+        tresult = time_function(vals, div_bfull, sum_quotients_vec);
         min_my_time_vector = (std::min)(min_my_time_vector, tresult.time);
-        CHECK(tresult.result, expected);
+        check_result(tresult.result, expected, __LINE__);
 
         if (testBranchfree) {
-            tresult = time_function(vals, div_bfree, sum_quotients_vec<IntT, divider<IntT, BRANCHFREE>>);
+            tresult = time_function(vals, div_bfree, sum_quotients_vec);
             min_my_time_vector_branchfree = (std::min)(min_my_time_vector_branchfree, tresult.time);
-            CHECK(tresult.result, expected);
+            check_result(tresult.result, expected, __LINE__);
         }
 #else
         min_my_time_vector = 0;
