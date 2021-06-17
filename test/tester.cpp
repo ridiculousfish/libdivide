@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
                 << "Usage: tester [OPTIONS]\n"
                    "\n"
                    "You can pass the tester program one or more of the following options:\n"
-                   "u32, s32, u64, s64 or run it without arguments to test all four.\n"
+                   "u16, s16, u32, s32, u64, s64 or run it without arguments to test all four.\n"
                    "The tester is multithreaded so it can test multiple cases simultaneously.\n"
                    "The tester will verify the correctness of libdivide via a set of\n"
                    "randomly chosen denominators, by comparing the result of libdivide's\n"

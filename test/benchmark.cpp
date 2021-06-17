@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
                     "Usage: benchmark [OPTIONS]\n"
                     "\n"
                     "You can pass the benchmark program one or more of the following\n"
-                    "options: u32, s32, u64, s64 to compare libdivide's speed against\n"
+                    "options: u16, s16, u32, s32, u64, s64 to compare libdivide's speed against\n"
                     "hardware division. If benchmark is run without any options u64\n"
                     "is used as default option. benchmark tests a simple function that\n"
                     "inputs an array of random numerators and a single divisor, and\n"
