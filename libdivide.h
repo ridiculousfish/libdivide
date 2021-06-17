@@ -229,8 +229,12 @@ static LIBDIVIDE_INLINE struct libdivide_u32_branchfree_t libdivide_u32_branchfr
 static LIBDIVIDE_INLINE struct libdivide_s64_branchfree_t libdivide_s64_branchfree_gen(int64_t d);
 static LIBDIVIDE_INLINE struct libdivide_u64_branchfree_t libdivide_u64_branchfree_gen(uint64_t d);
 
+static LIBDIVIDE_INLINE int16_t libdivide_s16_do_raw(
+    int16_t numer, int16_t magic, uint8_t more);
 static LIBDIVIDE_INLINE int16_t libdivide_s16_do(
     int16_t numer, const struct libdivide_s16_t* denom);
+static LIBDIVIDE_INLINE uint16_t libdivide_u16_do_raw(
+    uint16_t numer, uint16_t magic, uint8_t more);    
 static LIBDIVIDE_INLINE uint16_t libdivide_u16_do(
     uint16_t numer, const struct libdivide_u16_t* denom);
 static LIBDIVIDE_INLINE int32_t libdivide_s32_do(
@@ -736,13 +740,15 @@ struct libdivide_u16_branchfree_t libdivide_u16_branchfree_gen(uint16_t d) {
     return ret;
 }
 
-uint16_t libdivide_u16_do(uint16_t numer, const struct libdivide_u16_t* denom) {
-    uint8_t more = denom->more;
-    if (!denom->magic) {
+// The original libdivide_u16_do takes a const pointer. However, this cannot be used
+// with a compile time constant libdivide_u16_t: it will generate a warning about
+// taking the address of a temporary. Hence this overload.
+uint16_t libdivide_u16_do_raw(uint16_t numer, uint16_t magic, uint8_t more) {
+    if (!magic) {
         return numer >> more;
     }
     else {
-        uint16_t q = libdivide_mullhi_u16(denom->magic, numer);
+        uint16_t q = libdivide_mullhi_u16(magic, numer);
         if (more & LIBDIVIDE_ADD_MARKER) {
             uint16_t t = ((numer - q) >> 1) + q;
             return t >> (more & LIBDIVIDE_16_SHIFT_MASK);
@@ -752,7 +758,11 @@ uint16_t libdivide_u16_do(uint16_t numer, const struct libdivide_u16_t* denom) {
             // don't need to mask them off.
             return q >> more;
         }
-    }
+    }    
+}
+
+uint16_t libdivide_u16_do(uint16_t numer, const struct libdivide_u16_t* denom) {
+    return libdivide_u16_do_raw(numer, denom->magic, denom->more);
 }
 
 uint16_t libdivide_u16_branchfree_do(
@@ -1237,11 +1247,13 @@ struct libdivide_s16_branchfree_t libdivide_s16_branchfree_gen(int16_t d) {
     return result;
 }
 
-int16_t libdivide_s16_do(int16_t numer, const struct libdivide_s16_t *denom) {
-    uint8_t more = denom->more;
+// The original libdivide_s16_do takes a const pointer. However, this cannot be used
+// with a compile time constant libdivide_s16_t: it will generate a warning about
+// taking the address of a temporary. Hence this overload.
+int16_t libdivide_s16_do_raw(int16_t numer, int16_t magic, uint8_t more) {
     uint8_t shift = more & LIBDIVIDE_16_SHIFT_MASK;
 
-    if (!denom->magic) {
+    if (!magic) {
         uint16_t sign = (int8_t)more >> 7;
         uint16_t mask = ((uint16_t)1 << shift) - 1;
         uint16_t uq = numer + ((numer >> 15) & mask);
@@ -1250,7 +1262,7 @@ int16_t libdivide_s16_do(int16_t numer, const struct libdivide_s16_t *denom) {
         q = (q ^ sign) - sign;
         return q;
     } else {
-        uint16_t uq = (uint16_t)libdivide_mullhi_s16(denom->magic, numer);
+        uint16_t uq = (uint16_t)libdivide_mullhi_s16(magic, numer);
         if (more & LIBDIVIDE_ADD_MARKER) {
             // must be arithmetic shift and then sign extend
             int16_t sign = (int8_t)more >> 7;
@@ -1263,6 +1275,10 @@ int16_t libdivide_s16_do(int16_t numer, const struct libdivide_s16_t *denom) {
         q += (q < 0);
         return q;
     }
+}
+
+int16_t libdivide_s16_do(int16_t numer, const struct libdivide_s16_t *denom) {
+    return libdivide_s16_do_raw(numer, denom->magic, denom->more);
 }
 
 int16_t libdivide_s16_branchfree_do(int16_t numer, const struct libdivide_s16_branchfree_t *denom) {

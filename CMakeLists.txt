@@ -256,6 +256,7 @@ if (BUILD_TESTS)
 
     add_executable(tester test/tester.cpp)
     add_executable(test_c99 test/test_c99.c)
+    add_executable(fast_div_generator test/fast_div_generator.cpp)
     add_executable(benchmark test/benchmark.cpp)
     add_executable(benchmark_branchfree test/benchmark_branchfree.cpp)
 
@@ -266,6 +267,7 @@ if (BUILD_TESTS)
 
     target_compile_options(tester PRIVATE "${LIBDIVIDE_FLAGS}" "${NO_VECTORIZE}")
     target_compile_options(test_c99 PRIVATE "${LIBDIVIDE_FLAGS}" "${NO_VECTORIZE}")
+    target_compile_options(fast_div_generator PRIVATE "${LIBDIVIDE_FLAGS}" "${NO_VECTORIZE}")
     target_compile_options(benchmark PRIVATE "${LIBDIVIDE_FLAGS}" "${NO_VECTORIZE_C}")
     target_compile_options(benchmark_branchfree PRIVATE "${LIBDIVIDE_FLAGS}" "${NO_VECTORIZE}")
     set_property(TARGET benchmark_branchfree PROPERTY CXX_STANDARD 11)

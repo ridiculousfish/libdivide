@@ -285,7 +285,7 @@ NOINLINE TestResult test_one(_IntT d, const random_numerators<_IntT> &data) {
 // Result column width
 #define PRIcw "10"
 
-static void print_report_header(void) {
+inline static void print_report_header(void) {
     char buffer[256];
     sprintf(buffer, "%6s %" PRIcw "s %" PRIcw "s %" PRIcw "s %" PRIcw "s %" PRIcw "s %" PRIcw "s %6s\n", "#", "system", "scalar", "scl_bf", "vector", "vec_bf",
         "gener", "algo");

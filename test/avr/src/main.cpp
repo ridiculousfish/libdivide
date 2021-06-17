@@ -1,8 +1,11 @@
+#include <Arduino.h>
 #include <avr/sleep.h>
 #if defined(BENCHMARK)
 #include "..\..\benchmark.h"
-#else
+#elif defined(TEST_LIBDIVIDE)
 #include "..\..\DivideTest.h"
+#elif defined(TEST_CONSTANTS)
+#include "invariant_div_test/Constant_Div_Tests.h"
 #endif
 
 void setup() {
