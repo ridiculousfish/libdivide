@@ -11,16 +11,16 @@ namespace std
         typedef _IntT type;  
     };
     template <>
-    struct make_unsigned<uint16_t> {
-        typedef int16_t type;  
+    struct make_unsigned<int16_t> {
+        typedef uint16_t type;  
     };
     template <>
-    struct make_unsigned<uint32_t> {
-        typedef int32_t type;  
+    struct make_unsigned<int32_t> {
+        typedef uint32_t type;  
     };
     template <>
-    struct make_unsigned<uint64_t> {
-        typedef int64_t type;  
+    struct make_unsigned<int64_t> {
+        typedef uint64_t type;  
     };
 
     static const uint8_t CHAR_BIT = 8;
