@@ -19,6 +19,8 @@ vector division which provides an even larger speedup. You can test how much
 speedup you can achieve on your CPU using the [benchmark](#benchmark-program)
 program.
 
+libdivide is compatible with 8-bit microcontrollers, such as the AVR series: [the CI build includes a AtMega2560 target](test/avr/readme.md). Since low end hardware such as this often do not include a hardware divider, libdivide is particulary useful.
+
 See https://libdivide.com for more information on libdivide.
 
 # C++ example

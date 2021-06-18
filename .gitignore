@@ -6,7 +6,6 @@ benchmark
 primes
 tester
 /build*
-/.vscode
 CMakeCache.txt
 CMakeFiles
 CMakeScripts
@@ -15,5 +14,6 @@ cmake_install.cmake
 install_manifest.txt
 CTestTestfile.cmake
 .DS_Store
-.vscode
 .pio
+.vscode/*
+!.vscode/extensions.json

@@ -6,6 +6,14 @@
 
 namespace std
 {
+    template< class T >
+    const T& (min)( const T& a, const T& b ) {
+        return min(a, b);
+    }
+    template< class T >
+    const T& (max)( const T& a, const T& b ) {
+        return max(a, b);
+    }
     template <typename _IntT>
     struct make_unsigned {
         typedef _IntT type;  
@@ -71,23 +79,6 @@ namespace std
         static const bool is_signed = false;
         static const int digits   = CHAR_BIT * sizeof(uint64_t);
     };    
-
-    template <typename _IntT>
-    struct is_unsigned {
-        static const bool value = false;
-    };
-    template <>
-    struct is_unsigned<uint16_t> {
-        static const bool value = true;
-    };
-    template <>
-    struct is_unsigned<uint32_t> {
-        static const bool value = true;
-    };
-    template <>
-    struct is_unsigned<uint64_t> {
-        static const bool value = true;
-    };
 } // namespace std
 
 #endif
