@@ -1,0 +1,44 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"cstdlib": "cpp",
+			"vector": "cpp",
+			"array": "cpp",
+			"chrono": "cpp",
+			"compare": "cpp",
+			"memory": "cpp",
+			"ratio": "cpp",
+			"tuple": "cpp",
+			"type_traits": "cpp",
+			"utility": "cpp",
+			"xmemory": "cpp",
+			"xstring": "cpp",
+			"xtr1common": "cpp",
+			"xutility": "cpp",
+			"bit": "cpp",
+			"charconv": "cpp",
+			"format": "cpp",
+			"limits": "cpp",
+			"random": "cpp",
+			"xlocmon": "cpp",
+			"xlocnum": "cpp",
+			"xloctime": "cpp",
+			"string": "cpp",
+			"algorithm": "cpp",
+			"iterator": "cpp",
+			"forward_list": "cpp",
+			"initializer_list": "cpp",
+			"xtree": "cpp",
+			"map": "cpp",
+			"system_error": "cpp",
+			"thread": "cpp",
+			"xstddef": "cpp",
+			"xiosbase": "cpp"
+		}
+	}
+}

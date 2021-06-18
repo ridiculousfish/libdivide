@@ -1,0 +1,6 @@
+{
+    "recommendations": [
+        "ms-vscode.cmake-tools",
+        "twxs.cmake"
+    ]
+}
