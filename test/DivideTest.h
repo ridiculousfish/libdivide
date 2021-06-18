@@ -152,7 +152,7 @@ class DivideTest {
     template <Branching ALGO>
     void test_many(T denom) {
         // Don't try dividing by 1 with unsigned branchfree
-        if (ALGO == BRANCHFREE && std::is_unsigned<T>::value && denom == 1) {
+        if (ALGO == BRANCHFREE && !std::numeric_limits<T>::is_signed && denom == 1) {
             return;
         }
 

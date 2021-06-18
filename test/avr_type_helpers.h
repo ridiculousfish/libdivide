@@ -79,23 +79,6 @@ namespace std
         static const bool is_signed = false;
         static const int digits   = CHAR_BIT * sizeof(uint64_t);
     };    
-
-    template <typename _IntT>
-    struct is_unsigned {
-        static const bool value = false;
-    };
-    template <>
-    struct is_unsigned<uint16_t> {
-        static const bool value = true;
-    };
-    template <>
-    struct is_unsigned<uint32_t> {
-        static const bool value = true;
-    };
-    template <>
-    struct is_unsigned<uint64_t> {
-        static const bool value = true;
-    };
 } // namespace std
 
 #endif
