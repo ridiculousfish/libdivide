@@ -2747,7 +2747,7 @@ struct NeonVecFor<int64_t> {
     }
 #define LIBDIVIDE_DIVIDE_NEON_false(ALGO, INT_TYPE)              \
     LIBDIVIDE_INLINE typename NeonVecFor<INT_TYPE>::type divide( \
-        typename NeonVecFor<INT_TYPE>::type n) const {           \
+        typename NeonVecFor<INT_TYPE>::type) const {           \
         return (NeonVecFor<INT_TYPE>::type)0;                    \
     }
 #define LIBDIVIDE_DIVIDE_NEON(ALGO, INT_TYPE, VecSupport) \
@@ -2763,7 +2763,7 @@ struct NeonVecFor<int64_t> {
         return libdivide_##ALGO##_do_vec128(n, &denom); \
     }
 #define LIBDIVIDE_DIVIDE_SSE2_false(ALGO)              \
-    LIBDIVIDE_INLINE __m128i divide(__m128i n) const { \
+    LIBDIVIDE_INLINE __m128i divide(__m128i) const { \
         return _mm_setzero_si128();                    \
     }
 #define LIBDIVIDE_DIVIDE_SSE2(ALGO, VecSupport) \
@@ -2779,7 +2779,7 @@ struct NeonVecFor<int64_t> {
         return libdivide_##ALGO##_do_vec256(n, &denom); \
     }
 #define LIBDIVIDE_DIVIDE_AVX2_false(ALGO)              \
-    LIBDIVIDE_INLINE __m256i divide(__m256i n) const { \
+    LIBDIVIDE_INLINE __m256i divide(__m256i) const { \
         return _mm256_setzero_si256();                 \
     }
 #define LIBDIVIDE_DIVIDE_AVX2(ALGO, VecSupport) \
@@ -2796,7 +2796,7 @@ struct NeonVecFor<int64_t> {
         return libdivide_##ALGO##_do_vec512(n, &denom); \
     }
 #define LIBDIVIDE_DIVIDE_AVX512_false(ALGO)            \
-    LIBDIVIDE_INLINE __m512i divide(__m512i n) const { \
+    LIBDIVIDE_INLINE __m512i divide(__m512i) const { \
         return _mm512_setzero_si512();                 \
     }
 #define LIBDIVIDE_DIVIDE_AVX512(ALGO, VecSupport) \
