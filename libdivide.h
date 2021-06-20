@@ -1664,8 +1664,24 @@ int64_t libdivide_s64_branchfree_recover(const struct libdivide_s64_branchfree_t
     return libdivide_s64_recover((const struct libdivide_s64_t *)denom);
 }
 
+// Simplest possible vector type division: treat the vector type as an array
+// of underlying native type.
+#define SIMPLE_VECTOR_DIVISION(IntT, VecT, Algo) \
+    static const size_t count = sizeof(VecT) / sizeof(IntT); \
+    VecT result; \
+    IntT *pSource = (IntT *)&numers; \
+    IntT *pTarget = (IntT *)&result; \
+    for (size_t loop=0; loop<count; ++loop) { \
+        pTarget[loop] = libdivide_##Algo##_do(pSource[loop], denom); \
+    } \
+    return result; \
+
 #if defined(LIBDIVIDE_NEON)
 
+static LIBDIVIDE_INLINE uint16x8_t libdivide_u16_do_vec128(
+    uint16x8_t numers, const struct libdivide_u16_t *denom);
+static LIBDIVIDE_INLINE int16x8_t libdivide_s16_do_vec128(
+    int16x8_t numers, const struct libdivide_s16_t *denom);
 static LIBDIVIDE_INLINE uint32x4_t libdivide_u32_do_vec128(
     uint32x4_t numers, const struct libdivide_u32_t *denom);
 static LIBDIVIDE_INLINE int32x4_t libdivide_s32_do_vec128(
@@ -1675,6 +1691,10 @@ static LIBDIVIDE_INLINE uint64x2_t libdivide_u64_do_vec128(
 static LIBDIVIDE_INLINE int64x2_t libdivide_s64_do_vec128(
     int64x2_t numers, const struct libdivide_s64_t *denom);
 
+static LIBDIVIDE_INLINE uint16x8_t libdivide_u16_branchfree_do_vec128(
+    uint16x8_t numers, const struct libdivide_u16_branchfree_t *denom);
+static LIBDIVIDE_INLINE uint16x8_t libdivide_s16_branchfree_do_vec128(
+    uint16x8_t numers, const struct libdivide_s16_branchfree_t *denom);
 static LIBDIVIDE_INLINE uint32x4_t libdivide_u32_branchfree_do_vec128(
     uint32x4_t numers, const struct libdivide_u32_branchfree_t *denom);
 static LIBDIVIDE_INLINE int32x4_t libdivide_s32_branchfree_do_vec128(
@@ -1766,6 +1786,16 @@ static LIBDIVIDE_INLINE int64x2_t libdivide_mullhi_s64_vec128(int64x2_t x, int64
     return p;
 }
 
+////////// UINT16
+
+uint16x8_t libdivide_u16_do_vec128(uint16x8_t numers, const struct libdivide_u16_t *denom) {
+    SIMPLE_VECTOR_DIVISION(uint16_t, uint16x8_t, u16)
+}
+
+uint16x8_t libdivide_u16_branchfree_do_vec128(uint16x8_t numers, const struct libdivide_u16_branchfree_t *denom) {
+    SIMPLE_VECTOR_DIVISION(uint16_t, uint16x8_t, u16_branchfree)
+}
+
 ////////// UINT32
 
 uint32x4_t libdivide_u32_do_vec128(uint32x4_t numers, const struct libdivide_u32_t *denom) {
@@ -1820,6 +1850,16 @@ uint64x2_t libdivide_u64_branchfree_do_vec128(
     uint64x2_t q = libdivide_mullhi_u64_vec128(numers, denom->magic);
     uint64x2_t t = vaddq_u64(vshrq_n_u64(vsubq_u64(numers, q), 1), q);
     return libdivide_u64_neon_srl(t, denom->more);
+}
+
+////////// SINT16
+
+int16x8_t libdivide_s16_do_vec128(int16x8_t numers, const struct libdivide_s16_t *denom) {
+    SIMPLE_VECTOR_DIVISION(int16_t, int16x8_t, s16)
+}
+
+int16x8_t libdivide_s16_branchfree_do_vec128(int16x8_t numers, const struct libdivide_s16_branchfree_t *denom) {
+    SIMPLE_VECTOR_DIVISION(int16_t, int16x8_t, s16_branchfree)
 }
 
 ////////// SINT32
@@ -1936,6 +1976,10 @@ int64x2_t libdivide_s64_branchfree_do_vec128(
 
 #if defined(LIBDIVIDE_AVX512)
 
+static LIBDIVIDE_INLINE __m512i libdivide_u16_do_vec512(
+    __m512i numers, const struct libdivide_u16_t *denom);
+static LIBDIVIDE_INLINE __m512i libdivide_s16_do_vec512(
+    __m512i numers, const struct libdivide_s16_t *denom);
 static LIBDIVIDE_INLINE __m512i libdivide_u32_do_vec512(
     __m512i numers, const struct libdivide_u32_t *denom);
 static LIBDIVIDE_INLINE __m512i libdivide_s32_do_vec512(
@@ -1945,6 +1989,10 @@ static LIBDIVIDE_INLINE __m512i libdivide_u64_do_vec512(
 static LIBDIVIDE_INLINE __m512i libdivide_s64_do_vec512(
     __m512i numers, const struct libdivide_s64_t *denom);
 
+static LIBDIVIDE_INLINE __m512i libdivide_u16_branchfree_do_vec512(
+    __m512i numers, const struct libdivide_u16_branchfree_t *denom);
+static LIBDIVIDE_INLINE __m512i libdivide_s16_branchfree_do_vec512(
+    __m512i numers, const struct libdivide_s16_branchfree_t *denom);
 static LIBDIVIDE_INLINE __m512i libdivide_u32_branchfree_do_vec512(
     __m512i numers, const struct libdivide_u32_branchfree_t *denom);
 static LIBDIVIDE_INLINE __m512i libdivide_s32_branchfree_do_vec512(
@@ -2016,6 +2064,16 @@ static LIBDIVIDE_INLINE __m512i libdivide_mullhi_s64_vec512(__m512i x, __m512i y
     return p;
 }
 
+////////// UINT16
+
+__m512i libdivide_u16_do_vec512(__m512i numers, const struct libdivide_u16_t *denom) {
+    SIMPLE_VECTOR_DIVISION(uint16_t, __m512i, u16)
+}
+
+__m512i libdivide_u16_branchfree_do_vec512(__m512i numers, const struct libdivide_u16_branchfree_t *denom) {
+    SIMPLE_VECTOR_DIVISION(uint16_t, __m512i, u16_branchfree)
+}
+
 ////////// UINT32
 
 __m512i libdivide_u32_do_vec512(__m512i numers, const struct libdivide_u32_t *denom) {
@@ -2068,6 +2126,16 @@ __m512i libdivide_u64_branchfree_do_vec512(
     __m512i q = libdivide_mullhi_u64_vec512(numers, _mm512_set1_epi64(denom->magic));
     __m512i t = _mm512_add_epi64(_mm512_srli_epi64(_mm512_sub_epi64(numers, q), 1), q);
     return _mm512_srli_epi64(t, denom->more);
+}
+
+////////// SINT16
+
+__m512i libdivide_s16_do_vec512(__m512i numers, const struct libdivide_s16_t *denom) {
+    SIMPLE_VECTOR_DIVISION(int16_t, __m512i, s16)
+}
+
+__m512i libdivide_s16_branchfree_do_vec512(__m512i numers, const struct libdivide_s16_branchfree_t *denom) {
+    SIMPLE_VECTOR_DIVISION(int16_t, __m512i, s16_branchfree)
 }
 
 ////////// SINT32
@@ -2183,6 +2251,10 @@ __m512i libdivide_s64_branchfree_do_vec512(
 
 #if defined(LIBDIVIDE_AVX2)
 
+static LIBDIVIDE_INLINE __m256i libdivide_u16_do_vec256(
+    __m256i numers, const struct libdivide_u16_t *denom);
+static LIBDIVIDE_INLINE __m256i libdivide_s16_do_vec256(
+    __m256i numers, const struct libdivide_s16_t *denom);
 static LIBDIVIDE_INLINE __m256i libdivide_u32_do_vec256(
     __m256i numers, const struct libdivide_u32_t *denom);
 static LIBDIVIDE_INLINE __m256i libdivide_s32_do_vec256(
@@ -2192,6 +2264,10 @@ static LIBDIVIDE_INLINE __m256i libdivide_u64_do_vec256(
 static LIBDIVIDE_INLINE __m256i libdivide_s64_do_vec256(
     __m256i numers, const struct libdivide_s64_t *denom);
 
+static LIBDIVIDE_INLINE __m256i libdivide_u16_branchfree_do_vec256(
+    __m256i numers, const struct libdivide_u16_branchfree_t *denom);
+static LIBDIVIDE_INLINE __m256i libdivide_s16_branchfree_do_vec256(
+    __m256i numers, const struct libdivide_s16_branchfree_t *denom);
 static LIBDIVIDE_INLINE __m256i libdivide_u32_branchfree_do_vec256(
     __m256i numers, const struct libdivide_u32_branchfree_t *denom);
 static LIBDIVIDE_INLINE __m256i libdivide_s32_branchfree_do_vec256(
@@ -2270,6 +2346,16 @@ static LIBDIVIDE_INLINE __m256i libdivide_mullhi_s64_vec256(__m256i x, __m256i y
     return p;
 }
 
+////////// UINT16
+
+__m256i libdivide_u16_do_vec256(__m256i numers, const struct libdivide_u16_t *denom) {
+    SIMPLE_VECTOR_DIVISION(uint16_t, __m256i, u16)
+}
+
+__m256i libdivide_u16_branchfree_do_vec256(__m256i numers, const struct libdivide_u16_branchfree_t *denom) {
+    SIMPLE_VECTOR_DIVISION(uint16_t, __m256i, u16_branchfree)
+}
+
 ////////// UINT32
 
 __m256i libdivide_u32_do_vec256(__m256i numers, const struct libdivide_u32_t *denom) {
@@ -2322,6 +2408,16 @@ __m256i libdivide_u64_branchfree_do_vec256(
     __m256i q = libdivide_mullhi_u64_vec256(numers, _mm256_set1_epi64x(denom->magic));
     __m256i t = _mm256_add_epi64(_mm256_srli_epi64(_mm256_sub_epi64(numers, q), 1), q);
     return _mm256_srli_epi64(t, denom->more);
+}
+
+////////// SINT16
+
+__m256i libdivide_s16_do_vec256(__m256i numers, const struct libdivide_s16_t *denom) {
+    SIMPLE_VECTOR_DIVISION(int16_t, __m256i, s16)
+}
+
+__m256i libdivide_s16_branchfree_do_vec256(__m256i numers, const struct libdivide_s16_branchfree_t *denom) {
+    SIMPLE_VECTOR_DIVISION(int16_t, __m256i, s16_branchfree)
 }
 
 ////////// SINT32
@@ -2437,6 +2533,10 @@ __m256i libdivide_s64_branchfree_do_vec256(
 
 #if defined(LIBDIVIDE_SSE2)
 
+static LIBDIVIDE_INLINE __m128i libdivide_u16_do_vec128(
+    __m128i numers, const struct libdivide_u16_t *denom);
+static LIBDIVIDE_INLINE __m128i libdivide_s16_do_vec128(
+    __m128i numers, const struct libdivide_s16_t *denom);
 static LIBDIVIDE_INLINE __m128i libdivide_u32_do_vec128(
     __m128i numers, const struct libdivide_u32_t *denom);
 static LIBDIVIDE_INLINE __m128i libdivide_s32_do_vec128(
@@ -2446,6 +2546,10 @@ static LIBDIVIDE_INLINE __m128i libdivide_u64_do_vec128(
 static LIBDIVIDE_INLINE __m128i libdivide_s64_do_vec128(
     __m128i numers, const struct libdivide_s64_t *denom);
 
+static LIBDIVIDE_INLINE __m128i libdivide_u16_branchfree_do_vec128(
+    __m128i numers, const struct libdivide_u16_branchfree_t *denom);
+static LIBDIVIDE_INLINE __m128i libdivide_s16_branchfree_do_vec128(
+    __m128i numers, const struct libdivide_s16_branchfree_t *denom);
 static LIBDIVIDE_INLINE __m128i libdivide_u32_branchfree_do_vec128(
     __m128i numers, const struct libdivide_u32_branchfree_t *denom);
 static LIBDIVIDE_INLINE __m128i libdivide_s32_branchfree_do_vec128(
@@ -2538,6 +2642,16 @@ static LIBDIVIDE_INLINE __m128i libdivide_mullhi_s64_vec128(__m128i x, __m128i y
     return p;
 }
 
+////////// UINT26
+
+__m128i libdivide_u16_do_vec128(__m128i numers, const struct libdivide_u16_t *denom) {
+    SIMPLE_VECTOR_DIVISION(uint16_t, __m128i, u16)
+}
+
+__m128i libdivide_u16_branchfree_do_vec128(__m128i numers, const struct libdivide_u16_branchfree_t *denom) {
+    SIMPLE_VECTOR_DIVISION(uint16_t, __m128i, u16_branchfree)
+}
+
 ////////// UINT32
 
 __m128i libdivide_u32_do_vec128(__m128i numers, const struct libdivide_u32_t *denom) {
@@ -2590,6 +2704,16 @@ __m128i libdivide_u64_branchfree_do_vec128(
     __m128i q = libdivide_mullhi_u64_vec128(numers, _mm_set1_epi64x(denom->magic));
     __m128i t = _mm_add_epi64(_mm_srli_epi64(_mm_sub_epi64(numers, q), 1), q);
     return _mm_srli_epi64(t, denom->more);
+}
+
+////////// SINT16
+
+__m128i libdivide_s16_do_vec128(__m128i numers, const struct libdivide_s16_t *denom) {
+    SIMPLE_VECTOR_DIVISION(int16_t, __m128i, s16)
+}
+
+__m128i libdivide_s16_branchfree_do_vec128(__m128i numers, const struct libdivide_s16_branchfree_t *denom) {
+    SIMPLE_VECTOR_DIVISION(int16_t, __m128i, s16_branchfree)
 }
 
 ////////// SINT32
@@ -2718,6 +2842,16 @@ template <typename T>
 struct NeonVecFor {};
 
 template <>
+struct NeonVecFor<uint16_t> {
+    typedef uint16x8_t type;
+};
+
+template <>
+struct NeonVecFor<int16_t> {
+    typedef int16x8_t type;
+};
+
+template <>
 struct NeonVecFor<uint32_t> {
     typedef uint32x4_t type;
 };
@@ -2740,88 +2874,53 @@ struct NeonVecFor<int64_t> {
 
 // Versions of our algorithms for SIMD.
 #if defined(LIBDIVIDE_NEON)
-#define LIBDIVIDE_DIVIDE_NEON_true(ALGO, INT_TYPE)               \
+#define LIBDIVIDE_DIVIDE_NEON(ALGO, INT_TYPE)                    \
     LIBDIVIDE_INLINE typename NeonVecFor<INT_TYPE>::type divide( \
         typename NeonVecFor<INT_TYPE>::type n) const {           \
         return libdivide_##ALGO##_do_vec128(n, &denom);          \
     }
-#define LIBDIVIDE_DIVIDE_NEON_false(ALGO, INT_TYPE)              \
-    LIBDIVIDE_INLINE typename NeonVecFor<INT_TYPE>::type divide( \
-        typename NeonVecFor<INT_TYPE>::type) const {           \
-        return (NeonVecFor<INT_TYPE>::type)0;                    \
-    }
-#define LIBDIVIDE_DIVIDE_NEON(ALGO, INT_TYPE, VecSupport) \
-    LIBDIVIDE_DIVIDE_NEON_ ##VecSupport(ALGO, INT_TYPE) \
-    static bool supports_neon() { return VecSupport; }    
 #else
-#define LIBDIVIDE_DIVIDE_NEON(ALGO, INT_TYPE, VecSupport)
+#define LIBDIVIDE_DIVIDE_NEON(ALGO, INT_TYPE)
 #endif
-
 #if defined(LIBDIVIDE_SSE2)
-#define LIBDIVIDE_DIVIDE_SSE2_true(ALGO)                \
+#define LIBDIVIDE_DIVIDE_SSE2(ALGO)                     \
     LIBDIVIDE_INLINE __m128i divide(__m128i n) const {  \
         return libdivide_##ALGO##_do_vec128(n, &denom); \
     }
-#define LIBDIVIDE_DIVIDE_SSE2_false(ALGO)              \
-    LIBDIVIDE_INLINE __m128i divide(__m128i) const { \
-        return _mm_setzero_si128();                    \
-    }
-#define LIBDIVIDE_DIVIDE_SSE2(ALGO, VecSupport) \
-    LIBDIVIDE_DIVIDE_SSE2_ ##VecSupport(ALGO) \
-    static bool supports_sse2() { return VecSupport; }
 #else
-#define LIBDIVIDE_DIVIDE_SSE2(ALGO, VecSupport)
+#define LIBDIVIDE_DIVIDE_SSE2(ALGO)
 #endif
 
 #if defined(LIBDIVIDE_AVX2)
-#define LIBDIVIDE_DIVIDE_AVX2_true(ALGO)                \
+#define LIBDIVIDE_DIVIDE_AVX2(ALGO)                     \
     LIBDIVIDE_INLINE __m256i divide(__m256i n) const {  \
         return libdivide_##ALGO##_do_vec256(n, &denom); \
     }
-#define LIBDIVIDE_DIVIDE_AVX2_false(ALGO)              \
-    LIBDIVIDE_INLINE __m256i divide(__m256i) const { \
-        return _mm256_setzero_si256();                 \
-    }
-#define LIBDIVIDE_DIVIDE_AVX2(ALGO, VecSupport) \
-    LIBDIVIDE_DIVIDE_AVX2_ ##VecSupport(ALGO)   \
-    static bool supports_avx2() { return VecSupport; }
-
 #else
-#define LIBDIVIDE_DIVIDE_AVX2(ALGO, VecSupport)
+#define LIBDIVIDE_DIVIDE_AVX2(ALGO)
 #endif
 
 #if defined(LIBDIVIDE_AVX512)
-#define LIBDIVIDE_DIVIDE_AVX512_true(ALGO)           \
-    LIBDIVIDE_INLINE __m512i divide(__m512i n) const {      \
+#define LIBDIVIDE_DIVIDE_AVX512(ALGO)                   \
+    LIBDIVIDE_INLINE __m512i divide(__m512i n) const {  \
         return libdivide_##ALGO##_do_vec512(n, &denom); \
     }
-#define LIBDIVIDE_DIVIDE_AVX512_false(ALGO)            \
-    LIBDIVIDE_INLINE __m512i divide(__m512i) const { \
-        return _mm512_setzero_si512();                 \
-    }
-#define LIBDIVIDE_DIVIDE_AVX512(ALGO, VecSupport) \
-    LIBDIVIDE_DIVIDE_AVX512_ ##VecSupport(ALGO)  \
-    static bool supports_avx512() { return VecSupport; }
-      
 #else
-#define LIBDIVIDE_DIVIDE_AVX512(ALGO, VecSupport)
+#define LIBDIVIDE_DIVIDE_AVX512(ALGO)
 #endif
 
 // The DISPATCHER_GEN() macro generates C++ methods (for the given integer
 // and algorithm types) that redirect to libdivide's C API.
-
-// The DISPATCHER_GEN() macro generates C++ methods (for the given integer
-// and algorithm types) that redirect to libdivide's C API.
-#define DISPATCHER_GEN(T, ALGO, VecSupport)                                           \
+#define DISPATCHER_GEN(T, ALGO)                                                       \
     libdivide_##ALGO##_t denom;                                                       \
     LIBDIVIDE_INLINE dispatcher() {}                                                  \
     LIBDIVIDE_INLINE dispatcher(T d) : denom(libdivide_##ALGO##_gen(d)) {}            \
     LIBDIVIDE_INLINE T divide(T n) const { return libdivide_##ALGO##_do(n, &denom); } \
     LIBDIVIDE_INLINE T recover() const { return libdivide_##ALGO##_recover(&denom); } \
-    LIBDIVIDE_DIVIDE_NEON(ALGO, T, VecSupport)                                        \
-    LIBDIVIDE_DIVIDE_SSE2(ALGO, VecSupport)                                           \
-    LIBDIVIDE_DIVIDE_AVX2(ALGO, VecSupport)                                           \
-    LIBDIVIDE_DIVIDE_AVX512(ALGO, VecSupport)
+    LIBDIVIDE_DIVIDE_NEON(ALGO, T)                                                    \
+    LIBDIVIDE_DIVIDE_SSE2(ALGO)                                                       \
+    LIBDIVIDE_DIVIDE_AVX2(ALGO)                                                       \
+    LIBDIVIDE_DIVIDE_AVX512(ALGO)
 
 // The dispatcher selects a specific division algorithm for a given
 // type and ALGO using partial template specialization.
@@ -2830,51 +2929,51 @@ struct dispatcher {};
 
 template <>
 struct dispatcher<int16_t, BRANCHFULL> {
-    DISPATCHER_GEN(int16_t, s16, false)
+    DISPATCHER_GEN(int16_t, s16)
 };
 template <>
 struct dispatcher<int16_t, BRANCHFREE> {
-    DISPATCHER_GEN(int16_t, s16_branchfree, false)
+    DISPATCHER_GEN(int16_t, s16_branchfree)
 };
 template <>
 struct dispatcher<uint16_t, BRANCHFULL> {
-    DISPATCHER_GEN(uint16_t, u16, false)
+    DISPATCHER_GEN(uint16_t, u16)
 };
 template <>
 struct dispatcher<uint16_t, BRANCHFREE> {
-    DISPATCHER_GEN(uint16_t, u16_branchfree, false)
+    DISPATCHER_GEN(uint16_t, u16_branchfree)
 };
 template <>
 struct dispatcher<int32_t, BRANCHFULL> {
-    DISPATCHER_GEN(int32_t, s32, true)
+    DISPATCHER_GEN(int32_t, s32)
 };
 template <>
 struct dispatcher<int32_t, BRANCHFREE> {
-    DISPATCHER_GEN(int32_t, s32_branchfree, true)
+    DISPATCHER_GEN(int32_t, s32_branchfree)
 };
 template <>
 struct dispatcher<uint32_t, BRANCHFULL> {
-    DISPATCHER_GEN(uint32_t, u32, true)
+    DISPATCHER_GEN(uint32_t, u32)
 };
 template <>
 struct dispatcher<uint32_t, BRANCHFREE> {
-    DISPATCHER_GEN(uint32_t, u32_branchfree, true)
+    DISPATCHER_GEN(uint32_t, u32_branchfree)
 };
 template <>
 struct dispatcher<int64_t, BRANCHFULL> {
-    DISPATCHER_GEN(int64_t, s64, true)
+    DISPATCHER_GEN(int64_t, s64)
 };
 template <>
 struct dispatcher<int64_t, BRANCHFREE> {
-    DISPATCHER_GEN(int64_t, s64_branchfree, true)
+    DISPATCHER_GEN(int64_t, s64_branchfree)
 };
 template <>
 struct dispatcher<uint64_t, BRANCHFULL> {
-    DISPATCHER_GEN(uint64_t, u64, true)
+    DISPATCHER_GEN(uint64_t, u64)
 };
 template <>
 struct dispatcher<uint64_t, BRANCHFREE> {
-    DISPATCHER_GEN(uint64_t, u64_branchfree, true)
+    DISPATCHER_GEN(uint64_t, u64_branchfree)
 };
 
 // This is the main divider class for use by the user (C++ API).
@@ -2912,21 +3011,17 @@ class divider {
     // quotients.
 #if defined(LIBDIVIDE_SSE2)
     LIBDIVIDE_INLINE __m128i divide(__m128i n) const { return div.divide(n); }
-    static bool supports_sse2() { return dispatcher_t::supports_sse2(); }
 #endif
 #if defined(LIBDIVIDE_AVX2)
     LIBDIVIDE_INLINE __m256i divide(__m256i n) const { return div.divide(n); }
-    static bool supports_avx2() { return dispatcher_t::supports_avx2(); }
 #endif
 #if defined(LIBDIVIDE_AVX512)
     LIBDIVIDE_INLINE __m512i divide(__m512i n) const { return div.divide(n); }
-    static bool supports_avx512() { return dispatcher_t::supports_avx512(); }
 #endif
 #if defined(LIBDIVIDE_NEON)
     LIBDIVIDE_INLINE typename NeonVecFor<T>::type divide(typename NeonVecFor<T>::type n) const {
         return div.divide(n);
     }
-    static bool supports_neon() { return dispatcher_t::supports_neon(); }
 #endif
 
    private:
@@ -2986,46 +3081,13 @@ LIBDIVIDE_INLINE __m512i operator/=(__m512i &n, const divider<T, ALGO> &div) {
 #endif
 
 #if defined(LIBDIVIDE_NEON)
-template <Branching ALGO>
-LIBDIVIDE_INLINE uint32x4_t operator/(uint32x4_t n, const divider<uint32_t, ALGO> &div) {
+template <typename T, Branching ALGO>
+LIBDIVIDE_INLINE typename NeonVecFor<T>::type operator/(typename NeonVecFor<T>::type n, const divider<T, ALGO> &div) {
     return div.divide(n);
 }
 
-template <Branching ALGO>
-LIBDIVIDE_INLINE int32x4_t operator/(int32x4_t n, const divider<int32_t, ALGO> &div) {
-    return div.divide(n);
-}
-
-template <Branching ALGO>
-LIBDIVIDE_INLINE uint64x2_t operator/(uint64x2_t n, const divider<uint64_t, ALGO> &div) {
-    return div.divide(n);
-}
-
-template <Branching ALGO>
-LIBDIVIDE_INLINE int64x2_t operator/(int64x2_t n, const divider<int64_t, ALGO> &div) {
-    return div.divide(n);
-}
-
-template <Branching ALGO>
-LIBDIVIDE_INLINE uint32x4_t operator/=(uint32x4_t &n, const divider<uint32_t, ALGO> &div) {
-    n = div.divide(n);
-    return n;
-}
-
-template <Branching ALGO>
-LIBDIVIDE_INLINE int32x4_t operator/=(int32x4_t &n, const divider<int32_t, ALGO> &div) {
-    n = div.divide(n);
-    return n;
-}
-
-template <Branching ALGO>
-LIBDIVIDE_INLINE uint64x2_t operator/=(uint64x2_t &n, const divider<uint64_t, ALGO> &div) {
-    n = div.divide(n);
-    return n;
-}
-
-template <Branching ALGO>
-LIBDIVIDE_INLINE int64x2_t operator/=(int64x2_t &n, const divider<int64_t, ALGO> &div) {
+template <typename T, Branching ALGO>
+LIBDIVIDE_INLINE typename NeonVecFor<T>::type operator/=(typename NeonVecFor<T>::type &n, const divider<T, ALGO> &div) {
     n = div.divide(n);
     return n;
 }
