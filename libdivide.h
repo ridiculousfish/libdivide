@@ -433,16 +433,10 @@ static LIBDIVIDE_INLINE int32_t libdivide_count_leading_zeros64(uint64_t val) {
 // Returns the quotient directly and the remainder in *r
 static inline uint16_t libdivide_32_div_16_to_16(
     uint16_t u1, uint16_t u0, uint16_t v, uint16_t* r) {
-//#if (defined(LIBDIVIDE_i386) || defined(LIBDIVIDE_X86_64)) && defined(LIBDIVIDE_GCC_STYLE_ASM)
-//    uint16_t result;
-//    __asm__("divl %[v]" : "=a"(result), "=d"(*r) : [v] "r"(v), "a"(u0), "d"(u1));
-//    return result;
-//#else
     uint32_t n = ((uint32_t)u1 << 16) | u0;
     uint16_t result = (uint16_t)(n / v);
     *r = (uint16_t)(n - result * (uint32_t)v);
     return result;
-//#endif
 }
 
 // libdivide_64_div_32_to_32: divides a 64-bit uint {u1, u0} by a 32-bit
@@ -785,8 +779,8 @@ uint16_t libdivide_u16_recover(const struct libdivide_u16_t *denom) {
         return 1 + libdivide_32_div_16_to_16(hi_dividend, 0, denom->magic, &rem_ignored);
     } else {
         // Here we wish to compute d = 2^(16+shift+1)/(m+2^16).
-        // Notice (m + 2^16) is a 17 bit number. Use 64 bit division for now
-        // Also note that shift may be as high as 31, so shift + 1 will
+        // Notice (m + 2^16) is a 17 bit number. Use 32 bit division for now
+        // Also note that shift may be as high as 15, so shift + 1 will
         // overflow. So we have to compute it as 2^(16+shift)/(m+2^16), and
         // then double the quotient and remainder.
         uint32_t half_n = (uint32_t)1 << (16 + shift);
@@ -798,7 +792,7 @@ uint16_t libdivide_u16_recover(const struct libdivide_u16_t *denom) {
         // We computed 2^(16+shift)/(m+2^16)
         // Need to double it, and then add 1 to the quotient if doubling th
         // remainder would increase the quotient.
-        // Note that rem<<1 cannot overflow, since rem < d and d is 33 bits
+        // Note that rem<<1 cannot overflow, since rem < d and d is 17 bits
         uint16_t full_q = half_q + half_q + ((rem << 1) >= d);
 
         // We rounded down in gen (hence +1)
@@ -814,14 +808,14 @@ uint16_t libdivide_u16_branchfree_recover(const struct libdivide_u16_branchfree_
         return (uint16_t)1 << (shift + 1);
     } else {
         // Here we wish to compute d = 2^(16+shift+1)/(m+2^16).
-        // Notice (m + 2^16) is a 33 bit number. Use 64 bit division for now
-        // Also note that shift may be as high as 31, so shift + 1 will
+        // Notice (m + 2^16) is a 17 bit number. Use 32 bit division for now
+        // Also note that shift may be as high as 15, so shift + 1 will
         // overflow. So we have to compute it as 2^(16+shift)/(m+2^16), and
         // then double the quotient and remainder.
         uint32_t half_n = (uint32_t)1 << (16 + shift);
         uint32_t d = ((uint32_t)1 << 16) | denom->magic;
         // Note that the quotient is guaranteed <= 16 bits, but the remainder
-        // may need 33!
+        // may need 17!
         uint16_t half_q = (uint16_t)(half_n / d);
         uint32_t rem = half_n % d;
         // We computed 2^(16+shift)/(m+2^16)
