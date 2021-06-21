@@ -136,14 +136,18 @@ string(REPLACE ";" " " CMAKE_REQUIRED_FLAGS "${LIBDIVIDE_FLAGS}")
 if (NOT LIBDIVIDE_NEON STREQUAL "AUTO")
     set(LIBDIVIDE_NEON_ENABLED "${LIBDIVIDE_NEON}")
 else()
-    check_cxx_source_runs("
-                #include <arm_neon.h>
-                int main()
-                {
-                    int32x4_t a = vdupq_n_s32(0);
-                    return *(int *)&a;
-                }"
-                LIBDIVIDE_NEON_ENABLED)
+    set(NEON_TEST "
+    #include <arm_neon.h>
+    int main()
+    {
+        int32x4_t a = vdupq_n_s32(0);
+        return *(int *)&a;
+    }")
+    if (CMAKE_CROSSCOMPILING)
+        check_cxx_source_compiles("${NEON_TEST}" LIBDIVIDE_NEON_ENABLED)
+    else()
+        check_cxx_source_runs("${NEON_TEST}" LIBDIVIDE_NEON_ENABLED)
+    endif()
 endif()
 
 # AVX512
