@@ -108,19 +108,14 @@ class DivideTest {
     }
 
     template <typename VecType, Branching ALGO>
-    void test_vec(const T *numers, T denom, const divider<T, ALGO> &div) {
-        // Align memory to 64 byte boundary for AVX512
-        char mem[16 * sizeof(T) + 64];
-        size_t offset = 64 - (size_t)&mem % 64;
-        T *results = (T *)&mem[offset];
-
-        size_t iters = 64 / sizeof(VecType);
+    void test_vec(const T *numers, uint16_t count, T denom, const divider<T, ALGO> &div) {
         size_t size = sizeof(VecType) / sizeof(T);
+        size_t iters = (sizeof(T)*count)/sizeof(VecType);
 
         for (size_t j = 0; j < iters; j++, numers += size) {
             VecType x = *((const VecType *)numers);
             VecType resultVector = x / div;
-            results = (T *)&resultVector;
+            T *results = (T *)&resultVector;
 
             for (size_t i = 0; i < size; i++) {
                 T numer = numers[i];
@@ -301,32 +296,35 @@ class DivideTest {
         for (UT bits = (UT)~0ull; bits != 0; bits <<= 1) {
             test_one((T)bits, denom, the_divider);
         }
-
+        
+        // random_count * sizeof(T) must be >= size of largest
+        // vector type. 
+        const uint16_t random_count = 32;
         // Align memory to 64 byte boundary for AVX512
-        char mem[16 * sizeof(T) + 64];
+        char mem[random_count * sizeof(T) + 64];
         size_t offset = 64 - (size_t)&mem % 64;
         T *numers = (T *)&mem[offset];
 
         // test random numerators
         increment = get_loop_increment(0, 10000);
         for (size_t i = 0; i < 10000; i += increment) {
-            for (size_t j = 0; j < 16; j++) {
+            for (size_t j = 0; j < random_count; j++) {
                 numers[j] = get_random();
             }
-            for (size_t j = 0; j < 16; j++) {
+            for (size_t j = 0; j < random_count; j++) {
                 test_one(numers[j], denom, the_divider);
             }
 #ifdef LIBDIVIDE_SSE2
-            test_vec<__m128i>(numers, denom, the_divider);
+            test_vec<__m128i>(numers, random_count, denom, the_divider);
 #endif
 #ifdef LIBDIVIDE_AVX2
-            test_vec<__m256i>(numers, denom, the_divider);
+            test_vec<__m256i>(numers, random_count, denom, the_divider);
 #endif
 #ifdef LIBDIVIDE_AVX512
-            test_vec<__m512i>(numers, denom, the_divider);
+            test_vec<__m512i>(numers, random_count, denom, the_divider);
 #endif
 #ifdef LIBDIVIDE_NEON
-            test_vec<typename NeonVecFor<T>::type>(numers, denom, the_divider);
+            test_vec<typename NeonVecFor<T>::type>(numers, random_count, denom, the_divider);
 #endif
         }
     }
