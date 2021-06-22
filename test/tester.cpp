@@ -27,6 +27,27 @@ enum TestType {
     type_u64,
 };
 
+void wait_for_threads(std::vector<std::thread> &test_threads) {
+    for (auto &t : test_threads) {
+        t.join();
+    }
+}
+
+uint8_t get_max_threads() {
+    return std::max(1U, std::thread::hardware_concurrency());
+}
+
+template<typename _IntT>
+void launch_test_thread(std::vector<std::thread> &test_threads) {
+    static uint8_t max_threads = get_max_threads();
+    
+    if (max_threads==test_threads.size()) {
+        wait_for_threads(test_threads);
+        test_threads.clear();
+    }    
+    test_threads.emplace_back(run_test<_IntT>);
+}
+    
 int main(int argc, char *argv[]) {
     bool default_do_test = (argc <= 1);
     std::vector<bool> do_tests(6, default_do_test);
@@ -82,27 +103,27 @@ int main(int argc, char *argv[]) {
 
     // Run tests in threads.
     std::vector<std::thread> test_threads;
+
     if (do_tests[type_s16]) {
-        test_threads.emplace_back(run_test<int16_t>);
+        launch_test_thread<int16_t>(test_threads);
     }
     if (do_tests[type_u16]) {
-        test_threads.emplace_back(run_test<uint16_t>);
+        launch_test_thread<uint16_t>(test_threads);
     }
     if (do_tests[type_s32]) {
-        test_threads.emplace_back(run_test<int32_t>);
+        launch_test_thread<int32_t>(test_threads);
     }
     if (do_tests[type_u32]) {
-        test_threads.emplace_back(run_test<uint32_t>);
+        launch_test_thread<uint32_t>(test_threads);
     }
     if (do_tests[type_s64]) {
-        test_threads.emplace_back(run_test<int64_t>);
+        launch_test_thread<int64_t>(test_threads);
     }
     if (do_tests[type_u64]) {
-        test_threads.emplace_back(run_test<uint64_t>);
+        launch_test_thread<uint64_t>(test_threads);
     }
-    for (auto &t : test_threads) {
-        t.join();
-    }
+    
+    wait_for_threads(test_threads);
 
     std::cout << "\nAll tests passed successfully!" << std::endl;
     return 0;
