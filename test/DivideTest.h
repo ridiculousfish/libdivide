@@ -26,18 +26,8 @@ class DivideTest {
     using UT = typename std::make_unsigned<T>::type;
     using limits = std::numeric_limits<T>;
     uint32_t seed = 0;
-    UT rand_n = 0;
+    UT rand_n = 0;    
 
-    int32_t get_loop_increment(int32_t range_min, int32_t range_max)
-    {
-#if defined(TEST_MIN_ITERATIONS)
-        return (range_max - range_min)/TEST_MIN_ITERATIONS;
-#else
-        UNUSED(range_min);
-        UNUSED(range_max);
-        return 1;
-#endif
-    }
     // This random function slowly increases the random number
     // until there is an integer overflow, if this happens
     // the random number is reset to 0 and we restart at the
@@ -286,16 +276,18 @@ class DivideTest {
             test_one(numerator, denom, the_divider);
         }
 
-        // balance signed & unsigned testing
-        int32_t small_stop = (limits::is_signed) ? (int32_t)1 << 14 : (uint32_t)1 << 16;
-
         // test small numerators < 2^16
-        int32_t increment = get_loop_increment(0, small_stop);
-        for (int32_t i = 0; i < small_stop; i+=increment) {
-            test_one(i, denom, the_divider);
+       // balance signed & unsigned testing
+#if defined(__AVR__)
+        int32_t small_stop = (limits::is_signed) ? (int32_t)1 << 7 : (uint32_t)1 << 8;
+#else
+        int32_t small_stop = (limits::is_signed) ? (int32_t)1 << 14 : (uint32_t)1 << 16;
+#endif
+        for (int32_t i = 0; i < small_stop; ++i) {
+            test_one((T)i, denom, the_divider);
 
             if (limits::is_signed) {
-                test_one(-i, denom, the_divider);
+                test_one((T)-i, denom, the_divider);
             }
         }
 
@@ -317,14 +309,14 @@ class DivideTest {
             test_one((T)bits, denom, the_divider);
         }
        
+        // test random numerators
+#if !defined(__AVR__)
         // Align memory to 64 byte boundary for AVX512
         char mem[min_vector_count * sizeof(T) + 64];
         size_t offset = 64 - (size_t)&mem % 64;
         T *numers = (T *)&mem[offset];
 
-        // test random numerators
-        increment = get_loop_increment(0, 10000);
-        for (size_t i = 0; i < 10000; i += increment) {
+        for (size_t i = 0; i < 10000; ++i) {
             for (size_t j = 0; j < min_vector_count; j++) {
                 numers[j] = get_random();
             }
@@ -344,6 +336,7 @@ class DivideTest {
             test_vec<typename NeonVecFor<T>::type>(numers, min_vector_count, denom, the_divider);
 #endif
         }
+#endif
     }
 
     static uint32_t randomSeed() {
@@ -365,6 +358,14 @@ class DivideTest {
         test_many<BRANCHFREE>(denom);        
     }
 
+    void test_both_signs(UT denom) {
+        test_all_algorithms(denom);
+
+        if (limits::is_signed) {
+            test_all_algorithms(-denom);
+        }        
+    }
+
 public:
 
     DivideTest() {
@@ -374,14 +375,16 @@ public:
 
     void run() {
         // Test small values
-        int32_t increment = get_loop_increment(0, 1024);
-        for (int denom = 1; denom < 1024; denom+=increment) {
-            test_all_algorithms(denom);
-
-            if (limits::is_signed) {
-                test_all_algorithms(-denom);
-            }
+#if defined(__AVR__)
+        UT primes[] = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173};
+        for (size_t index = 0; index < sizeof(primes)/sizeof(primes[0]); ++index) {
+            test_both_signs(primes[index]);
         }
+#else
+        for (UT denom = 1; denom < 1024; ++denom) {
+            test_both_signs(denom);
+        }
+#endif
 
         if (limits::is_signed) {
             PRINT_PROGRESS_MSG(F("Testing minimum\n"));
@@ -395,13 +398,9 @@ public:
         PRINT_PROGRESS_MSG(F("Testing powers of 2\n"));
         for (int i = 1; i < limits::digits; i++) {
             for (int j = -1; j <= 1; j++) {
-                T denom = ((T)1 << i) + j;
+                T denom = (UT)((T)1 << i) + j;
 
-                test_all_algorithms(denom);
-
-                if (limits::is_signed) {
-                    test_all_algorithms(-denom);
-                }
+                test_both_signs(denom);
             }
         }
 
@@ -413,13 +412,12 @@ public:
         }
 
         // Test random denominators
+#if !defined(__AVR__)
         PRINT_PROGRESS_MSG(F("Test random denominators\n"));        
-        increment = get_loop_increment(0, 10000);
-        for (int i = 0; i < 10000; i+=increment) {
-            T denom = random_denominator();
-
-            test_all_algorithms(denom);
+        for (int i = 0; i < 10000; ++i) {
+            test_all_algorithms(random_denominator());
         }
+#endif
     }
 };
 
