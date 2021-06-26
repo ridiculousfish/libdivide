@@ -26,7 +26,7 @@ class DivideTest {
     using UT = typename std::make_unsigned<T>::type;
     using limits = std::numeric_limits<T>;
     uint32_t seed = 0;
-    UT rand_n = 0;    
+    UT rand_n = 0;
 
     // This random function slowly increases the random number
     // until there is an integer overflow, if this happens
@@ -154,6 +154,33 @@ class DivideTest {
     static const size_t min_vector_count = sizeof(union vector_size_u)/sizeof(T);
 
 
+    static constexpr T min = (std::numeric_limits<T>::min)();
+    static constexpr T max = (std::numeric_limits<T>::max)(); 
+    static constexpr T edgeCases[] = {
+        0,					(T)(1),				(T)(2),					(T)(3),				(T)(4),				(T)(5),
+        (T)(6),				(T)(7),				(T)(8),					(T)(9),				(T)(10),			(T)(11),
+        (T)(12),			(T)(13),			(T)(14),				(T)(15),			(T)(16),			(T)(17),
+        (T)(18),			(T)(19),			(T)(20),				(T)(21),			(T)(22),			(T)(23),
+        (T)(24),			(T)(25),			(T)(26),				(T)(27),			(T)(28),			(T)(29),
+        (T)(30),			(T)(31),			(T)(32),				(T)(33),			(T)(34),			(T)(35),
+        (T)(36),			(T)(37),			(T)(38),				(T)(39),			(T)(40),			(T)(41),
+        (T)(42),			(T)(43),			(T)(44),				(T)(45),			(T)(46),			(T)(47),
+        (T)(48),			(T)(49),			(T)(123),				(T)(1232),			(T)(36847),			(T)(506838),
+        (T)(3000003),		(T)(70000007),		
+
+        (T)(max),			(T)(max - 1),		(T)(max - 2),			(T)(max - 3),		(T)(max - 4),		(T)(max - 5),
+        (T)(max - 3213),	(T)(max - 2453242),	(T)(max - 432234231),	
+
+        (T)(min),			(T)(min + 1),		(T)(min + 2),			(T)(min + 3),		(T)(min + 4),		(T)(min + 5),
+        (T)(min + 3213),	(T)(min + 2453242),	(T)(min + 432234231),	
+
+        (T)(max / 2),		(T)(max / 2 + 1),	(T)(max / 2 - 1),		(T)(max / 3),		(T)(max / 3 + 1),	(T)(max / 3 - 1),	
+        (T)(max / 4),		(T)(max / 4 + 1),	(T)(max / 4 - 1),
+
+        (T)(min / 2),		(T)(min / 2 + 1),	(T)(min / 2 - 1),		(T)(min / 3),		(T)(min / 3 + 1),	(T)(min / 3 - 1),
+        (T)(min / 4),		(T)(min / 4 + 1),	(T)(min / 4 - 1)
+    };
+
     template <Branching ALGO>
     void test_many(T denom) {
         // Don't try dividing by 1 with unsigned branchfree
@@ -174,108 +201,10 @@ class DivideTest {
             exit(1);
         }
 
-        T min = (limits::min)();
-        T max = (limits::max)();
-
-        static const T edgeCases[] = {
-          0,
-          (T)(1),
-          (T)(2),
-          (T)(3),
-          (T)(4),
-          (T)(5),
-          (T)(6),
-          (T)(7),
-          (T)(8),
-          (T)(9),
-          (T)(10),
-          (T)(11),
-          (T)(12),
-          (T)(13),
-          (T)(14),
-          (T)(15),
-          (T)(16),
-          (T)(17),
-          (T)(18),
-          (T)(19),
-          (T)(20),
-          (T)(21),
-          (T)(22),
-          (T)(23),
-          (T)(24),
-          (T)(25),
-          (T)(26),
-          (T)(27),
-          (T)(28),
-          (T)(29),
-          (T)(30),
-          (T)(31),
-          (T)(32),
-          (T)(33),
-          (T)(34),
-          (T)(35),
-          (T)(36),
-          (T)(37),
-          (T)(38),
-          (T)(39),
-          (T)(40),
-          (T)(41),
-          (T)(42),
-          (T)(43),
-          (T)(44),
-          (T)(45),
-          (T)(46),
-          (T)(47),
-          (T)(48),
-          (T)(49),
-          (T)(123),
-          (T)(1232),
-          (T)(36847),
-          (T)(506838),
-          (T)(3000003),
-          (T)(70000007),
-          (T)(max),
-          (T)(max - 1),
-          (T)(max - 2),
-          (T)(max - 3),
-          (T)(max - 4),
-          (T)(max - 5),
-          (T)(max - 3213),
-          (T)(max - 2453242),
-          (T)(max - 432234231),
-          (T)(min),
-          (T)(min + 1),
-          (T)(min + 2),
-          (T)(min + 3),
-          (T)(min + 4),
-          (T)(min + 5),
-          (T)(min + 3213),
-          (T)(min + 2453242),
-          (T)(min + 432234231),
-          (T)(max / 2),
-          (T)(max / 2 + 1),
-          (T)(max / 2 - 1),
-          (T)(max / 3),
-          (T)(max / 3 + 1),
-          (T)(max / 3 - 1),
-          (T)(max / 4),
-          (T)(max / 4 + 1),
-          (T)(max / 4 - 1),
-          (T)(min / 2),
-          (T)(min / 2 + 1),
-          (T)(min / 2 - 1),
-          (T)(min / 3),
-          (T)(min / 3 + 1),
-          (T)(min / 3 - 1),
-          (T)(min / 4),
-          (T)(max / 4 + 1),
-          (T)(min / 4 - 1)
-        };
-
-        for (T numerator : edgeCases) {
-            test_one(numerator, denom, the_divider);
-        }
-
+        for (auto numerator : edgeCases) {
+            test_one((T)numerator, denom, the_divider);
+        }               
+        
         // test small numerators < 2^16
        // balance signed & unsigned testing
 #if defined(__AVR__)
@@ -351,11 +280,11 @@ class DivideTest {
     }
 
     void test_all_algorithms(T denom) {
-        PRINT_PROGRESS_MSG(F("Testing deom "));
-        PRINT_PROGRESS_MSG(denom);
-        PRINT_PROGRESS_MSG(F("\n"));
-        test_many<BRANCHFULL>(denom);
-        test_many<BRANCHFREE>(denom);        
+            PRINT_PROGRESS_MSG(F("Testing deom "));
+            PRINT_PROGRESS_MSG(denom);
+            PRINT_PROGRESS_MSG(F("\n"));
+            test_many<BRANCHFULL>(denom);
+            test_many<BRANCHFREE>(denom);        
     }
 
     void test_both_signs(UT denom) {
@@ -420,6 +349,9 @@ public:
 #endif
     }
 };
+
+template<typename IntT>
+constexpr IntT DivideTest<IntT>::edgeCases[];
 
 template <typename T>
 void run_test() {
