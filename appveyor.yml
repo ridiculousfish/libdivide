@@ -108,4 +108,4 @@ for:
       - tester.exe
       - benchmark_branchfree.exe
       - cd ../test/avr
-      - pio run -t Simulate -e megaatmega2560_TestFast
+      - pio run -t Simulate -e megaatmega2560_Test
