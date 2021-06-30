@@ -30,6 +30,7 @@ using namespace libdivide;
 #define NOINLINE __attribute__((__noinline__))
 #elif defined(_MSC_VER)
 #define NOINLINE __declspec(noinline)
+#pragma warning(disable : 4146)
 #else
 #define NOINLINE
 #endif
@@ -81,6 +82,25 @@ NOINLINE uint64_t sum_quotients(const random_numerators<IntT> &vals, const Divis
 }
 
 #ifdef x86_VECTOR_TYPE
+
+template <size_t IntSize>
+inline x86_VECTOR_TYPE add_vector(x86_VECTOR_TYPE &sumX4, x86_VECTOR_TYPE &numers) {
+    abort();
+    return sumX4;
+}
+template <>
+inline x86_VECTOR_TYPE add_vector<2>(x86_VECTOR_TYPE &sumX4, x86_VECTOR_TYPE &numers) {
+    return ADD_EPI16(sumX4, numers);
+}
+template <>
+inline x86_VECTOR_TYPE add_vector<4>(x86_VECTOR_TYPE &sumX4, x86_VECTOR_TYPE &numers) {
+    return ADD_EPI32(sumX4, numers);
+}
+template <>
+inline x86_VECTOR_TYPE add_vector<8>(x86_VECTOR_TYPE &sumX4, x86_VECTOR_TYPE &numers) {
+    return ADD_EPI64(sumX4, numers);
+}
+
 template <typename IntT, typename Divisor>
 NOINLINE uint64_t sum_quotients_vec(const random_numerators<IntT> &vals, const Divisor &div) {
     size_t count = sizeof(x86_VECTOR_TYPE) / sizeof(IntT);
@@ -88,15 +108,7 @@ NOINLINE uint64_t sum_quotients_vec(const random_numerators<IntT> &vals, const D
     for (auto iter = vals.begin(); iter != vals.end(); iter += count) {
         x86_VECTOR_TYPE numers = LOAD_SI((const x86_VECTOR_TYPE *)iter);
         numers = numers / div;
-        if (sizeof(IntT) == 2) {
-            sumX4 = ADD_EPI16(sumX4, numers);
-        } else if (sizeof(IntT) == 4) {
-            sumX4 = ADD_EPI32(sumX4, numers);
-        } else if (sizeof(IntT) == 8) {
-            sumX4 = ADD_EPI64(sumX4, numers);
-        } else {
-            abort();
-        }
+        sumX4 = add_vector<sizeof(IntT)>(sumX4, numers);
     }
     return unsigned_sum_vals((const IntT *)&sumX4, count);
 }

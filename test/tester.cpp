@@ -34,7 +34,7 @@ void wait_for_threads(std::vector<std::thread> &test_threads) {
 }
 
 uint8_t get_max_threads() {
-    return std::max(1U, std::thread::hardware_concurrency());
+    return (uint8_t)std::max(1U, std::thread::hardware_concurrency());
 }
 
 template<typename _IntT>

@@ -35,15 +35,15 @@
 // These primes will later be used as dividers in the benchmark.
 template <typename divider_type, typename T>
 std::vector<divider_type> get_primes(T max) {
-    uint64_t n = (uint64_t)max;
-    std::vector<divider_type> primes;
+    size_t n = (size_t)max;
     std::vector<char> sieve(n + 1, true);
 
-    for (uint64_t i = 2; i * i <= n; i++)
+    for (size_t i = 2; i * i <= n; i++)
         if (sieve[i])
-            for (uint64_t j = i * i; j <= n; j += i) sieve[j] = false;
+            for (size_t j = i * i; j <= n; j += i) sieve[j] = false;
 
-    for (uint64_t i = 2; i <= n; i++)
+    std::vector<divider_type> primes;
+    for (size_t i = 2; i <= n; i++)
         if (sieve[i]) primes.push_back((T)i);
 
     return primes;
@@ -59,7 +59,7 @@ template <typename N, typename T>
 NOINLINE size_t sum_dividers(N numerator, const T& dividers) {
     size_t sum = 0;
 
-    for (const auto& divider : dividers) sum += numerator / divider;
+    for (const auto& divider : dividers) sum += (size_t)(numerator / divider);
 
     return sum;
 }
@@ -113,8 +113,9 @@ void benchmark(tasks_t tasks, size_t max, size_t iters) {
     result_t branchfull = {0, 0};
     result_t branchfree = {0, 0};
 
-    T t_max = (T)std::min(max, (size_t)std::numeric_limits<T>::max());
-    iters = iters * (max/t_max);
+    size_t st_max = std::min(max, (size_t)std::numeric_limits<T>::max());
+    iters = iters * (max/st_max);
+    T t_max = (T)st_max;
     if (test_system) {
         using divider_type = T;
         auto dividers = get_primes<divider_type>(t_max);

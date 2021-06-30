@@ -21,6 +21,12 @@ template <typename IntT>
 using set_t = std::set<IntT>;
 #endif
 
+#if defined(_MSC_VER)
+#pragma warning(disable : 4324)
+#pragma warning(disable : 4310)
+#pragma warning(disable : 4146)
+#endif
+
 #include "libdivide.h"
 #include "type_mappings.h"
 
@@ -30,6 +36,11 @@ using namespace libdivide;
 
 #if defined(LIBDIVIDE_SSE2) && defined(LIBDIVIDE_AVX2) && defined(LIBDIVIDE_AVX512) && defined(LIBDIVIDE_NEON)
 #define VECTOR_TESTS
+#endif
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4127) // disable "conditional expression is constant""
 #endif
 
 template <typename T>
@@ -222,7 +233,7 @@ class DivideTest {
        // test power of 2 numerators: 2^i-1, 2^i, 2^i+1
         for (int i = 1; i < limits::digits; i++) {
             for (int j = -1; j <= 1; j++) {
-                T numerator = ((T)1 << i) + j;
+                T numerator = static_cast<T>((static_cast<T>(1) << i) + j);
                 test_one(numerator, denom, the_divider);
 
                 if (limits::is_signed) {
@@ -236,7 +247,7 @@ class DivideTest {
     void test_allbits_numerators(T denom, const divider<T, ALGO> &the_divider) {
         // test all bits set:
         // 11111111, 11111110, 11111100, ...
-        for (UT bits = (UT)~0ull; bits != 0; bits <<= 1) {
+        for (UT bits = (std::numeric_limits<UT>::max)(); bits != 0; bits <<= 1) {
             test_one((T)bits, denom, the_divider);
         }
     }
@@ -388,7 +399,7 @@ public:
         PRINT_PROGRESS_MSG(F("Testing powers of 2\n"));
         for (int i = 1; i < limits::digits; i++) {
             for (int j = -1; j <= 1; j++) {
-                T denom = (UT)((T)1 << i) + j;
+                T denom = static_cast<UT>((static_cast<T>(1) << i) + j);
 
                 test_both_signs(denom, tested_denom);
             }
@@ -428,3 +439,7 @@ void run_test() {
     DivideTest<T> dt;
     dt.run();
 }
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif

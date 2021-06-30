@@ -12,6 +12,10 @@
 #include "libdivide.h"
 #include "constant_fast_div.h"
 
+#if defined(_MSC_VER)
+#pragma warning(disable : 4146)
+#endif
+
 #define UNUSED(x) (void)(x)
 #define MIN_RANGE (UINT16_MAX/4U)
 #define LOOP_STEP 3

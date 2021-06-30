@@ -18,8 +18,8 @@ for:
         - image: Ubuntu1804
           platform: x86
     environment:
-      CFLAGS: "-Wall -Wextra -pedantic -Werror -O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
-      CXXFLAGS: "-Wall -Wextra -pedantic -Werror -O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
+      CFLAGS: "-O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
+      CXXFLAGS: "-O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
     install:
       - sudo apt install --yes cppcheck
     build_script:
@@ -36,8 +36,8 @@ for:
         - image: Ubuntu1804
           platform: x64
     environment:
-      CFLAGS: "-Wall -Wextra -pedantic -Werror -O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
-      CXXFLAGS: "-Wall -Wextra -pedantic -Werror -O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
+      CFLAGS: "-O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
+      CXXFLAGS: "-O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
     install:
       - sudo apt install --yes cppcheck
     build_script:
@@ -55,6 +55,7 @@ for:
           platform: x86
     build_script:
       - cmake . -G "Visual Studio 15 2017"
+      - cmake --build . --config Debug
       - cmake --build . --config Release
     test_script:
       - cd Release
@@ -66,11 +67,9 @@ for:
       only:
         - image: Visual Studio 2017
           platform: x64
-    environment:
-      CFLAGS: "/W3 /WX /DLIBDIVIDE_ASSERTIONS_ON"
-      CXXFLAGS: "/W3 /WX /DLIBDIVIDE_ASSERTIONS_ON"
     build_script:
       - cmake . -G "Visual Studio 15 2017 Win64"
+      - cmake --build . --config Debug
       - cmake --build . --config Release
     test_script:
       - cd Release
@@ -84,6 +83,7 @@ for:
           platform: x86
     build_script:
       - cmake . -G "Visual Studio 16 2019"
+      - cmake --build . --config Debug
       - cmake --build . --config Release
     test_script:
       - cd Release
@@ -95,15 +95,13 @@ for:
       only:
         - image: Visual Studio 2019
           platform: x64
-    environment:
-      CFLAGS: "/W3 /WX /DLIBDIVIDE_ASSERTIONS_ON"
-      CXXFLAGS: "/W3 /WX /DLIBDIVIDE_ASSERTIONS_ON"
     install:
       - cmd: SET PATH=C:\Python39;C:\Python39\Scripts;%PATH%
       - cmd: pip install -U platformio
       - cmd: pio platform install atmelavr --with-package=tool-simavr
     build_script:
       - cmake . -G "Visual Studio 16 2019"
+      - cmake --build . --config Debug
       - cmake --build . --config Release
       - cd test/avr
       - ps: Get-Content -Path .\platformio.ini | Where-Object { $_.StartsWith("[env:") } | ForEach-Object { & pio run -e $_.SubString(5, $_.Length-6) }
