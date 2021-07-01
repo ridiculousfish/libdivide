@@ -20,6 +20,8 @@ int main(int argc, char *argv[]) {
     // This is mainly required for Windows.
     setbuf(stdout, NULL);
 
+    bool u16 = 0;
+    bool s16 = 0;
     bool u32 = 0;
     bool s32 = 0;
     bool u64 = 0;
@@ -30,10 +32,14 @@ int main(int argc, char *argv[]) {
         u64 = 1;
     } else {
         for (int i = 1; i < argc; i++) {
-            if (!strcmp(argv[i], type_tag<uint32_t>::get_tag()))
+            if (!strcmp(argv[i], type_tag<uint16_t>::get_tag()))
+                u16 = true;
+            else if (!strcmp(argv[i], type_tag<uint32_t>::get_tag()))
                 u32 = true;
             else if (!strcmp(argv[i], type_tag<uint64_t>::get_tag()))
                 u64 = true;
+            else if (!strcmp(argv[i], type_tag<int16_t>::get_tag()))
+                s16 = true;
             else if (!strcmp(argv[i], type_tag<int32_t>::get_tag()))
                 s32 = true;
             else if (!strcmp(argv[i], type_tag<int64_t>::get_tag()))
@@ -43,7 +49,7 @@ int main(int argc, char *argv[]) {
                     "Usage: benchmark [OPTIONS]\n"
                     "\n"
                     "You can pass the benchmark program one or more of the following\n"
-                    "options: u32, s32, u64, s64 to compare libdivide's speed against\n"
+                    "options: u16, s16, u32, s32, u64, s64 to compare libdivide's speed against\n"
                     "hardware division. If benchmark is run without any options u64\n"
                     "is used as default option. benchmark tests a simple function that\n"
                     "inputs an array of random numerators and a single divisor, and\n"
@@ -55,6 +61,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    if (u16) test_many<uint16_t>();
+    if (s16) test_many<int16_t>();
     if (u32) test_many<uint32_t>();
     if (s32) test_many<int32_t>();
     if (u64) test_many<uint64_t>();

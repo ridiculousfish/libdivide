@@ -6,11 +6,19 @@
 #include <Arduino.h>
 #include "avr_type_helpers.h"
 typedef String string_class;
+// AVR targets do not have enough memory to track which denominatores
+// have been tested. So this is a dummy placeholder, just to allow
+// common function signatures.
+template <typename IntT>
+using set_t = std::numeric_limits<IntT>;
 #else
 #include <limits>
 #include <random>
 #include <string>
 typedef std::string string_class;
+#include <set>
+template <typename IntT>
+using set_t = std::set<IntT>;
 #endif
 
 #include "libdivide.h"
@@ -20,6 +28,10 @@ using namespace libdivide;
 
 #define UNUSED(x) (void)(x)
 
+#if defined(LIBDIVIDE_SSE2) && defined(LIBDIVIDE_AVX2) && defined(LIBDIVIDE_AVX512) && defined(LIBDIVIDE_NEON)
+#define VECTOR_TESTS
+#endif
+
 template <typename T>
 class DivideTest {
    private:
@@ -28,16 +40,6 @@ class DivideTest {
     uint32_t seed = 0;
     UT rand_n = 0;
 
-    int32_t get_loop_increment(int32_t range_min, int32_t range_max)
-    {
-#if defined(TEST_MIN_ITERATIONS)
-        return (range_max - range_min)/TEST_MIN_ITERATIONS;
-#else
-        UNUSED(range_min);
-        UNUSED(range_max);
-        return 1;
-#endif
-    }
     // This random function slowly increases the random number
     // until there is an integer overflow, if this happens
     // the random number is reset to 0 and we restart at the
@@ -108,19 +110,14 @@ class DivideTest {
     }
 
     template <typename VecType, Branching ALGO>
-    void test_vec(const T *numers, T denom, const divider<T, ALGO> &div) {
-        // Align memory to 64 byte boundary for AVX512
-        char mem[16 * sizeof(T) + 64];
-        size_t offset = 64 - (size_t)&mem % 64;
-        T *results = (T *)&mem[offset];
-
-        size_t iters = 64 / sizeof(VecType);
+    void test_vec(const T *numers, size_t count, T denom, const divider<T, ALGO> &div) {
         size_t size = sizeof(VecType) / sizeof(T);
+        size_t iters = (sizeof(T)*count)/sizeof(VecType);
 
         for (size_t j = 0; j < iters; j++, numers += size) {
             VecType x = *((const VecType *)numers);
             VecType resultVector = x / div;
-            results = (T *)&resultVector;
+            T *results = (T *)&resultVector;
 
             for (size_t i = 0; i < size; i++) {
                 T numer = numers[i];
@@ -149,6 +146,148 @@ class DivideTest {
         }
     }
 
+    // random_count * sizeof(T) must be >= size of largest
+    // vector type. So figure that out at compile time.
+    union vector_size_u {
+        T s1;
+#ifdef LIBDIVIDE_SSE2
+        __m128i s2;
+#endif
+#ifdef LIBDIVIDE_AVX2
+        __m256i s3;
+#endif
+#ifdef LIBDIVIDE_AVX512
+        __m512i s4;
+#endif
+#ifdef LIBDIVIDE_NEON
+        typename NeonVecFor<T>::type s5;
+#endif  
+    };    
+    static const size_t min_vector_count = sizeof(union vector_size_u)/sizeof(T);
+
+    static constexpr T min = (std::numeric_limits<T>::min)();
+    static constexpr T max = (std::numeric_limits<T>::max)(); 
+    static constexpr T edgeCases[] = {
+        0,					(T)(1),				(T)(2),					(T)(3),				(T)(4),				(T)(5),
+        (T)(6),				(T)(7),				(T)(8),					(T)(9),				(T)(10),			(T)(11),
+        (T)(12),			(T)(13),			(T)(14),				(T)(15),			(T)(16),			(T)(17),
+        (T)(18),			(T)(19),			(T)(20),				(T)(21),			(T)(22),			(T)(23),
+        (T)(24),			(T)(25),			(T)(26),				(T)(27),			(T)(28),			(T)(29),
+        (T)(30),			(T)(31),			(T)(32),				(T)(33),			(T)(34),			(T)(35),
+        (T)(36),			(T)(37),			(T)(38),				(T)(39),			(T)(40),			(T)(41),
+        (T)(42),			(T)(43),			(T)(44),				(T)(45),			(T)(46),			(T)(47),
+        (T)(48),			(T)(49),			(T)(123),				(T)(1232),			(T)(36847),			(T)(506838),
+        (T)(3000003),		(T)(70000007),		
+
+        (T)(max),			(T)(max - 1),		(T)(max - 2),			(T)(max - 3),		(T)(max - 4),		(T)(max - 5),
+        (T)(max - 3213),	(T)(max - 2453242),	(T)(max - 432234231),	
+
+        (T)(min),			(T)(min + 1),		(T)(min + 2),			(T)(min + 3),		(T)(min + 4),		(T)(min + 5),
+        (T)(min + 3213),	(T)(min + 2453242),	(T)(min + 432234231),	
+
+        (T)(max / 2),		(T)(max / 2 + 1),	(T)(max / 2 - 1),		(T)(max / 3),		(T)(max / 3 + 1),	(T)(max / 3 - 1),	
+        (T)(max / 4),		(T)(max / 4 + 1),	(T)(max / 4 - 1),
+
+        (T)(min / 2),		(T)(min / 2 + 1),	(T)(min / 2 - 1),		(T)(min / 3),		(T)(min / 3 + 1),	(T)(min / 3 - 1),
+        (T)(min / 4),		(T)(min / 4 + 1),	(T)(min / 4 - 1)
+    };
+
+    template <Branching ALGO>
+    void test_edgecase_numerators(T denom, const divider<T, ALGO> &the_divider) {
+        for (auto numerator : edgeCases) {
+            test_one((T)numerator, denom, the_divider);
+        }        
+    }
+
+    template <Branching ALGO>
+    void test_small_numerators(T denom, const divider<T, ALGO> &the_divider) {
+        // test small numerators < 2^16
+        // balance signed & unsigned testing
+#if defined(__AVR__)
+        int32_t small_stop = (limits::is_signed) ? (int32_t)1 << 7 : (uint32_t)1 << 8;
+#else
+        int32_t small_stop = (limits::is_signed) ? (int32_t)1 << 14 : (uint32_t)1 << 16;
+#endif
+        for (int32_t i = 0; i < small_stop; ++i) {
+            test_one((T)i, denom, the_divider);
+
+            if (limits::is_signed) {
+                test_one((T)-i, denom, the_divider);
+            }
+        }
+    }
+
+    template <Branching ALGO>
+    void test_pow2_numerators(T denom, const divider<T, ALGO> &the_divider) {
+       // test power of 2 numerators: 2^i-1, 2^i, 2^i+1
+        for (int i = 1; i < limits::digits; i++) {
+            for (int j = -1; j <= 1; j++) {
+                T numerator = ((T)1 << i) + j;
+                test_one(numerator, denom, the_divider);
+
+                if (limits::is_signed) {
+                    test_one(-numerator, denom, the_divider);
+                }
+            }
+        }
+    }
+
+    template <Branching ALGO>
+    void test_allbits_numerators(T denom, const divider<T, ALGO> &the_divider) {
+        // test all bits set:
+        // 11111111, 11111110, 11111100, ...
+        for (UT bits = (UT)~0ull; bits != 0; bits <<= 1) {
+            test_one((T)bits, denom, the_divider);
+        }
+    }
+
+    template <Branching ALGO>
+    void test_random_numerators(T denom, const divider<T, ALGO> &the_divider) {
+        for (size_t i = 0; i < 10000; ++i) {
+            for (size_t j = 0; j < min_vector_count; j++) {
+                test_one(get_random(), denom, the_divider);
+            }
+        }        
+    }
+
+    template <Branching ALGO>
+    void test_vectordivide_numerators(T denom, const divider<T, ALGO> &the_divider) {
+#if defined(VECTOR_TESTS)        
+        // Align memory to 64 byte boundary for AVX512
+        char mem[min_vector_count * sizeof(T) + 64];
+        size_t offset = 64 - (size_t)&mem % 64;
+        T *numers = (T *)&mem[offset];
+
+        for (size_t i = 0; i < 10000; ++i) {
+            for (size_t j = 0; j < min_vector_count; j++) {
+                numers[j] = get_random();
+            }
+#ifdef LIBDIVIDE_SSE2
+            test_vec<__m128i>(numers, min_vector_count, denom, the_divider);
+#endif
+#ifdef LIBDIVIDE_AVX2
+            test_vec<__m256i>(numers, min_vector_count, denom, the_divider);
+#endif
+#ifdef LIBDIVIDE_AVX512
+            test_vec<__m512i>(numers, min_vector_count, denom, the_divider);
+#endif
+#ifdef LIBDIVIDE_NEON
+            test_vec<typename NeonVecFor<T>::type>(numers, min_vector_count, denom, the_divider);
+#endif
+        }
+#else
+        UNUSED(denom);
+        UNUSED(the_divider);        
+#endif
+    }
+
+    template <Branching ALGO>
+    void test_all_numerators(T denom, const divider<T, ALGO> &the_divider) {
+        for (T numerator=(min); numerator!=(max); ++numerator) {
+            test_one((T)numerator, denom, the_divider);
+        }
+    }
+
     template <Branching ALGO>
     void test_many(T denom) {
         // Don't try dividing by 1 with unsigned branchfree
@@ -169,166 +308,14 @@ class DivideTest {
             exit(1);
         }
 
-        T min = (limits::min)();
-        T max = (limits::max)();
-
-        static const T edgeCases[] = {
-          0,
-          (T)(1),
-          (T)(2),
-          (T)(3),
-          (T)(4),
-          (T)(5),
-          (T)(6),
-          (T)(7),
-          (T)(8),
-          (T)(9),
-          (T)(10),
-          (T)(11),
-          (T)(12),
-          (T)(13),
-          (T)(14),
-          (T)(15),
-          (T)(16),
-          (T)(17),
-          (T)(18),
-          (T)(19),
-          (T)(20),
-          (T)(21),
-          (T)(22),
-          (T)(23),
-          (T)(24),
-          (T)(25),
-          (T)(26),
-          (T)(27),
-          (T)(28),
-          (T)(29),
-          (T)(30),
-          (T)(31),
-          (T)(32),
-          (T)(33),
-          (T)(34),
-          (T)(35),
-          (T)(36),
-          (T)(37),
-          (T)(38),
-          (T)(39),
-          (T)(40),
-          (T)(41),
-          (T)(42),
-          (T)(43),
-          (T)(44),
-          (T)(45),
-          (T)(46),
-          (T)(47),
-          (T)(48),
-          (T)(49),
-          (T)(123),
-          (T)(1232),
-          (T)(36847),
-          (T)(506838),
-          (T)(3000003),
-          (T)(70000007),
-          (T)(max),
-          (T)(max - 1),
-          (T)(max - 2),
-          (T)(max - 3),
-          (T)(max - 4),
-          (T)(max - 5),
-          (T)(max - 3213),
-          (T)(max - 2453242),
-          (T)(max - 432234231),
-          (T)(min),
-          (T)(min + 1),
-          (T)(min + 2),
-          (T)(min + 3),
-          (T)(min + 4),
-          (T)(min + 5),
-          (T)(min + 3213),
-          (T)(min + 2453242),
-          (T)(min + 432234231),
-          (T)(max / 2),
-          (T)(max / 2 + 1),
-          (T)(max / 2 - 1),
-          (T)(max / 3),
-          (T)(max / 3 + 1),
-          (T)(max / 3 - 1),
-          (T)(max / 4),
-          (T)(max / 4 + 1),
-          (T)(max / 4 - 1),
-          (T)(min / 2),
-          (T)(min / 2 + 1),
-          (T)(min / 2 - 1),
-          (T)(min / 3),
-          (T)(min / 3 + 1),
-          (T)(min / 3 - 1),
-          (T)(min / 4),
-          (T)(max / 4 + 1),
-          (T)(min / 4 - 1)
-        };
-
-        for (T numerator : edgeCases) {
-            test_one(numerator, denom, the_divider);
-        }
-
-        // balance signed & unsigned testing
-        int32_t small_stop = (limits::is_signed) ? (int32_t)1 << 14 : (uint32_t)1 << 16;
-
-        // test small numerators < 2^16
-        int32_t increment = get_loop_increment(0, small_stop);
-        for (int32_t i = 0; i < small_stop; i+=increment) {
-            test_one(i, denom, the_divider);
-
-            if (limits::is_signed) {
-                test_one(-i, denom, the_divider);
-            }
-        }
-
-        // test power of 2 numerators: 2^i-1, 2^i, 2^i+1
-        for (int i = 1; i < limits::digits; i++) {
-            for (int j = -1; j <= 1; j++) {
-                T numerator = ((T)1 << i) + j;
-                test_one(numerator, denom, the_divider);
-
-                if (limits::is_signed) {
-                    test_one(-numerator, denom, the_divider);
-                }
-            }
-        }
-
-        // test all bits set:
-        // 11111111, 11111110, 11111100, ...
-        for (UT bits = (UT)~0ull; bits != 0; bits <<= 1) {
-            test_one((T)bits, denom, the_divider);
-        }
-
-        // Align memory to 64 byte boundary for AVX512
-        char mem[16 * sizeof(T) + 64];
-        size_t offset = 64 - (size_t)&mem % 64;
-        T *numers = (T *)&mem[offset];
-
-        // test random numerators
-        increment = get_loop_increment(0, 10000);
-        for (size_t i = 0; i < 10000; i += increment) {
-            for (size_t j = 0; j < 16; j++) {
-                numers[j] = get_random();
-            }
-            for (size_t j = 0; j < 16; j++) {
-                test_one(numers[j], denom, the_divider);
-            }
-#ifdef LIBDIVIDE_SSE2
-            test_vec<__m128i>(numers, denom, the_divider);
+        test_edgecase_numerators(denom, the_divider);
+        test_small_numerators(denom, the_divider);
+        test_pow2_numerators(denom, the_divider);
+        test_allbits_numerators(denom, the_divider);
+#if !defined(__AVR__)
+        test_random_numerators(denom, the_divider);
+        test_vectordivide_numerators(denom, the_divider);
 #endif
-#ifdef LIBDIVIDE_AVX2
-            test_vec<__m256i>(numers, denom, the_divider);
-#endif
-#ifdef LIBDIVIDE_AVX512
-            test_vec<__m512i>(numers, denom, the_divider);
-#endif
-#ifdef LIBDIVIDE_NEON
-            test_vec<typename NeonVecFor<T>::type>(numers, denom, the_divider);
-#endif
-        }
     }
 
     static uint32_t randomSeed() {
@@ -342,12 +329,29 @@ class DivideTest {
 #endif
     }
 
-    void test_all_algorithms(T denom) {
-        PRINT_PROGRESS_MSG(F("Testing deom "));
-        PRINT_PROGRESS_MSG(denom);
-        PRINT_PROGRESS_MSG(F("\n"));
-        test_many<BRANCHFULL>(denom);
-        test_many<BRANCHFREE>(denom);        
+    void test_all_algorithms(T denom, set_t<T> &tested_denom) {
+#if !defined(__AVR__)
+        if(tested_denom.end()==tested_denom.find(denom)) {
+#endif
+            PRINT_PROGRESS_MSG(F("Testing deom "));
+            PRINT_PROGRESS_MSG(denom);
+            PRINT_PROGRESS_MSG(F("\n"));
+            test_many<BRANCHFULL>(denom);
+            test_many<BRANCHFREE>(denom);
+#if !defined(__AVR__)
+            tested_denom.insert(denom);
+        } 
+#else
+        UNUSED(tested_denom);
+#endif
+    }
+
+    void test_both_signs(UT denom, set_t<T> &tested_denom) {
+        test_all_algorithms(denom, tested_denom);
+
+        if (limits::is_signed) {
+            test_all_algorithms(-denom, tested_denom);
+        }        
     }
 
 public:
@@ -358,55 +362,63 @@ public:
     }
 
     void run() {
-        // Test small values
-        int32_t increment = get_loop_increment(0, 1024);
-        for (int denom = 1; denom < 1024; denom+=increment) {
-            test_all_algorithms(denom);
+        set_t<T> tested_denom;
 
-            if (limits::is_signed) {
-                test_all_algorithms(-denom);
-            }
+        // Test small values
+#if defined(__AVR__)
+        UT primes[] = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173};
+        for (size_t index = 0; index < sizeof(primes)/sizeof(primes[0]); ++index) {
+            test_both_signs(primes[index], tested_denom);
         }
+#else
+        for (UT denom = 1; denom < 1024; ++denom) {
+            test_both_signs(denom, tested_denom);
+        }
+#endif
 
         if (limits::is_signed) {
             PRINT_PROGRESS_MSG(F("Testing minimum\n"));
-            test_all_algorithms((limits::min)());
+            test_all_algorithms((limits::min)(), tested_denom);
         }
 
         PRINT_PROGRESS_MSG(F("Testing maximum\n"));
-        test_all_algorithms((limits::max)());
+        test_all_algorithms((limits::max)(), tested_denom);
 
         // test power of 2 denoms: 2^i-1, 2^i, 2^i+1
         PRINT_PROGRESS_MSG(F("Testing powers of 2\n"));
         for (int i = 1; i < limits::digits; i++) {
             for (int j = -1; j <= 1; j++) {
-                T denom = ((T)1 << i) + j;
+                T denom = (UT)((T)1 << i) + j;
 
-                test_all_algorithms(denom);
-
-                if (limits::is_signed) {
-                    test_all_algorithms(-denom);
-                }
+                test_both_signs(denom, tested_denom);
             }
         }
 
         // test all bits set:
         // 11111111, 11111110, 11111100, ...
         PRINT_PROGRESS_MSG(F("Testing all bits set\n"));
-        for (UT bits = (UT)~0ull; bits != 0; bits <<= 1) {
-            test_all_algorithms((T)bits);
+        // For signed types, this degenerates to negative powers of
+        // 2 (-1, -2, -4....): since we just tested those (above), skip.
+        if (!limits::is_signed) {
+            for (UT bits = (std::numeric_limits<UT>::max)(); bits != 0; bits <<= 1) {
+                PRINT_PROGRESS_MSG((T)bits);
+                PRINT_PROGRESS_MSG("\n");
+                test_all_algorithms((T)bits, tested_denom);
+            }
         }
 
         // Test random denominators
+#if !defined(__AVR__)
         PRINT_PROGRESS_MSG(F("Test random denominators\n"));        
-        increment = get_loop_increment(0, 10000);
-        for (int i = 0; i < 10000; i+=increment) {
-            T denom = random_denominator();
-
-            test_all_algorithms(denom);
+        for (int i = 0; i < 10000; ++i) {
+            test_all_algorithms(random_denominator(), tested_denom);
         }
+#endif
     }
 };
+
+template<typename IntT>
+constexpr IntT DivideTest<IntT>::edgeCases[];
 
 template <typename T>
 void run_test() {

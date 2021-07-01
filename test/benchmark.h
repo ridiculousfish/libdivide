@@ -40,18 +40,21 @@ using namespace libdivide;
 #define LOAD_SI _mm512_load_si512
 #define ADD_EPI64 _mm512_add_epi64
 #define ADD_EPI32 _mm512_add_epi32
+#define ADD_EPI16 _mm512_add_epi16
 #elif defined(LIBDIVIDE_AVX2)
 #define x86_VECTOR_TYPE __m256i
 #define SETZERO_SI _mm256_setzero_si256
 #define LOAD_SI _mm256_load_si256
 #define ADD_EPI64 _mm256_add_epi64
 #define ADD_EPI32 _mm256_add_epi32
+#define ADD_EPI16 _mm256_add_epi16
 #elif defined(LIBDIVIDE_SSE2)
 #define x86_VECTOR_TYPE __m128i
 #define SETZERO_SI _mm_setzero_si128
 #define LOAD_SI _mm_load_si128
 #define ADD_EPI64 _mm_add_epi64
 #define ADD_EPI32 _mm_add_epi32
+#define ADD_EPI16 _mm_add_epi16
 #endif
 
 // Helper - given a vector of some type, convert it to unsigned and sum it.
@@ -85,7 +88,9 @@ NOINLINE uint64_t sum_quotients_vec(const random_numerators<IntT> &vals, const D
     for (auto iter = vals.begin(); iter != vals.end(); iter += count) {
         x86_VECTOR_TYPE numers = LOAD_SI((const x86_VECTOR_TYPE *)iter);
         numers = numers / div;
-        if (sizeof(IntT) == 4) {
+        if (sizeof(IntT) == 2) {
+            sumX4 = ADD_EPI16(sumX4, numers);
+        } else if (sizeof(IntT) == 4) {
             sumX4 = ADD_EPI32(sumX4, numers);
         } else if (sizeof(IntT) == 8) {
             sumX4 = ADD_EPI64(sumX4, numers);
@@ -95,29 +100,40 @@ NOINLINE uint64_t sum_quotients_vec(const random_numerators<IntT> &vals, const D
     }
     return unsigned_sum_vals((const IntT *)&sumX4, count);
 }
+
 #elif defined(LIBDIVIDE_NEON)
 
 // Helper to deduce NEON vector type for integral type.
 template <typename T> struct NeonVecFuncs {};
 
+template <> struct NeonVecFuncs<uint16_t> {
+    static inline uint16x8_t dup(uint16_t value) { return vdupq_n_u16(value); }
+    static inline uint16x8_t add(uint16x8_t a, uint16x8_t b) { return vaddq_u16(a, b); }
+};
+
+template <> struct NeonVecFuncs<int16_t> { 
+    static inline int16x8_t dup(int16_t value) { return vdupq_n_s16(value); }
+    static inline int16x8_t add(int16x8_t a, int16x8_t b) { return vaddq_s16(a, b); }
+};
+
 template <> struct NeonVecFuncs<uint32_t> {
-    inline uint32x4_t dup(uint32_t value) { return vdupq_n_u32(value); }
-    inline uint32x4_t add(uint32x4_t a, uint32x4_t b) { return vaddq_u32(a, b); }
+    static inline uint32x4_t dup(uint32_t value) { return vdupq_n_u32(value); }
+    static inline uint32x4_t add(uint32x4_t a, uint32x4_t b) { return vaddq_u32(a, b); }
 };
 
 template <> struct NeonVecFuncs<int32_t> { 
-    inline int32x4_t dup(int32_t value) { return vdupq_n_s32(value); }
-    inline int32x4_t add(int32x4_t a, int32x4_t b) { return vaddq_s32(a, b); }
+    static inline int32x4_t dup(int32_t value) { return vdupq_n_s32(value); }
+    static inline int32x4_t add(int32x4_t a, int32x4_t b) { return vaddq_s32(a, b); }
 };
 
 template <> struct NeonVecFuncs<uint64_t> {
-    inline uint64x2_t dup(uint64_t value) { return vdupq_n_u64(value); }
-    inline uint64x2_t add(uint64x2_t a, uint64x2_t b) { return vaddq_u64(a, b); }
+    static inline uint64x2_t dup(uint64_t value) { return vdupq_n_u64(value); }
+    static inline uint64x2_t add(uint64x2_t a, uint64x2_t b) { return vaddq_u64(a, b); }
 };
 
 template <> struct NeonVecFuncs<int64_t> {
-    inline int64x2_t dup(int64_t value) { return vdupq_n_s64(value); }
-    inline int64x2_t add(int64x2_t a, int64x2_t b) { return vaddq_s64(a, b); }
+    static inline int64x2_t dup(int64_t value) { return vdupq_n_s64(value); }
+    static inline int64x2_t add(int64x2_t a, int64x2_t b) { return vaddq_s64(a, b); }
 };
 
 template <typename IntT, typename Divisor>

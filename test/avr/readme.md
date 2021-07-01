@@ -10,15 +10,11 @@
  
 ## Running the Test program
 
-There are 2 test programs:
- 1. Slow. Will test all combinations, same as the Windows/Linux tests. 
- 2. Fast. Runs a more sparse test suite. Good for most purposes
-   
-The slow option is the default
+The test program is in the 'megaatmega2560_Test' environment.
 
 To run the test program in a simulator:
  1. On the activity bar, select PlatformIO 
- 2. Run Project Tasks -> megaatmega2560_TestFast -> Custom -> Simulate
+ 2. Run Project Tasks -> megaatmega2560_Test -> Custom -> Simulate
     a. This will build the test program & launch it in the simulator (this might download )supporting packages)
     b. **NOTE** Once running it can take a **long** time for ouput to appear in the terminal. **Be patient**
      * Or copy the simavr command line from the terminal to a command prompt (or another vscode terminal)

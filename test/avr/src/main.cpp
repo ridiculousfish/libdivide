@@ -10,7 +10,11 @@ void setup() {
 
 #if defined(BENCHMARK)
 
-#if defined(U32)
+#if defined(U16)
+    test_many<uint16_t>();
+#elif defined(S16)
+    test_many<int16_t>();
+#elif defined(U32)
     test_many<uint32_t>();
 #elif defined(S32)
     test_many<int32_t>();
@@ -21,6 +25,8 @@ void setup() {
 #endif
 
 #else
+  run_test<int16_t>();
+  run_test<uint16_t>();
   run_test<int32_t>();
   run_test<uint32_t>();
   run_test<int64_t>();

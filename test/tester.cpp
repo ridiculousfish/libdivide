@@ -19,19 +19,46 @@
 #include "libdivide.h"
 
 enum TestType {
+    type_s16,
+    type_u16,
     type_s32,
     type_u32,
     type_s64,
     type_u64,
 };
 
+void wait_for_threads(std::vector<std::thread> &test_threads) {
+    for (auto &t : test_threads) {
+        t.join();
+    }
+}
+
+uint8_t get_max_threads() {
+    return std::max(1U, std::thread::hardware_concurrency());
+}
+
+template<typename _IntT>
+void launch_test_thread(std::vector<std::thread> &test_threads) {
+    static uint8_t max_threads = get_max_threads();
+    
+    if (max_threads==test_threads.size()) {
+        wait_for_threads(test_threads);
+        test_threads.clear();
+    }    
+    test_threads.emplace_back(run_test<_IntT>);
+}
+    
 int main(int argc, char *argv[]) {
     bool default_do_test = (argc <= 1);
-    std::vector<bool> do_tests(4, default_do_test);
+    std::vector<bool> do_tests(6, default_do_test);
 
     for (int i = 1; i < argc; i++) {
         const std::string arg(argv[i]);
-        if (arg == type_tag<int32_t>::get_tag())
+        if (arg == type_tag<int16_t>::get_tag())
+            do_tests[type_s16] = true;
+        else if (arg == type_tag<uint16_t>::get_tag())
+            do_tests[type_u16] = true;
+        else if (arg == type_tag<int32_t>::get_tag())
             do_tests[type_s32] = true;
         else if (arg == type_tag<uint32_t>::get_tag())
             do_tests[type_u32] = true;
@@ -44,7 +71,7 @@ int main(int argc, char *argv[]) {
                 << "Usage: tester [OPTIONS]\n"
                    "\n"
                    "You can pass the tester program one or more of the following options:\n"
-                   "u32, s32, u64, s64 or run it without arguments to test all four.\n"
+                   "u16, s16, u32, s32, u64, s64 or run it without arguments to test all four.\n"
                    "The tester is multithreaded so it can test multiple cases simultaneously.\n"
                    "The tester will verify the correctness of libdivide via a set of\n"
                    "randomly chosen denominators, by comparing the result of libdivide's\n"
@@ -76,21 +103,27 @@ int main(int argc, char *argv[]) {
 
     // Run tests in threads.
     std::vector<std::thread> test_threads;
+
+    if (do_tests[type_s16]) {
+        launch_test_thread<int16_t>(test_threads);
+    }
+    if (do_tests[type_u16]) {
+        launch_test_thread<uint16_t>(test_threads);
+    }
     if (do_tests[type_s32]) {
-        test_threads.emplace_back(run_test<int32_t>);
+        launch_test_thread<int32_t>(test_threads);
     }
     if (do_tests[type_u32]) {
-        test_threads.emplace_back(run_test<uint32_t>);
+        launch_test_thread<uint32_t>(test_threads);
     }
     if (do_tests[type_s64]) {
-        test_threads.emplace_back(run_test<int64_t>);
+        launch_test_thread<int64_t>(test_threads);
     }
     if (do_tests[type_u64]) {
-        test_threads.emplace_back(run_test<uint64_t>);
+        launch_test_thread<uint64_t>(test_threads);
     }
-    for (auto &t : test_threads) {
-        t.join();
-    }
+    
+    wait_for_threads(test_threads);
 
     std::cout << "\nAll tests passed successfully!" << std::endl;
     return 0;
