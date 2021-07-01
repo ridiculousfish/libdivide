@@ -1661,7 +1661,7 @@ int64_t libdivide_s64_branchfree_recover(const struct libdivide_s64_branchfree_t
 // Simplest possible vector type division: treat the vector type as an array
 // of underlying native type.
 #define SIMPLE_VECTOR_DIVISION(IntT, VecT, Algo) \
-    static const size_t count = sizeof(VecT) / sizeof(IntT); \
+    const size_t count = sizeof(VecT) / sizeof(IntT); \
     VecT result; \
     IntT *pSource = (IntT *)&numers; \
     IntT *pTarget = (IntT *)&result; \
