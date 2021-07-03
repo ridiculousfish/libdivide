@@ -27,7 +27,7 @@ void setup() {
     test_many<int64_t>();
 #endif
 
-#else
+#elif defined(TEST_LIBDIVIDE)
   run_test<int16_t>();
   run_test<uint16_t>();
   run_test<int32_t>();
@@ -36,6 +36,9 @@ void setup() {
   run_test<uint64_t>();
 
   PRINT_INFO(F("\nAll tests passed successfully!\n"));
+
+#elif defined(TEST_CONSTANTS)
+  run_constant_test();
 #endif
 
   Serial.flush();
