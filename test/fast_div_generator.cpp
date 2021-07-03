@@ -7,19 +7,20 @@
 #include <string>
 #include <type_traits>
 #include <algorithm>
+#include <ctype.h>
 
-#include "..\libdivide.h"
+#include "libdivide.h"
 #include "type_mappings.h"
 
 inline std::string to_lower(std::string str) {
     std::transform(str.begin(), str.end(), str.begin(),
-               [](unsigned char c){ return std::tolower(c); });
+               [](unsigned char c){ return ::tolower(c); });
     return str;
 }
 
 inline std::string to_upper(std::string str) {
     std::transform(str.begin(), str.end(), str.begin(),
-               [](unsigned char c){ return std::toupper(c); });
+               [](unsigned char c){ return ::toupper(c); });
     return str;
 }
 
@@ -44,8 +45,9 @@ static std::string const_macro_name(_IntT denom) {
     name += "LD_DENOM_";
     if (denom<0) {
         name += "MINUS_";
+        denom = -denom;
     }
-    name += std::to_string(std::abs(denom));
+    name += std::to_string(denom);
     return name;
 }
 

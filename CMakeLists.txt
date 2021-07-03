@@ -262,6 +262,7 @@ if (BUILD_TESTS)
 
     target_link_libraries(tester libdivide Threads::Threads)
     target_link_libraries(test_c99 libdivide)
+    target_link_libraries(fast_div_generator libdivide)
     target_link_libraries(benchmark libdivide)
     target_link_libraries(benchmark_branchfree libdivide)
 
@@ -275,6 +276,7 @@ if (BUILD_TESTS)
 
     target_compile_definitions(tester PRIVATE "${LIBDIVIDE_ASSERTIONS}" "${LIBDIVIDE_VECTOR_EXT}")
     target_compile_definitions(test_c99 PRIVATE "${LIBDIVIDE_ASSERTIONS}" "${LIBDIVIDE_VECTOR_EXT}")
+    target_compile_definitions(fast_div_generator PRIVATE "${LIBDIVIDE_ASSERTIONS}" "${LIBDIVIDE_VECTOR_EXT}")
     target_compile_definitions(benchmark PRIVATE "${LIBDIVIDE_ASSERTIONS}" "${LIBDIVIDE_VECTOR_EXT}")
     target_compile_definitions(benchmark_branchfree PRIVATE "${LIBDIVIDE_ASSERTIONS}" "${LIBDIVIDE_VECTOR_EXT}")
 endif()
