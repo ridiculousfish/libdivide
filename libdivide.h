@@ -362,7 +362,7 @@ static LIBDIVIDE_INLINE int16_t libdivide_count_leading_zeros16(uint16_t val) {
 #elif defined(LIBDIVIDE_VC)
     unsigned long result;
     if (_BitScanReverse(&result, (unsigned long)val)) {
-        return static_cast<int16_t>(15 - result);
+        return (int16_t)(15 - result);
     }
     return 0;
 #else
@@ -676,7 +676,7 @@ static LIBDIVIDE_INLINE struct libdivide_u16_t libdivide_internal_u16_gen(
     }
 
     struct libdivide_u16_t result;
-    uint8_t floor_log_2_d = static_cast<uint8_t>(15 - libdivide_count_leading_zeros16(d));
+    uint8_t floor_log_2_d = (uint8_t)(15 - libdivide_count_leading_zeros16(d));
 
     // Power of 2
     if ((d & (d - 1)) == 0) {
@@ -1183,7 +1183,7 @@ static LIBDIVIDE_INLINE struct libdivide_s16_t libdivide_internal_s16_gen(
     if ((absD & (absD - 1)) == 0) {
         // Branchfree and normal paths are exactly the same
         result.magic = 0;
-        result.more = static_cast<uint8_t>(floor_log_2_d | (d < 0 ? LIBDIVIDE_NEGATIVE_DIVISOR : 0));
+        result.more = (uint8_t)(floor_log_2_d | (d < 0 ? LIBDIVIDE_NEGATIVE_DIVISOR : 0));
     } else {
         LIBDIVIDE_ASSERT(floor_log_2_d >= 1);
 
@@ -1198,7 +1198,7 @@ static LIBDIVIDE_INLINE struct libdivide_s16_t libdivide_internal_s16_gen(
         // This works if works if e < 2**floor_log_2_d.
         if (!branchfree && e < ((uint16_t)1 << floor_log_2_d)) {
             // This power works
-            more = static_cast<uint8_t>(floor_log_2_d - 1);
+            more = (uint8_t)(floor_log_2_d - 1);
         } else {
             // We need to go one higher. This should not make proposed_m
             // overflow, but it will make it negative when interpreted as an
@@ -1206,7 +1206,7 @@ static LIBDIVIDE_INLINE struct libdivide_s16_t libdivide_internal_s16_gen(
             proposed_m += proposed_m;
             const uint16_t twice_rem = rem + rem;
             if (twice_rem >= absD || twice_rem < rem) proposed_m += 1;
-            more = static_cast<uint8_t>(floor_log_2_d | LIBDIVIDE_ADD_MARKER);
+            more = (uint8_t)(floor_log_2_d | LIBDIVIDE_ADD_MARKER);
         }
 
         proposed_m += 1;
@@ -1703,23 +1703,23 @@ static LIBDIVIDE_INLINE int64x2_t libdivide_s64_branchfree_do_vec128(
 // Logical right shift by runtime value.
 // NEON implements right shift as left shits by negative values.
 static LIBDIVIDE_INLINE uint32x4_t libdivide_u32_neon_srl(uint32x4_t v, uint8_t amt) {
-    int32_t wamt = static_cast<int32_t>(amt);
+    int32_t wamt = (int32_t)(amt);
     return vshlq_u32(v, vdupq_n_s32(-wamt));
 }
 
 static LIBDIVIDE_INLINE uint64x2_t libdivide_u64_neon_srl(uint64x2_t v, uint8_t amt) {
-    int64_t wamt = static_cast<int64_t>(amt);
+    int64_t wamt = (int64_t)(amt);
     return vshlq_u64(v, vdupq_n_s64(-wamt));
 }
 
 // Arithmetic right shift by runtime value.
 static LIBDIVIDE_INLINE int32x4_t libdivide_s32_neon_sra(int32x4_t v, uint8_t amt) {
-    int32_t wamt = static_cast<int32_t>(amt);
+    int32_t wamt = (int32_t)(amt);
     return vshlq_s32(v, vdupq_n_s32(-wamt));
 }
 
 static LIBDIVIDE_INLINE int64x2_t libdivide_s64_neon_sra(int64x2_t v, uint8_t amt) {
-    int64_t wamt = static_cast<int64_t>(amt);
+    int64_t wamt = (int64_t)(amt);
     return vshlq_s64(v, vdupq_n_s64(-wamt));
 }
 
@@ -1771,7 +1771,7 @@ static LIBDIVIDE_INLINE uint64x2_t libdivide_mullhi_u64_vec128(uint64x2_t x, uin
 
 static LIBDIVIDE_INLINE int64x2_t libdivide_mullhi_s64_vec128(int64x2_t x, int64_t sy) {
     int64x2_t p = vreinterpretq_s64_u64(
-        libdivide_mullhi_u64_vec128(vreinterpretq_u64_s64(x), static_cast<uint64_t>(sy)));
+        libdivide_mullhi_u64_vec128(vreinterpretq_u64_s64(x), (uint64_t)(sy)));
     int64x2_t y = vdupq_n_s64(sy);
     int64x2_t t1 = vandq_s64(libdivide_s64_signbits(x), y);
     int64x2_t t2 = vandq_s64(libdivide_s64_signbits(y), x);
@@ -1998,7 +1998,7 @@ static LIBDIVIDE_INLINE __m512i libdivide_s64_branchfree_do_vec512(
 
 //////// Internal Utility Functions
 
-static LIBDIVIDE_INLINE __m512i libdivide_s64_signbits(__m512i v) {
+static LIBDIVIDE_INLINE __m512i libdivide_s64_signbits_vec512(__m512i v) {
     ;
     return _mm512_srai_epi64(v, 63);
 }
@@ -2051,8 +2051,8 @@ static LIBDIVIDE_INLINE __m512i libdivide_mullhi_u64_vec512(__m512i x, __m512i y
 // y is one 64-bit value repeated.
 static LIBDIVIDE_INLINE __m512i libdivide_mullhi_s64_vec512(__m512i x, __m512i y) {
     __m512i p = libdivide_mullhi_u64_vec512(x, y);
-    __m512i t1 = _mm512_and_si512(libdivide_s64_signbits(x), y);
-    __m512i t2 = _mm512_and_si512(libdivide_s64_signbits(y), x);
+    __m512i t1 = _mm512_and_si512(libdivide_s64_signbits_vec512(x), y);
+    __m512i t2 = _mm512_and_si512(libdivide_s64_signbits_vec512(y), x);
     p = _mm512_sub_epi64(p, t1);
     p = _mm512_sub_epi64(p, t2);
     return p;
@@ -2196,7 +2196,7 @@ __m512i libdivide_s64_do_vec512(__m512i numers, const struct libdivide_s64_t *de
         __m512i roundToZeroTweak = _mm512_set1_epi64(mask);
         // q = numer + ((numer >> 63) & roundToZeroTweak);
         __m512i q = _mm512_add_epi64(
-            numers, _mm512_and_si512(libdivide_s64_signbits(numers), roundToZeroTweak));
+            numers, _mm512_and_si512(libdivide_s64_signbits_vec512(numers), roundToZeroTweak));
         q = libdivide_s64_shift_right_vec512(q, shift);
         __m512i sign = _mm512_set1_epi32((int8_t)more >> 7);
         // q = (q ^ sign) - sign;
@@ -2233,7 +2233,7 @@ __m512i libdivide_s64_branchfree_do_vec512(
     // If q is negative, we want to add either (2**shift)-1 if d is
     // a power of 2, or (2**shift) if it is not a power of 2.
     uint32_t is_power_of_2 = (magic == 0);
-    __m512i q_sign = libdivide_s64_signbits(q);  // q_sign = q >> 63
+    __m512i q_sign = libdivide_s64_signbits_vec512(q);  // q_sign = q >> 63
     __m512i mask = _mm512_set1_epi64(((uint64_t)1 << shift) - is_power_of_2);
     q = _mm512_add_epi64(q, _mm512_and_si512(q_sign, mask));  // q = q + (q_sign & mask)
     q = libdivide_s64_shift_right_vec512(q, shift);           // q >>= shift
@@ -2274,7 +2274,7 @@ static LIBDIVIDE_INLINE __m256i libdivide_s64_branchfree_do_vec256(
 //////// Internal Utility Functions
 
 // Implementation of _mm256_srai_epi64(v, 63) (from AVX512).
-static LIBDIVIDE_INLINE __m256i libdivide_s64_signbits(__m256i v) {
+static LIBDIVIDE_INLINE __m256i libdivide_s64_signbits_vec256(__m256i v) {
     __m256i hiBitsDuped = _mm256_shuffle_epi32(v, _MM_SHUFFLE(3, 3, 1, 1));
     __m256i signBits = _mm256_srai_epi32(hiBitsDuped, 31);
     return signBits;
@@ -2333,8 +2333,8 @@ static LIBDIVIDE_INLINE __m256i libdivide_mullhi_u64_vec256(__m256i x, __m256i y
 // y is one 64-bit value repeated.
 static LIBDIVIDE_INLINE __m256i libdivide_mullhi_s64_vec256(__m256i x, __m256i y) {
     __m256i p = libdivide_mullhi_u64_vec256(x, y);
-    __m256i t1 = _mm256_and_si256(libdivide_s64_signbits(x), y);
-    __m256i t2 = _mm256_and_si256(libdivide_s64_signbits(y), x);
+    __m256i t1 = _mm256_and_si256(libdivide_s64_signbits_vec256(x), y);
+    __m256i t2 = _mm256_and_si256(libdivide_s64_signbits_vec256(y), x);
     p = _mm256_sub_epi64(p, t1);
     p = _mm256_sub_epi64(p, t2);
     return p;
@@ -2478,7 +2478,7 @@ __m256i libdivide_s64_do_vec256(__m256i numers, const struct libdivide_s64_t *de
         __m256i roundToZeroTweak = _mm256_set1_epi64x(mask);
         // q = numer + ((numer >> 63) & roundToZeroTweak);
         __m256i q = _mm256_add_epi64(
-            numers, _mm256_and_si256(libdivide_s64_signbits(numers), roundToZeroTweak));
+            numers, _mm256_and_si256(libdivide_s64_signbits_vec256(numers), roundToZeroTweak));
         q = libdivide_s64_shift_right_vec256(q, shift);
         __m256i sign = _mm256_set1_epi32((int8_t)more >> 7);
         // q = (q ^ sign) - sign;
@@ -2515,7 +2515,7 @@ __m256i libdivide_s64_branchfree_do_vec256(
     // If q is negative, we want to add either (2**shift)-1 if d is
     // a power of 2, or (2**shift) if it is not a power of 2.
     uint32_t is_power_of_2 = (magic == 0);
-    __m256i q_sign = libdivide_s64_signbits(q);  // q_sign = q >> 63
+    __m256i q_sign = libdivide_s64_signbits_vec256(q);  // q_sign = q >> 63
     __m256i mask = _mm256_set1_epi64x(((uint64_t)1 << shift) - is_power_of_2);
     q = _mm256_add_epi64(q, _mm256_and_si256(q_sign, mask));  // q = q + (q_sign & mask)
     q = libdivide_s64_shift_right_vec256(q, shift);           // q >>= shift
@@ -2556,7 +2556,7 @@ static LIBDIVIDE_INLINE __m128i libdivide_s64_branchfree_do_vec128(
 //////// Internal Utility Functions
 
 // Implementation of _mm_srai_epi64(v, 63) (from AVX512).
-static LIBDIVIDE_INLINE __m128i libdivide_s64_signbits(__m128i v) {
+static LIBDIVIDE_INLINE __m128i libdivide_s64_signbits_vec128(__m128i v) {
     __m128i hiBitsDuped = _mm_shuffle_epi32(v, _MM_SHUFFLE(3, 3, 1, 1));
     __m128i signBits = _mm_srai_epi32(hiBitsDuped, 31);
     return signBits;
@@ -2629,8 +2629,8 @@ static LIBDIVIDE_INLINE __m128i libdivide_mullhi_u64_vec128(__m128i x, __m128i y
 // y is one 64-bit value repeated.
 static LIBDIVIDE_INLINE __m128i libdivide_mullhi_s64_vec128(__m128i x, __m128i y) {
     __m128i p = libdivide_mullhi_u64_vec128(x, y);
-    __m128i t1 = _mm_and_si128(libdivide_s64_signbits(x), y);
-    __m128i t2 = _mm_and_si128(libdivide_s64_signbits(y), x);
+    __m128i t1 = _mm_and_si128(libdivide_s64_signbits_vec128(x), y);
+    __m128i t2 = _mm_and_si128(libdivide_s64_signbits_vec128(y), x);
     p = _mm_sub_epi64(p, t1);
     p = _mm_sub_epi64(p, t2);
     return p;
@@ -2774,7 +2774,7 @@ __m128i libdivide_s64_do_vec128(__m128i numers, const struct libdivide_s64_t *de
         __m128i roundToZeroTweak = _mm_set1_epi64x(mask);
         // q = numer + ((numer >> 63) & roundToZeroTweak);
         __m128i q =
-            _mm_add_epi64(numers, _mm_and_si128(libdivide_s64_signbits(numers), roundToZeroTweak));
+            _mm_add_epi64(numers, _mm_and_si128(libdivide_s64_signbits_vec128(numers), roundToZeroTweak));
         q = libdivide_s64_shift_right_vec128(q, shift);
         __m128i sign = _mm_set1_epi32((int8_t)more >> 7);
         // q = (q ^ sign) - sign;
@@ -2811,7 +2811,7 @@ __m128i libdivide_s64_branchfree_do_vec128(
     // If q is negative, we want to add either (2**shift)-1 if d is
     // a power of 2, or (2**shift) if it is not a power of 2.
     uint32_t is_power_of_2 = (magic == 0);
-    __m128i q_sign = libdivide_s64_signbits(q);  // q_sign = q >> 63
+    __m128i q_sign = libdivide_s64_signbits_vec128(q);  // q_sign = q >> 63
     __m128i mask = _mm_set1_epi64x(((uint64_t)1 << shift) - is_power_of_2);
     q = _mm_add_epi64(q, _mm_and_si128(q_sign, mask));  // q = q + (q_sign & mask)
     q = libdivide_s64_shift_right_vec128(q, shift);     // q >>= shift
