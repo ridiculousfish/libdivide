@@ -1687,8 +1687,8 @@ static LIBDIVIDE_INLINE int64x2_t libdivide_s64_do_vec128(
 
 static LIBDIVIDE_INLINE uint16x8_t libdivide_u16_branchfree_do_vec128(
     uint16x8_t numers, const struct libdivide_u16_branchfree_t *denom);
-static LIBDIVIDE_INLINE uint16x8_t libdivide_s16_branchfree_do_vec128(
-    uint16x8_t numers, const struct libdivide_s16_branchfree_t *denom);
+static LIBDIVIDE_INLINE int16x8_t libdivide_s16_branchfree_do_vec128(
+    int16x8_t numers, const struct libdivide_s16_branchfree_t *denom);
 static LIBDIVIDE_INLINE uint32x4_t libdivide_u32_branchfree_do_vec128(
     uint32x4_t numers, const struct libdivide_u32_branchfree_t *denom);
 static LIBDIVIDE_INLINE int32x4_t libdivide_s32_branchfree_do_vec128(
