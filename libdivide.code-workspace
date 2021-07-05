@@ -82,7 +82,8 @@
 			"xlocale": "cpp",
 			"xlocbuf": "cpp",
 			"xlocinfo": "cpp",
-			"xlocmes": "cpp"
+			"xlocmes": "cpp",
+			"xmemory0": "c"
 		}
 	}
 }
