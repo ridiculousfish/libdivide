@@ -29,6 +29,7 @@ for:
       - cppcheck . --error-exitcode=1 --force -i doc
       - ./tester
       - ./benchmark_branchfree
+      - ./test_c99
 
   - matrix:
       only:
@@ -46,6 +47,7 @@ for:
       - cppcheck . --error-exitcode=1 --force -i doc
       - ./tester
       - ./benchmark_branchfree
+      - ./test_c99
 
   - matrix:
       only:
@@ -58,6 +60,7 @@ for:
       - cd Release
       - tester.exe
       - benchmark_branchfree.exe
+      - test_c99.exe
 
   - matrix:
       only:
@@ -73,6 +76,7 @@ for:
       - cd Release
       - tester.exe
       - benchmark_branchfree.exe
+      - test_c99.exe
 
   - matrix:
       only:
@@ -85,6 +89,7 @@ for:
       - cd Release
       - tester.exe
       - benchmark_branchfree.exe
+      - test_c99.exe
 
   - matrix:
       only:
@@ -107,5 +112,6 @@ for:
       - cd Release
       - tester.exe
       - benchmark_branchfree.exe
+      - test_c99.exe
       - cd ../test/avr
       - pio run -t Simulate -e megaatmega2560_Test
