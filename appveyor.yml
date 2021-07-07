@@ -109,6 +109,8 @@ for:
       - ps: Get-Content -Path .\platformio.ini | Where-Object { $_.StartsWith("[env:") } | ForEach-Object { & pio run -e $_.SubString(5, $_.Length-6) }
       - cd ../..
     test_script:
+      # Important check for AVR - static + inline
+      - ps: Select-String -Path "libdivide.h" "static [^L]" -AllMatches | ForEach-Object { Write-Error ("Static but not line - " + $_) }
       - cd Release
       - tester.exe
       - benchmark_branchfree.exe
