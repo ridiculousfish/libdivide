@@ -431,7 +431,7 @@ static LIBDIVIDE_INLINE int32_t libdivide_count_leading_zeros64(uint64_t val) {
 // libdivide_32_div_16_to_16: divides a 32-bit uint {u1, u0} by a 16-bit
 // uint {v}. The result must fit in 16 bits.
 // Returns the quotient directly and the remainder in *r
-static inline uint16_t libdivide_32_div_16_to_16(
+static LIBDIVIDE_INLINE uint16_t libdivide_32_div_16_to_16(
     uint16_t u1, uint16_t u0, uint16_t v, uint16_t* r) {
     uint32_t n = ((uint32_t)u1 << 16) | u0;
     uint16_t result = (uint16_t)(n / v);
@@ -458,7 +458,7 @@ static LIBDIVIDE_INLINE uint32_t libdivide_64_div_32_to_32(
 
 // libdivide_128_div_64_to_64: divides a 128-bit uint {numhi, numlo} by a 64-bit uint {den}. The
 // result must fit in 64 bits. Returns the quotient directly and the remainder in *r
-static uint64_t libdivide_128_div_64_to_64(
+static LIBDIVIDE_INLINE uint64_t libdivide_128_div_64_to_64(
     uint64_t numhi, uint64_t numlo, uint64_t den, uint64_t *r) {
     // N.B. resist the temptation to use __uint128_t here.
     // In LLVM compiler-rt, it performs a 128/128 -> 128 division which is many times slower than
@@ -570,7 +570,7 @@ static LIBDIVIDE_INLINE void libdivide_u128_shift(
 }
 
 // Computes a 128 / 128 -> 64 bit division, with a 128 bit remainder.
-static uint64_t libdivide_128_div_128_to_64(
+static LIBDIVIDE_INLINE uint64_t libdivide_128_div_128_to_64(
     uint64_t u_hi, uint64_t u_lo, uint64_t v_hi, uint64_t v_lo, uint64_t *r_hi, uint64_t *r_lo) {
 #if defined(HAS_INT128_T) && defined(HAS_INT128_DIV)
     __uint128_t ufull = u_hi;
