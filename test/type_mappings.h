@@ -29,6 +29,7 @@ template <typename _IntT> struct struct_selector {};
 #define DECLARE_STRUCT_SELECTOR(type, tag, ...) \
     template <> struct struct_selector<type> { \
         typedef libdivide::libdivide_ ##tag ##_t struct_t; \
+        static const char * get_name() { return "libdivide_" #tag "_t"; } \
     };
 LIB_DIVIDE_GENERATOR(DECLARE_STRUCT_SELECTOR, NULL)
 
