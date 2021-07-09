@@ -1,0 +1,40 @@
+{
+    "buildType": {
+      "default": "debug",
+        "choices": { 
+            "debug": {
+              "short": "Debug",
+              "long": "Disable optimizations - include debug information.",
+              "buildType": "Debug"
+            },
+            "release": {
+              "short": "Release",
+              "long": "Optimize for speed - exclude debug information.",
+              "buildType": "Release"
+            },            
+            "reldebuginfo": {
+              "short": "Release with debug Info",
+              "long": "Optimize for speed - include debug information.",
+              "buildType": "RelWithDebInfo"
+          }
+        }
+    },
+    "Sanitize" : {
+      "default": "NoSanitize",
+      "choices": {
+        "sanitize": {
+          "short": "Sanitize",
+          "long": "Add sanitization code to the binary. VS2019, Clang, GCC only",
+          "settings": { 
+            "SANITIZE":"On"
+          }
+        },
+        "NoSanitize": {
+          "short": "Standard build",
+          "settings": { 
+            "SANITIZE":"Off"
+          }
+        }
+      }
+    }
+}

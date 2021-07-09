@@ -17,13 +17,10 @@ for:
       only:
         - image: Ubuntu1804
           platform: x86
-    environment:
-      CFLAGS: "-O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
-      CXXFLAGS: "-O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
     install:
       - sudo apt install --yes cppcheck
     build_script:
-      - cmake . -DCMAKE_BUILD_TYPE=Debug
+      - cmake . -DCMAKE_BUILD_TYPE=Debug -DSANITIZE:STRING=On
       - make VERBOSE=1
     test_script:
       - cppcheck . --error-exitcode=1 --force -i doc
@@ -35,13 +32,10 @@ for:
       only:
         - image: Ubuntu1804
           platform: x64
-    environment:
-      CFLAGS: "-O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
-      CXXFLAGS: "-O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
     install:
       - sudo apt install --yes cppcheck
     build_script:
-      - CC=clang CXX=clang++ cmake . -DCMAKE_BUILD_TYPE=Debug
+      - CC=clang CXX=clang++ cmake . -DCMAKE_BUILD_TYPE=Debug -DSANITIZE:STRING=On
       - make VERBOSE=1
     test_script:
       - cppcheck . --error-exitcode=1 --force -i doc
@@ -82,9 +76,9 @@ for:
         - image: Visual Studio 2019
           platform: x86
     build_script:
-      - cmake . -G "Visual Studio 16 2019"
+      - cmake . -G "Visual Studio 16 2019" -DSANITIZE:STRING=On
       - cmake --build . --config Debug
-      - cmake --build . --config Release
+      - cmake --build . --config RelWithDebInfo
     test_script:
       - cd Release
       - tester.exe
@@ -100,9 +94,9 @@ for:
       - cmd: pip install -U platformio
       - cmd: pio platform install atmelavr --with-package=tool-simavr
     build_script:
-      - cmake . -G "Visual Studio 16 2019"
+      - cmake . -G "Visual Studio 16 2019" -DSANITIZE:STRING=On
       - cmake --build . --config Debug
-      - cmake --build . --config Release
+      - cmake --build . --config RelWithDebInfo
       - cd test/avr
       - ps: Get-Content -Path .\platformio.ini | Where-Object { $_.StartsWith("[env:") } | ForEach-Object { & pio run -e $_.SubString(5, $_.Length-6) }
       - cd ../..

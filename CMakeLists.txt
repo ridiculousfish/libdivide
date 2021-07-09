@@ -16,6 +16,20 @@ include(CMakePushCheckState)
 add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/W4;/WX>")
 add_compile_options("$<$<CXX_COMPILER_ID:GNU,Clang>:-Wall;-Wextra;-pedantic;-Werror>")
 
+# Sanitizer if requested
+
+# MSVC
+add_compile_options("$<$<AND:$<CXX_COMPILER_ID:MSVC>,$<BOOL:${SANITIZE}>>:/fsanitize=address;/Zi;/MTd>")
+add_link_options("$<$<AND:$<CXX_COMPILER_ID:MSVC>,$<BOOL:${SANITIZE}>>:/INCREMENTAL:NO;/DEBUG>")
+
+# Clang
+add_compile_options("$<$<AND:$<CXX_COMPILER_ID:Clang>,$<BOOL:${SANITIZE}>>:-fsanitize=address;-fsanitize=undefined;-fno-sanitize-recover=all;-fno-omit-frame-pointer;-U_DLL;-U_MT;-DDEBUG;-O1;-g>")
+add_link_options("$<$<AND:$<CXX_COMPILER_ID:Clang>,$<BOOL:${SANITIZE}>>:-fsanitize=address>")
+
+# GCC
+add_compile_options("$<$<AND:$<CXX_COMPILER_ID:GNU>,$<BOOL:${SANITIZE}>>:-fsanitize=address;-fsanitize=undefined;-fno-sanitize-recover=all;-fno-omit-frame-pointer;-DDEBUG;-O1;-g>")
+add_link_options("$<$<AND:$<CXX_COMPILER_ID:GNU>,$<BOOL:${SANITIZE}>>:-fsanitize=address;-fsanitize=undefined>")
+
 # Build options ################################################
 
 option(BUILD_TESTS   "Build the test programs" ON)
