@@ -10,6 +10,8 @@
 #include <algorithm>
 #endif
 
+#define UNUSED(x) (void)(x)
+
 #if defined(_WIN32) || defined(WIN32)
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
@@ -84,20 +86,21 @@ NOINLINE uint64_t sum_quotients(const random_numerators<IntT> &vals, const Divis
 #ifdef x86_VECTOR_TYPE
 
 template <size_t IntSize>
-inline x86_VECTOR_TYPE add_vector(x86_VECTOR_TYPE &sumX4, x86_VECTOR_TYPE &numers) {
+inline x86_VECTOR_TYPE add_vector(x86_VECTOR_TYPE sumX4, x86_VECTOR_TYPE numers) {
+    UNUSED(numers);
     abort();
     return sumX4;
 }
 template <>
-inline x86_VECTOR_TYPE add_vector<2>(x86_VECTOR_TYPE &sumX4, x86_VECTOR_TYPE &numers) {
+inline x86_VECTOR_TYPE add_vector<2U>(x86_VECTOR_TYPE sumX4, x86_VECTOR_TYPE numers) {
     return ADD_EPI16(sumX4, numers);
 }
 template <>
-inline x86_VECTOR_TYPE add_vector<4>(x86_VECTOR_TYPE &sumX4, x86_VECTOR_TYPE &numers) {
+inline x86_VECTOR_TYPE add_vector<4U>(x86_VECTOR_TYPE sumX4, x86_VECTOR_TYPE numers) {
     return ADD_EPI32(sumX4, numers);
 }
 template <>
-inline x86_VECTOR_TYPE add_vector<8>(x86_VECTOR_TYPE &sumX4, x86_VECTOR_TYPE &numers) {
+inline x86_VECTOR_TYPE add_vector<8U>(x86_VECTOR_TYPE sumX4, x86_VECTOR_TYPE numers) {
     return ADD_EPI64(sumX4, numers);
 }
 

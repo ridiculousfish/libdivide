@@ -49,7 +49,6 @@ for:
           platform: x86
     build_script:
       - cmake . -G "Visual Studio 15 2017"
-      - cmake --build . --config Debug
       - cmake --build . --config Release
     test_script:
       - cd Release
@@ -75,12 +74,14 @@ for:
       only:
         - image: Visual Studio 2019
           platform: x86
+    install:
+      - cmd: vs_community.exe modify --add Microsoft.VisualStudio.Component.VC.ASAN
     build_script:
       - cmake . -G "Visual Studio 16 2019" -DSANITIZE:STRING=On
       - cmake --build . --config Debug
       - cmake --build . --config RelWithDebInfo
     test_script:
-      - cd Release
+      - cd RelWithDebInfo
       - tester.exe
       - benchmark_branchfree.exe
       - test_c99.exe
@@ -90,6 +91,7 @@ for:
         - image: Visual Studio 2019
           platform: x64
     install:
+      - cmd: vs_community.exe modify --add Microsoft.VisualStudio.Component.VC.ASAN
       - cmd: SET PATH=C:\Python39;C:\Python39\Scripts;%PATH%
       - cmd: pip install -U platformio
       - cmd: pio platform install atmelavr --with-package=tool-simavr
@@ -103,7 +105,7 @@ for:
     test_script:
       # Important check for AVR - static + inline
       - ps: Select-String -Path "libdivide.h" "static [^L]" -AllMatches | ForEach-Object { Write-Error ("Static but not line - " + $_) }
-      - cd Release
+      - cd RelWithDebInfo
       - tester.exe
       - benchmark_branchfree.exe
       - test_c99.exe
