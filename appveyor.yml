@@ -75,7 +75,7 @@ for:
         - image: Visual Studio 2019
           platform: x86
     install:
-      - cmd: vs_community.exe modify --add Microsoft.VisualStudio.Component.VC.ASAN
+      - cmd: '"C:/Program Files (x86)/Microsoft Visual Studio/Installer/vs_installer.exe" modify --quiet --installpath "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community" --channelid VisualStudio.16.Release --productid Microsoft.VisualStudio.Product.Community --add Microsoft.VisualStudio.Component.VC.ASAN'
     build_script:
       - cmake . -G "Visual Studio 16 2019" -DSANITIZE:STRING=On
       - cmake --build . --config Debug
@@ -91,7 +91,7 @@ for:
         - image: Visual Studio 2019
           platform: x64
     install:
-      - cmd: vs_community.exe modify --add Microsoft.VisualStudio.Component.VC.ASAN
+      - cmd: '"C:/Program Files (x86)/Microsoft Visual Studio/Installer/vs_installer.exe" modify --quiet --installpath "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community" --channelid VisualStudio.16.Release --productid Microsoft.VisualStudio.Product.Community --add Microsoft.VisualStudio.Component.VC.ASAN'
       - cmd: SET PATH=C:\Python39;C:\Python39\Scripts;%PATH%
       - cmd: pip install -U platformio
       - cmd: pio platform install atmelavr --with-package=tool-simavr
