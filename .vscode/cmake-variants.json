@@ -16,25 +16,12 @@
               "short": "Release with debug Info",
               "long": "Optimize for speed - include debug information.",
               "buildType": "RelWithDebInfo"
-          }
+            },
+            "sanitize": {
+              "short": "Release with sanitizers",
+              "long": "Fast sanitization checks.",
+              "buildType": "Sanitize"
+          }          
         }
-    },
-    "Sanitize" : {
-      "default": "NoSanitize",
-      "choices": {
-        "sanitize": {
-          "short": "Sanitize",
-          "long": "Add sanitization code to the binary. VS2019, Clang, GCC only",
-          "settings": { 
-            "SANITIZE":"On"
-          }
-        },
-        "NoSanitize": {
-          "short": "Standard build",
-          "settings": { 
-            "SANITIZE":"Off"
-          }
-        }
-      }
     }
 }

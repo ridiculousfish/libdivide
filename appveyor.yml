@@ -20,7 +20,7 @@ for:
     install:
       - sudo apt install --yes cppcheck
     build_script:
-      - cmake . -DCMAKE_BUILD_TYPE=Debug -DSANITIZE:STRING=On
+      - cmake . -DCMAKE_BUILD_TYPE=Sanitize
       - make VERBOSE=1
     test_script:
       - cppcheck . --error-exitcode=1 --force -i doc
@@ -35,7 +35,7 @@ for:
     install:
       - sudo apt install --yes cppcheck
     build_script:
-      - CC=clang CXX=clang++ cmake . -DCMAKE_BUILD_TYPE=Debug -DSANITIZE:STRING=On
+      - CC=clang CXX=clang++ cmake . -DCMAKE_BUILD_TYPE=Sanitie
       - make VERBOSE=1
     test_script:
       - cppcheck . --error-exitcode=1 --force -i doc
@@ -77,11 +77,11 @@ for:
     install:
       - cmd: '"C:/Program Files (x86)/Microsoft Visual Studio/Installer/vs_installer.exe" modify --quiet --installpath "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community" --channelid VisualStudio.16.Release --productid Microsoft.VisualStudio.Product.Community --add Microsoft.VisualStudio.Component.VC.ASAN'
     build_script:
-      - cmake . -G "Visual Studio 16 2019" -DSANITIZE:STRING=On
+      - cmake . -G "Visual Studio 16 2019"
       - cmake --build . --config Debug
-      - cmake --build . --config RelWithDebInfo
+      - cmake --build . --config Sanitize
     test_script:
-      - cd RelWithDebInfo
+      - cd Sanitize
       - tester.exe
       - benchmark_branchfree.exe
       - test_c99.exe
@@ -96,16 +96,16 @@ for:
       - cmd: pip install -U platformio
       - cmd: pio platform install atmelavr --with-package=tool-simavr
     build_script:
-      - cmake . -G "Visual Studio 16 2019" -DSANITIZE:STRING=On
+      - cmake . -G "Visual Studio 16 2019"
       - cmake --build . --config Debug
-      - cmake --build . --config RelWithDebInfo
+      - cmake --build . --config Sanitize
       - cd test/avr
       - ps: Get-Content -Path .\platformio.ini | Where-Object { $_.StartsWith("[env:") } | ForEach-Object { & pio run -e $_.SubString(5, $_.Length-6) }
       - cd ../..
     test_script:
       # Important check for AVR - static + inline
       - ps: Select-String -Path "libdivide.h" "static [^L]" -AllMatches | ForEach-Object { Write-Error ("Static but not line - " + $_) }
-      - cd RelWithDebInfo
+      - cd Sanitize
       - tester.exe
       - benchmark_branchfree.exe
       - test_c99.exe
