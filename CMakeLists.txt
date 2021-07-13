@@ -15,7 +15,7 @@ include(CMakeSanitize)
 
 # Maximum warnings level & warnings as error
 add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/W4;/WX>")
-add_compile_options("$<$<CXX_COMPILER_ID:GNU,Clang>:-Wall;-Wextra;-pedantic;-Werror>")
+add_compile_options("$<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall;-Wextra;-pedantic;-Werror>")
 
 # Build options ################################################
 

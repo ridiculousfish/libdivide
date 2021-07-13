@@ -35,7 +35,7 @@ for:
     install:
       - sudo apt install --yes cppcheck
     build_script:
-      - CC=clang CXX=clang++ cmake . -DCMAKE_BUILD_TYPE=Sanitie
+      - CC=clang CXX=clang++ cmake . -DCMAKE_BUILD_TYPE=Sanitize
       - make VERBOSE=1
     test_script:
       - cppcheck . --error-exitcode=1 --force -i doc

@@ -231,7 +231,7 @@ Although there are no individual unit tests, the supplied ```cmake``` builds do 
 * They compile with:
   * All warnings on and;
   * Warnings as errors
-* The CI build will build and run with sanitizers on ; these are available as part of the cmake build: ```-DSANITIZE:STRING=On```
+* The CI build will build and run with sanitizers on ; these are available as part of the cmake build: ```-DCMAKE_BUILD_TYPE=Sanitize```
 * The ```cmake``` and CI builds will compile and run both ```C``` and ```C++``` test programs.
 
 Before sending in patches, build and run at least the ```tester``` and ```benchmark``` using the supplied ```cmake``` scripts on at least ```MSVC``` and ```GCC``` (or ```Clang```).
