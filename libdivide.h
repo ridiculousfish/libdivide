@@ -33,9 +33,15 @@
 
 #if defined(_MSC_VER)
 #include <intrin.h>
+#pragma warning(push)
 // disable warning C4146: unary minus operator applied
 // to unsigned type, result still unsigned
 #pragma warning(disable : 4146)
+// disable warning C4204: nonstandard extension used : non-constant aggregate 
+// initializer
+//
+// It's valid C99
+#pragma warning(disable : 4204)
 #define LIBDIVIDE_VC
 #endif
 
@@ -869,7 +875,7 @@ static LIBDIVIDE_INLINE struct libdivide_u32_t libdivide_internal_u32_gen(
         // This power works if e < 2**floor_log_2_d.
         if (!branchfree && (e < ((uint32_t)1 << floor_log_2_d))) {
             // This power works
-            more = floor_log_2_d;
+            more = (uint8_t)floor_log_2_d;
         } else {
             // We have to use the general 33-bit algorithm.  We need to compute
             // (2**power) / d. However, we already have (2**(power-1))/d and
@@ -879,7 +885,7 @@ static LIBDIVIDE_INLINE struct libdivide_u32_t libdivide_internal_u32_gen(
             proposed_m += proposed_m;
             const uint32_t twice_rem = rem + rem;
             if (twice_rem >= d || twice_rem < rem) proposed_m += 1;
-            more = floor_log_2_d | LIBDIVIDE_ADD_MARKER;
+            more = (uint8_t)(floor_log_2_d | LIBDIVIDE_ADD_MARKER);
         }
         result.magic = 1 + proposed_m;
         result.more = more;
@@ -1028,7 +1034,7 @@ static LIBDIVIDE_INLINE struct libdivide_u64_t libdivide_internal_u64_gen(
         // This power works if e < 2**floor_log_2_d.
         if (!branchfree && e < ((uint64_t)1 << floor_log_2_d)) {
             // This power works
-            more = floor_log_2_d;
+            more = (uint8_t)floor_log_2_d;
         } else {
             // We have to use the general 65-bit algorithm.  We need to compute
             // (2**power) / d. However, we already have (2**(power-1))/d and
@@ -1038,7 +1044,7 @@ static LIBDIVIDE_INLINE struct libdivide_u64_t libdivide_internal_u64_gen(
             proposed_m += proposed_m;
             const uint64_t twice_rem = rem + rem;
             if (twice_rem >= d || twice_rem < rem) proposed_m += 1;
-            more = floor_log_2_d | LIBDIVIDE_ADD_MARKER;
+            more = (uint8_t)(floor_log_2_d | LIBDIVIDE_ADD_MARKER);
         }
         result.magic = 1 + proposed_m;
         result.more = more;
@@ -1368,7 +1374,7 @@ static LIBDIVIDE_INLINE struct libdivide_s32_t libdivide_internal_s32_gen(
     if ((absD & (absD - 1)) == 0) {
         // Branchfree and normal paths are exactly the same
         result.magic = 0;
-        result.more = floor_log_2_d | (d < 0 ? LIBDIVIDE_NEGATIVE_DIVISOR : 0);
+        result.more = (uint8_t)(floor_log_2_d | (d < 0 ? LIBDIVIDE_NEGATIVE_DIVISOR : 0));
     } else {
         LIBDIVIDE_ASSERT(floor_log_2_d >= 1);
 
@@ -1383,7 +1389,7 @@ static LIBDIVIDE_INLINE struct libdivide_s32_t libdivide_internal_s32_gen(
         // This works if works if e < 2**floor_log_2_d.
         if (!branchfree && e < ((uint32_t)1 << floor_log_2_d)) {
             // This power works
-            more = floor_log_2_d - 1;
+            more = (uint8_t)(floor_log_2_d - 1);
         } else {
             // We need to go one higher. This should not make proposed_m
             // overflow, but it will make it negative when interpreted as an
@@ -1391,7 +1397,7 @@ static LIBDIVIDE_INLINE struct libdivide_s32_t libdivide_internal_s32_gen(
             proposed_m += proposed_m;
             const uint32_t twice_rem = rem + rem;
             if (twice_rem >= absD || twice_rem < rem) proposed_m += 1;
-            more = floor_log_2_d | LIBDIVIDE_ADD_MARKER;
+            more = (uint8_t)(floor_log_2_d | LIBDIVIDE_ADD_MARKER);
         }
 
         proposed_m += 1;
@@ -1537,7 +1543,7 @@ static LIBDIVIDE_INLINE struct libdivide_s64_t libdivide_internal_s64_gen(
     if ((absD & (absD - 1)) == 0) {
         // Branchfree and non-branchfree cases are the same
         result.magic = 0;
-        result.more = floor_log_2_d | (d < 0 ? LIBDIVIDE_NEGATIVE_DIVISOR : 0);
+        result.more = (uint8_t)(floor_log_2_d | (d < 0 ? LIBDIVIDE_NEGATIVE_DIVISOR : 0));
     } else {
         // the dividend here is 2**(floor_log_2_d + 63), so the low 64 bit word
         // is 0 and the high word is floor_log_2_d - 1
@@ -1550,7 +1556,7 @@ static LIBDIVIDE_INLINE struct libdivide_s64_t libdivide_internal_s64_gen(
         // This works if works if e < 2**floor_log_2_d.
         if (!branchfree && e < ((uint64_t)1 << floor_log_2_d)) {
             // This power works
-            more = floor_log_2_d - 1;
+            more = (uint8_t)(floor_log_2_d - 1);
         } else {
             // We need to go one higher. This should not make proposed_m
             // overflow, but it will make it negative when interpreted as an
@@ -1562,7 +1568,7 @@ static LIBDIVIDE_INLINE struct libdivide_s64_t libdivide_internal_s64_gen(
             // also set ADD_MARKER this is an annoying optimization that
             // enables algorithm #4 to avoid the mask. However we always set it
             // in the branchfree case
-            more = floor_log_2_d | LIBDIVIDE_ADD_MARKER;
+            more = (uint8_t)(floor_log_2_d | LIBDIVIDE_ADD_MARKER);
         }
         proposed_m += 1;
         int64_t magic = (int64_t)proposed_m;
@@ -3112,5 +3118,9 @@ using branchfree_divider = divider<T, BRANCHFREE>;
 }  // namespace libdivide
 
 #endif  // __cplusplus
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
 #endif  // LIBDIVIDE_H

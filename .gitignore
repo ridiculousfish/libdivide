@@ -17,3 +17,4 @@ CTestTestfile.cmake
 .pio
 .vscode/*
 !.vscode/extensions.json
+!.vscode/cmake-variants.json

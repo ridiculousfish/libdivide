@@ -1,0 +1,27 @@
+{
+    "buildType": {
+      "default": "debug",
+        "choices": { 
+            "debug": {
+              "short": "Debug",
+              "long": "Disable optimizations - include debug information.",
+              "buildType": "Debug"
+            },
+            "release": {
+              "short": "Release",
+              "long": "Optimize for speed - exclude debug information.",
+              "buildType": "Release"
+            },            
+            "reldebuginfo": {
+              "short": "Release with debug Info",
+              "long": "Optimize for speed - include debug information.",
+              "buildType": "RelWithDebInfo"
+            },
+            "sanitize": {
+              "short": "Release with sanitizers",
+              "long": "Fast sanitization checks.",
+              "buildType": "Sanitize"
+          }          
+        }
+    }
+}

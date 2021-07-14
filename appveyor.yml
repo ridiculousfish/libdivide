@@ -17,13 +17,10 @@ for:
       only:
         - image: Ubuntu1804
           platform: x86
-    environment:
-      CFLAGS: "-Wall -Wextra -pedantic -Werror -O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
-      CXXFLAGS: "-Wall -Wextra -pedantic -Werror -O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
     install:
       - sudo apt install --yes cppcheck
     build_script:
-      - cmake . -DCMAKE_BUILD_TYPE=Debug
+      - cmake . -DCMAKE_BUILD_TYPE=Sanitize
       - make VERBOSE=1
     test_script:
       - cppcheck . --error-exitcode=1 --force -i doc
@@ -35,13 +32,10 @@ for:
       only:
         - image: Ubuntu1804
           platform: x64
-    environment:
-      CFLAGS: "-Wall -Wextra -pedantic -Werror -O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
-      CXXFLAGS: "-Wall -Wextra -pedantic -Werror -O1 -g -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
     install:
       - sudo apt install --yes cppcheck
     build_script:
-      - CC=clang CXX=clang++ cmake . -DCMAKE_BUILD_TYPE=Debug
+      - CC=clang CXX=clang++ cmake . -DCMAKE_BUILD_TYPE=Sanitize
       - make VERBOSE=1
     test_script:
       - cppcheck . --error-exitcode=1 --force -i doc
@@ -66,11 +60,9 @@ for:
       only:
         - image: Visual Studio 2017
           platform: x64
-    environment:
-      CFLAGS: "/W3 /WX /DLIBDIVIDE_ASSERTIONS_ON"
-      CXXFLAGS: "/W3 /WX /DLIBDIVIDE_ASSERTIONS_ON"
     build_script:
       - cmake . -G "Visual Studio 15 2017 Win64"
+      - cmake --build . --config Debug
       - cmake --build . --config Release
     test_script:
       - cd Release
@@ -82,11 +74,14 @@ for:
       only:
         - image: Visual Studio 2019
           platform: x86
+    install:
+      - cmd: '"C:/Program Files (x86)/Microsoft Visual Studio/Installer/vs_installer.exe" modify --quiet --installpath "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community" --channelid VisualStudio.16.Release --productid Microsoft.VisualStudio.Product.Community --add Microsoft.VisualStudio.Component.VC.ASAN'
     build_script:
       - cmake . -G "Visual Studio 16 2019"
-      - cmake --build . --config Release
+      - cmake --build . --config Debug
+      - cmake --build . --config Sanitize
     test_script:
-      - cd Release
+      - cd Sanitize
       - tester.exe
       - benchmark_branchfree.exe
       - test_c99.exe
@@ -95,23 +90,22 @@ for:
       only:
         - image: Visual Studio 2019
           platform: x64
-    environment:
-      CFLAGS: "/W3 /WX /DLIBDIVIDE_ASSERTIONS_ON"
-      CXXFLAGS: "/W3 /WX /DLIBDIVIDE_ASSERTIONS_ON"
     install:
+      - cmd: '"C:/Program Files (x86)/Microsoft Visual Studio/Installer/vs_installer.exe" modify --quiet --installpath "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community" --channelid VisualStudio.16.Release --productid Microsoft.VisualStudio.Product.Community --add Microsoft.VisualStudio.Component.VC.ASAN'
       - cmd: SET PATH=C:\Python39;C:\Python39\Scripts;%PATH%
       - cmd: pip install -U platformio
       - cmd: pio platform install atmelavr --with-package=tool-simavr
     build_script:
       - cmake . -G "Visual Studio 16 2019"
-      - cmake --build . --config Release
+      - cmake --build . --config Debug
+      - cmake --build . --config Sanitize
       - cd test/avr
       - ps: Get-Content -Path .\platformio.ini | Where-Object { $_.StartsWith("[env:") } | ForEach-Object { & pio run -e $_.SubString(5, $_.Length-6) }
       - cd ../..
     test_script:
       # Important check for AVR - static + inline
       - ps: Select-String -Path "libdivide.h" "static [^L]" -AllMatches | ForEach-Object { Write-Error ("Static but not line - " + $_) }
-      - cd Release
+      - cd Sanitize
       - tester.exe
       - benchmark_branchfree.exe
       - test_c99.exe

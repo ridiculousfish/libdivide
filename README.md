@@ -187,7 +187,7 @@ discrepancy.
 
 # Benchmark program
 
-You can pass the **benchmark** program one or more of the following arguments: ```u32```,
+You can pass the **benchmark** program one or more of the following arguments: ```u16```, ```s16```, ```u32```,
 ```s32```, ```u64```, ```s64``` to compare libdivide's speed against hardware division.
 **benchmark** tests a simple function that inputs an array of random numerators and a single
 divisor, and returns the sum of their quotients. It tests this using both hardware division, and
@@ -210,7 +210,7 @@ It will keep going as long as you let it, so it's best to stop it when you are h
 denominators tested. These columns have the following significance. All times are in
 nanoseconds, lower is better.
 
-```bash
+```
      #:  The divisor that is tested
 system:  Hardware divide time
 scalar:  libdivide time, using scalar division
@@ -226,9 +226,14 @@ so benchmark is valuable for its verification as well.
 
 # Contributing
 
-We currently do not have automated testing! Hence, before sending in patches, it would be nice
-if you compiled your new code at high warning levels using at least MSVC and GCC (or Clang).
-Also run the tester program to verify correctness and the benchmark programs to ensure you have
-not introduced any performance regressions.
+Although there are no individual unit tests, the supplied ```cmake``` builds do include several safety nets:
+
+* They compile with:
+  * All warnings on and;
+  * Warnings as errors
+* The CI build will build and run with sanitizers on ; these are available as part of the cmake build: ```-DCMAKE_BUILD_TYPE=Sanitize```
+* The ```cmake``` and CI builds will compile and run both ```C``` and ```C++``` test programs.
+
+Before sending in patches, build and run at least the ```tester``` and ```benchmark``` using the supplied ```cmake``` scripts on at least ```MSVC``` and ```GCC``` (or ```Clang```).
 
 ### Happy hacking!

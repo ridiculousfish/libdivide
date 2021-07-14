@@ -14,13 +14,13 @@
 
 inline std::string to_lower(std::string str) {
     std::transform(str.begin(), str.end(), str.begin(),
-               [](unsigned char c){ return ::tolower(c); });
+               [](unsigned char c){ return (char)::tolower(c); });
     return str;
 }
 
 inline std::string to_upper(std::string str) {
     std::transform(str.begin(), str.end(), str.begin(),
-               [](unsigned char c){ return ::toupper(c); });
+               [](unsigned char c){ return (char)::toupper(c); });
     return str;
 }
 
