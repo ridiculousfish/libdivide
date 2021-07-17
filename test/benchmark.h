@@ -6,8 +6,9 @@
 #if defined(__AVR__)
 #include "avr_type_helpers.h"
 #else
-#include <type_traits>
 #include <algorithm>
+#include <limits>
+#include <type_traits>
 #endif
 
 #define UNUSED(x) (void)(x)
