@@ -300,8 +300,9 @@ if (BUILD_TESTS)
     add_test(benchmark_branchfree benchmark_branchfree)
 
     # cmake won't actually build the tests before it tries to run them
-    add_test(build_tests "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target tester benchmark_branchfree)
-    set_tests_properties(tester benchmark_branchfree PROPERTIES DEPENDS build_tests)
+    add_test(build_tester "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target tester)
+    add_test(build_benchmark_branchfree "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target benchmark_branchfree)
+    set_tests_properties(tester benchmark_branchfree PROPERTIES DEPENDS "build_tester;build_benchmark_branchfree")
 endif()
 
 # Build the fuzzers (requires clang) ###########################
