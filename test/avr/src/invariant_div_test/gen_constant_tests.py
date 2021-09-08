@@ -33,11 +33,11 @@ def before_build():
         denoms.add((2**range_end_bits)-2)
         # Fill in the rest of the denominators with random
         while (len(denoms)<count):
-            denoms.add(random.randint(33, 2**range_end_bits))
+            denoms.add(random.randint(33, (2**range_end_bits)-1))
         return sorted(denoms)
 
     # Build the denominators
-    denoms = get_denoms(226 if is_unsigned else 199) # The number of denominators was chosen so that all tests fit on an AtMega2560
+    denoms = get_denoms(340 if is_unsigned else 256) # The number of denominators was chosen so that all tests fit on an AtMega2560
 
     genfile = os.path.join(env['PROJECT_SRC_DIR'], 'invariant_div_test', 'test_declares.g.hpp')
     print(f'Generating {genfile}')

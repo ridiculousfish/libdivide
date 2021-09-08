@@ -6,7 +6,7 @@ template<class T1, class T2> struct pair
   T2 second;
 };
 
-typedef int32_t (*pCheckSumFunc)(int32_t);
+typedef int32_t (*pCheckSumFunc)();
 pair<int32_t, unsigned long> testCheckSum(pCheckSumFunc func)
 {
   uint8_t iterations = 2;
@@ -15,7 +15,7 @@ pair<int32_t, unsigned long> testCheckSum(pCheckSumFunc func)
   int32_t checkSum = 0;
   for (uint8_t loop=0; loop<iterations; ++loop)
   {
-    checkSum += func(checkSum);
+    checkSum += func();
   }
 
   auto stopTime = micros();
