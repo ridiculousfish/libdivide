@@ -6,14 +6,14 @@ template<class T1, class T2> struct pair
   T2 second;
 };
 
-typedef unsigned long (*pCheckSumFunc)(unsigned long);
-pair<unsigned long, unsigned long> testCheckSum(pCheckSumFunc func)
+typedef int32_t (*pCheckSumFunc)(int32_t);
+pair<int32_t, unsigned long> testCheckSum(pCheckSumFunc func)
 {
-  unsigned long iterations = 2;
+  uint8_t iterations = 2;
   auto startTime = micros();
 
-  unsigned long checkSum = 0;
-  for (unsigned long loop=0; loop<iterations; ++loop)
+  int32_t checkSum = 0;
+  for (uint8_t loop=0; loop<iterations; ++loop)
   {
     checkSum += func(checkSum);
   }
@@ -26,7 +26,7 @@ pair<unsigned long, unsigned long> testCheckSum(pCheckSumFunc func)
 #include "constant_macros.h"
 #include "test_declares.g.hpp"
 
-void print_result(const pair<unsigned long, unsigned long> &result) {
+void print_result(const pair<int32_t, unsigned long> &result) {
   Serial.print(result.first); 
   Serial.print(" ");
   Serial.print(result.second);

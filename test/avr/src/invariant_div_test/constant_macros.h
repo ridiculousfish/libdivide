@@ -22,7 +22,7 @@ typedef int16_t test_t;
 //
 // This macro defines a common test function structure
 #define TEST_FUNC(OPERATION, Op, Denom) \
-unsigned long TEST_FUNC_NAME(Op, Denom)(unsigned long checkSum) \
+int32_t TEST_FUNC_NAME(Op, Denom)(int32_t checkSum) \
 { \
   /* We need to be careful to have a wide enough range AND increment!=1 or else GCC figures out */ \
   /* this is a constant range and applies all sorts of optimizations */ \
