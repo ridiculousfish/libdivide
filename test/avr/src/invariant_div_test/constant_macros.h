@@ -1,13 +1,20 @@
 #pragma once
 
-#include "../../avr_type_helpers.h"
+#include <stdint.h>
 
 #define CAT_HELPER(a, b) a ## b
 #define CONCAT(A, B) CAT_HELPER(A, B)
 #define TEST_FUNC_NAME(Op, Denom) CONCAT(CONCAT(test, Op), Denom)
 
+#if TEST_UNSIGNED
 typedef uint16_t test_t;
-constexpr test_t range = UINT16_MAX/4;
+#define RANGE_MIN 0
+#define RANGE_MAX UINT16_MAX
+#else
+typedef int16_t test_t;
+#define RANGE_MIN INT16_MIN
+#define RANGE_MAX INT16_MAX
+#endif
 #define LOOP_STEP 3U
 
 // This is all about testing division by compile time constants
@@ -19,13 +26,11 @@ unsigned long TEST_FUNC_NAME(Op, Denom)(unsigned long checkSum) \
 { \
   /* We need to be careful to have a wide enough range AND increment!=1 or else GCC figures out */ \
   /* this is a constant range and applies all sorts of optimizations */ \
-  test_t loop = (Denom/2U)+LOOP_STEP; \
-  const test_t end = (test_t)min(max(range, ((uint32_t)Denom*4U)), (uint32_t)(std::numeric_limits<test_t>::max)()-(LOOP_STEP*2)); \
-  for (; loop < end; loop+=LOOP_STEP) \
+  for (test_t loop = RANGE_MIN; loop < RANGE_MAX; loop+=LOOP_STEP) \
   { \
     checkSum += OPERATION(loop, Denom); \
   } \
-  return checkSum; \
+    return checkSum; \
 }
 
 // Native test function
@@ -42,7 +47,11 @@ unsigned long TEST_FUNC_NAME(Op, Denom)(unsigned long checkSum) \
 #include "../../../constant_fast_div.h"
 #if defined(TEST_DIV)
 #define LIBDIV_NAME LibDivDiv
+#if TEST_UNSIGNED
 #define LIBDIV_OP(Operand, Denom) FAST_DIV16U(Operand, Denom)
+#else
+#define LIBDIV_OP(Operand, Denom) FAST_DIV16(Operand, Denom)
+#endif
 #else
 #define LIBDIV_NAME LibDivMod
 #define LIBDIV_OP(Operand, Denom) FAST_MOD16U(Operand, Denom)
@@ -53,7 +62,11 @@ unsigned long TEST_FUNC_NAME(Op, Denom)(unsigned long checkSum) \
 // Below are all helper macros for the genrated code.
 
 #if defined(TEST_DIV)
+#if TEST_UNSIGNED
+#define OP_NAME "DivU"
+#else
 #define OP_NAME "Div"
+#endif
 #else
 #define OP_NAME "Mod"
 #endif
