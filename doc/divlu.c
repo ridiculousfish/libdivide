@@ -56,14 +56,11 @@ uint64_t divllu(uint64_t numhi, uint64_t numlo, uint64_t den, uint64_t *r)
     // least half b. In binary this means just shifting left by the number of leading zeros, so that
     // there's a 1 in the MSB.
     // We also shift numer by the same amount. This cannot overflow because numhi < den.
-    // The expression copying the upper 'shift' bits of numlo into the lower 'shift' bits of numhi
-    // avoids the UB (Undefined Behaviour) of "numlo >> (64 - shift)" when shift is 0.
     // clang 11 has an x86 codegen bug here: see LLVM bug 50118. The sequence below avoids it. //?? is this still applicable?
     shift = __builtin_clzll(den);
     den <<= shift;
     numhi <<= shift;
     numhi |= (numlo >> 1) >> ((64 - 1) - shift);
-    //: numhi = (numhi << shift) | ((numlo >> 1) >> ((64 - 1) - shift)); // maybe combine the 2 lines above?
     numlo <<= shift;
 
     // Extract the low digits of the numerator and both digits of the denominator.
@@ -146,14 +143,11 @@ uint32_t divlu(uint32_t numhi, uint32_t numlo, uint32_t den, uint32_t *r)
     // least half b. In binary this means just shifting left by the number of leading zeros, so that
     // there's a 1 in the MSB.
     // We also shift numer by the same amount. This cannot overflow because numhi < den.
-    // The expression copying the upper 'shift' bits of numlo into the lower 'shift' bits of numhi
-    // avoids the UB (Undefined Behaviour) of "numlo >> (32 - shift)" when shift is 0.
-    // clang 11 has an x86 codegen bug here: see LLVM bug 50118. The sequence below avoids it. //?? is this still applicable?
+    // clang 11 has an x86 codegen bug here: see LLVM bug 50118. The sequence below avoids it.
     shift = __builtin_clz(den);
     den <<= shift;
     numhi <<= shift;
     numhi |= (numlo >> 1) >> ((32 - 1) - shift);
-    //: numhi = (numhi << shift) | ((numlo >> 1) >> ((32 - 1) - shift)); // maybe combine the 2 lines above?
     numlo <<= shift;
 
     // Extract the low digits of the numerator and both digits of the denominator.
