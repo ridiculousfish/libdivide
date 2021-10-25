@@ -19,11 +19,11 @@ for:
           platform: x86
     install:
       - sudo apt install --yes cppcheck
+      - cppcheck . --error-exitcode=1 --force -i doc
     build_script:
       - cmake . -DCMAKE_BUILD_TYPE=Sanitize
       - make VERBOSE=1
     test_script:
-      - cppcheck . --error-exitcode=1 --suppress=objectIndex --force -i doc
       - ./tester
       - ./benchmark_branchfree
       - ./test_c99
@@ -34,11 +34,11 @@ for:
           platform: x64
     install:
       - sudo apt install --yes cppcheck
+      - cppcheck . --error-exitcode=1 --force -i doc
     build_script:
       - CC=clang CXX=clang++ cmake . -DCMAKE_BUILD_TYPE=Sanitize
       - make VERBOSE=1
     test_script:
-      - cppcheck . --error-exitcode=1 --force -i doc
       - ./tester
       - ./benchmark_branchfree
       - ./test_c99
