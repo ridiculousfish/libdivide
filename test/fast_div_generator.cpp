@@ -67,28 +67,55 @@ static std::string more_tostr(uint8_t more) {
     return stream.str();
 }
 
+
 template <typename _IntT>
-void generate_constant(_IntT denom) {
+void generate_constant_macro(_IntT denom) {
     auto magic = libdivide_gen(denom);
     std::cout << "#define " << const_macro_name(denom)+"_MAGIC" << " "  << magic_tostr(magic.magic) << "\n";
     std::cout << "#define " << const_macro_name(denom)+"_MORE" << " "  << more_tostr(magic.more) << "\n";
 } 
 
+
+template <typename _IntT>
+void generate_specialized_template(_IntT denom) {
+    auto magic = libdivide_gen(denom);
+    std::cout << "template<> struct libdivide_constants"
+        << "<" << type_name<_IntT>::get_name() << "," << denom << "> "
+        << "{ "
+        << "static constexpr " << struct_selector<_IntT>::get_name() << " libdivide = { "
+        <<              ".magic = " << magic_tostr(magic.magic) << ", "
+        <<              ".more = " <<  more_tostr(magic.more) << "};"
+        << "};\n";
+}
+
+template <typename _IntT>
+void generate(bool generate_template) {
+    void (*pGen)(_IntT) = &generate_constant_macro<_IntT>;
+    if (generate_template)
+    {
+        pGen = &generate_specialized_template<_IntT>;
+    }
+    generator(pGen);
+}
+
+
 int main(int argc, char *argv[]) {
-    if (argc!=2) {
+    if (argc!=3) {
         std::cout
-                << "Usage: fast_div_generator [DATATYPE]\n"
+                << "Usage: fast_div_generator [DATATYPE] [STYLE]\n"
                    "\n"
-                   "[DATATYPE] in [s16, u16]"
+                   "[DATATYPE] in [s16, u16]\n"
+                   "[STYLE] in [MACRO, TEMPLATE]"
                 << std::endl;
             exit(1);        
     }
 
     std::string data_type(to_lower(argv[1]));
-    
+    bool generate_template = "template"==to_lower(argv[2]);
+
     if (data_type == type_tag<int16_t>::get_tag()) {
-        generator(&generate_constant<int16_t>);
+        generate<int16_t>(generate_template);
     } else if (data_type == type_tag<uint16_t>::get_tag()) {
-        generator(&generate_constant<uint16_t>);
+        generate<uint16_t>(generate_template);
     }
 }
