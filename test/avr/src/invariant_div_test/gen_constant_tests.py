@@ -4,6 +4,7 @@ import random
 Import("env")
 
 is_unsigned = any((flag for flag in env['BUILD_FLAGS'] if 'TEST_UNSIGNED' in flag))
+is_mod = any((flag for flag in env['BUILD_FLAGS'] if 'TEST_MOD' in flag))
 
 def eratosthenes():
 	'''Yields the sequence of prime numbers via the Sieve of Eratosthenes.'''
@@ -37,7 +38,7 @@ def before_build():
         return sorted(denoms)
 
     # Build the denominators
-    denoms = get_denoms(340 if is_unsigned else 256) # The number of denominators was chosen so that all tests fit on an AtMega2560
+    denoms = get_denoms(340 if is_unsigned and not is_mod else 250) # The number of denominators was chosen so that all tests fit on an AtMega2560
 
     genfile = os.path.join(env['PROJECT_SRC_DIR'], 'invariant_div_test', 'test_declares.g.hpp')
     print(f'Generating {genfile}')
