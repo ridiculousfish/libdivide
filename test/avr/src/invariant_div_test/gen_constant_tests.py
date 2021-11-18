@@ -1,8 +1,13 @@
 import os
 import random
+from typing import Any, TYPE_CHECKING
+
+# Tell type checkers about the construction environment that PIO injects
+if TYPE_CHECKING:
+    Import: Any = None
+    env: Any = {}
 
 Import("env")
-
 
 is_unsigned = any((flag for flag in env['BUILD_FLAGS'] if 'TEST_UNSIGNED' in flag))
 is_mod = any((flag for flag in env['BUILD_FLAGS'] if 'TEST_MOD' in flag))
@@ -13,18 +18,19 @@ print(f'Generating test files. Unsigned {is_unsigned}, Mod {is_mod}, Num Denoms 
 
 
 def eratosthenes():
-	'''Yields the sequence of prime numbers via the Sieve of Eratosthenes.'''
-	D = {}  # map composite integers to primes witnessing their compositeness
-	q = 2   # first integer to test for primality
-	while 1:
-		if q not in D:
-			yield q         # not marked composite, must be prime
-			D[q*q] = [q]    # first multiple of q not already marked
-		else:
-			for p in D[q]:  # move each witness to its next multiple
-				D.setdefault(p+q, []).append(p)
-			del D[q]        # no longer need D[q], free memory
-		q += 1
+    '''Yields the sequence of prime numbers via the Sieve of Eratosthenes.'''
+    D = {}  # map composite integers to primes witnessing their compositeness
+    q = 2   # first integer to test for primality
+    while 1:
+        if q not in D:
+            yield q         # not marked composite, must be prime
+            D[q*q] = [q]    # first multiple of q not already marked
+        else:
+            for p in D[q]:  # move each witness to its next multiple
+                D.setdefault(p+q, []).append(p)
+            del D[q]        # no longer need D[q], free memory
+        q += 1
+
 
 def before_build():
     def get_denoms(count):
@@ -39,7 +45,7 @@ def before_build():
         # End of the range
         denoms.add((2**range_end_bits)-2)
         # Fill in the rest of the denominators with random
-        while (len(denoms)<count):
+        while (len(denoms) < count):
             denoms.add(random.randint(33, (2**range_end_bits)-1))
         return sorted(denoms)
 
@@ -57,5 +63,6 @@ def before_build():
     with open(genfile, 'w') as f:
         for index in denoms:
             print(f'RUN_TEST_BOTH({index});', file=f)
+
 
 before_build()
