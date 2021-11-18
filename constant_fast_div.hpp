@@ -43,7 +43,8 @@ namespace libdivide {
     template<uint16_t divisor>
     struct fast_divide_t<uint16_t, divisor, false> {
       static LIBDIVIDE_INLINE uint16_t divide(uint16_t n) { 
-        return libdivide_u16_do(n, &libdivide_constants<uint16_t, divisor>::libdivide);
+        return libdivide_u16_do_raw(n, libdivide_constants<uint16_t, divisor>::libdivide.magic, 
+                                       libdivide_constants<uint16_t, divisor>::libdivide.more);
       }
     };
 
@@ -51,7 +52,8 @@ namespace libdivide {
     template<int16_t divisor>
     struct fast_divide_t<int16_t, divisor, false> {
       static LIBDIVIDE_INLINE int16_t divide(int16_t n) { 
-        return libdivide_s16_do(n, &libdivide_constants<int16_t, divisor>::libdivide); 
+        return libdivide_s16_do_raw(n, libdivide_constants<int16_t, divisor>::libdivide.magic,
+                                       libdivide_constants<int16_t, divisor>::libdivide.more); 
       }
     };
 
