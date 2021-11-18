@@ -3,7 +3,14 @@ import random
 
 Import("env")
 
+
 is_unsigned = any((flag for flag in env['BUILD_FLAGS'] if 'TEST_UNSIGNED' in flag))
+is_mod = any((flag for flag in env['BUILD_FLAGS'] if 'TEST_MOD' in flag))
+# The number of denominators was chosen so that all tests fit on an AtMega2560
+num_unsigned = 250 if is_mod else 340
+num_denoms = 256 if not is_unsigned else num_unsigned
+print(f'Generating test files. Unsigned {is_unsigned}, Mod {is_mod}, Num Denoms {num_denoms}')
+
 
 def eratosthenes():
 	'''Yields the sequence of prime numbers via the Sieve of Eratosthenes.'''
@@ -11,12 +18,12 @@ def eratosthenes():
 	q = 2   # first integer to test for primality
 	while 1:
 		if q not in D:
-			yield q        # not marked composite, must be prime
-			D[q*q] = [q]   # first multiple of q not already marked
+			yield q         # not marked composite, must be prime
+			D[q*q] = [q]    # first multiple of q not already marked
 		else:
-			for p in D[q]: # move each witness to its next multiple
-				D.setdefault(p+q,[]).append(p)
-			del D[q]       # no longer need D[q], free memory
+			for p in D[q]:  # move each witness to its next multiple
+				D.setdefault(p+q, []).append(p)
+			del D[q]        # no longer need D[q], free memory
 		q += 1
 
 def before_build():
@@ -37,7 +44,7 @@ def before_build():
         return sorted(denoms)
 
     # Build the denominators
-    denoms = get_denoms(340 if is_unsigned else 256) # The number of denominators was chosen so that all tests fit on an AtMega2560
+    denoms = get_denoms(num_denoms)
 
     genfile = os.path.join(env['PROJECT_SRC_DIR'], 'invariant_div_test', 'test_declares.g.hpp')
     print(f'Generating {genfile}')

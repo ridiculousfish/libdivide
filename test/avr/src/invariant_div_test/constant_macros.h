@@ -51,7 +51,7 @@ int32_t TEST_FUNC_NAME(Op, Denom)() \
 #include "../../../constant_fast_div.hpp"
 #define LIBDIV_OP(Operand, Denom) libdivide::fast_divide<test_t, Denom>(Operand)
 #else
-// #include "../../../constant_fast_div.h"
+#include "../../../constant_fast_div.h"
 #if TEST_UNSIGNED
 #define LIBDIV_OP(Operand, Denom) FAST_DIV16U(Operand, Denom)
 #else
@@ -59,9 +59,11 @@ int32_t TEST_FUNC_NAME(Op, Denom)() \
 #endif
 #endif
 #else
+#include "../../../constant_fast_div.h"
 #define LIBDIV_NAME LibDivMod
 #define LIBDIV_OP(Operand, Denom) FAST_MOD16U(Operand, Denom)
 #endif
+
 #define DEFINE_LIBDIV_FUNC(Denom) TEST_FUNC(LIBDIV_OP, LIBDIV_NAME, Denom)
 #define LIBDIV_FUNC_NAME(Denom) TEST_FUNC_NAME(LIBDIV_NAME, Denom)
 
