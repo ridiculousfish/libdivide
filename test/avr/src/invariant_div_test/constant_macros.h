@@ -9,7 +9,7 @@
 #if TEST_UNSIGNED
 typedef uint16_t test_t;
 #define RANGE_MIN 0
-#define RANGE_MAX UINT16_MAX
+#define RANGE_MAX UINT16_MAX-1
 #else
 typedef int16_t test_t;
 #define RANGE_MIN INT16_MIN
@@ -45,18 +45,25 @@ int32_t TEST_FUNC_NAME(Op, Denom)() \
 #define DEFINE_NATIVE_FUNC(Denom) TEST_FUNC(NATIVE_OP, NATIVE_NAME, Denom)
 #define NATIVE_FUNC_NAME(Denom) TEST_FUNC_NAME(NATIVE_NAME, Denom)
 
-#include "../../../constant_fast_div.h"
 #if defined(TEST_DIV)
 #define LIBDIV_NAME LibDivDiv
+#if TEST_CPP_TEMPLATE
+#include "../../../constant_fast_div.hpp"
+#define LIBDIV_OP(Operand, Denom) libdivide::fast_divide<test_t, Denom>(Operand)
+#else
+#include "../../../constant_fast_div.h"
 #if TEST_UNSIGNED
 #define LIBDIV_OP(Operand, Denom) FAST_DIV16U(Operand, Denom)
 #else
 #define LIBDIV_OP(Operand, Denom) FAST_DIV16(Operand, Denom)
 #endif
+#endif
 #else
+#include "../../../constant_fast_div.h"
 #define LIBDIV_NAME LibDivMod
 #define LIBDIV_OP(Operand, Denom) FAST_MOD16U(Operand, Denom)
 #endif
+
 #define DEFINE_LIBDIV_FUNC(Denom) TEST_FUNC(LIBDIV_OP, LIBDIV_NAME, Denom)
 #define LIBDIV_FUNC_NAME(Denom) TEST_FUNC_NAME(LIBDIV_NAME, Denom)
 
@@ -64,9 +71,17 @@ int32_t TEST_FUNC_NAME(Op, Denom)() \
 
 #if defined(TEST_DIV)
 #if TEST_UNSIGNED
+#if TEST_CPP_TEMPLATE
+#define OP_NAME "DivUT"
+#else
 #define OP_NAME "DivU"
+#endif
+#else
+#if TEST_CPP_TEMPLATE
+#define OP_NAME "DivT"
 #else
 #define OP_NAME "Div"
+#endif
 #endif
 #else
 #define OP_NAME "Mod"

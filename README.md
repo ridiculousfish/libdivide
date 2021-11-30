@@ -19,7 +19,7 @@ vector division which provides an even larger speedup. You can test how much
 speedup you can achieve on your CPU using the [benchmark](#benchmark-program)
 program.
 
-libdivide is compatible with 8-bit microcontrollers, such as the AVR series: [the CI build includes a AtMega2560 target](test/avr/readme.md). Since low end hardware such as this often do not include a hardware divider, libdivide is particulary useful. In addition to the runtime [C](https://github.com/ridiculousfish/libdivide/blob/master/doc/C-API.md) & [C++](https://github.com/ridiculousfish/libdivide/blob/master/doc/CPP-API.md) APIs, a set of [predefined macros](constant_fast_div.h) is included to speed up division by 16-bit constants: division by a 16-bit constant is [not optimized by avr-gcc on 8-bit systems](https://stackoverflow.com/questions/47994933/why-doesnt-gcc-or-clang-on-arm-use-division-by-invariant-integers-using-multip). 
+libdivide is compatible with 8-bit microcontrollers, such as the AVR series: [the CI build includes a AtMega2560 target](test/avr/readme.md). Since low end hardware such as this often do not include a hardware divider, libdivide is particulary useful. In addition to the runtime [C](https://github.com/ridiculousfish/libdivide/blob/master/doc/C-API.md) & [C++](https://github.com/ridiculousfish/libdivide/blob/master/doc/CPP-API.md) APIs, a set of [predefined macros](constant_fast_div.h) and [templates](constant_fast_div.hpp) is included to speed up division by 16-bit constants: division by a 16-bit constant is [not optimized by avr-gcc on 8-bit systems](https://stackoverflow.com/questions/47994933/why-doesnt-gcc-or-clang-on-arm-use-division-by-invariant-integers-using-multip). 
 
 See https://libdivide.com for more information on libdivide.
 
@@ -83,7 +83,8 @@ void divide(int64_t *array, size_t size, int64_t divisor)
 
 * [C API](https://github.com/ridiculousfish/libdivide/blob/master/doc/C-API.md)
 * [C++ API](https://github.com/ridiculousfish/libdivide/blob/master/doc/CPP-API.md)
-* [Invariant Division](constant_fast_div.h)
+* [Macro Invariant Division](constant_fast_div.h)
+* [Template Based Invariant Division](constant_fast_div.hpp)
 
 # Branchfull vs branchfree
 
