@@ -10,6 +10,8 @@
 
 #pragma once
 #include "libdivide.h"
+#include "u16_ldparams.h"
+#include "s16_ldparams.h"
 
 #ifdef __cplusplus
 namespace libdivide {
