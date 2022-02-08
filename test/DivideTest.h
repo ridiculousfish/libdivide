@@ -34,7 +34,7 @@ using namespace libdivide;
 
 #define UNUSED(x) (void)(x)
 
-#if defined(LIBDIVIDE_SSE2) && defined(LIBDIVIDE_AVX2) && defined(LIBDIVIDE_AVX512) && defined(LIBDIVIDE_NEON)
+#if defined(LIBDIVIDE_SSE2) || defined(LIBDIVIDE_AVX2) || defined(LIBDIVIDE_AVX512) || defined(LIBDIVIDE_NEON)
 #define VECTOR_TESTS
 #endif
 
