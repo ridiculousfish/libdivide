@@ -2372,11 +2372,24 @@ static LIBDIVIDE_INLINE __m256i libdivide_mullhi_s64_vec256(__m256i x, __m256i y
 ////////// UINT16
 
 __m256i libdivide_u16_do_vec256(__m256i numers, const struct libdivide_u16_t *denom) {
-    SIMPLE_VECTOR_DIVISION(uint16_t, __m256i, u16)
+    uint8_t more = denom->more;
+    if (!denom->magic) {
+        return _mm256_srli_epi16(numers, more);
+    } else {
+        __m256i q = _mm256_mulhi_epu16(numers, _mm256_set1_epi16(denom->magic));
+        if (more & LIBDIVIDE_ADD_MARKER) {
+            __m256i t = _mm256_adds_epu16(_mm256_srli_epi16(_mm256_subs_epu16(numers, q), 1), q);
+            return _mm256_srli_epi16(t, (more & LIBDIVIDE_16_SHIFT_MASK));
+        } else {
+            return _mm256_srli_epi16(q, more);
+        }
+    }    
 }
 
 __m256i libdivide_u16_branchfree_do_vec256(__m256i numers, const struct libdivide_u16_branchfree_t *denom) {
-    SIMPLE_VECTOR_DIVISION(uint16_t, __m256i, u16_branchfree)
+    __m256i q = _mm256_mulhi_epu16(numers, _mm256_set1_epi16(denom->magic));
+    __m256i t = _mm256_adds_epu16(_mm256_srli_epi16(_mm256_subs_epu16(numers, q), 1), q);
+    return _mm256_srli_epi16(t, denom->more);    
 }
 
 ////////// UINT32
@@ -2436,11 +2449,53 @@ __m256i libdivide_u64_branchfree_do_vec256(
 ////////// SINT16
 
 __m256i libdivide_s16_do_vec256(__m256i numers, const struct libdivide_s16_t *denom) {
-    SIMPLE_VECTOR_DIVISION(int16_t, __m256i, s16)
+    uint8_t more = denom->more;
+    if (!denom->magic) {
+        uint16_t shift = more & LIBDIVIDE_16_SHIFT_MASK;
+        uint16_t mask = ((uint16_t)1 << shift) - 1;
+        __m256i roundToZeroTweak = _mm256_set1_epi16(mask);
+        // q = numer + ((numer >> 15) & roundToZeroTweak);
+        __m256i q = _mm256_add_epi16(
+            numers, _mm256_and_si256(_mm256_srai_epi16(numers, 15), roundToZeroTweak));
+        q = _mm256_srai_epi16(q, shift);
+        __m256i sign = _mm256_set1_epi16((int8_t)more >> 7);
+        // q = (q ^ sign) - sign;
+        q = _mm256_sub_epi16(_mm256_xor_si256(q, sign), sign);
+        return q;
+    } else {
+        __m256i q = _mm256_mulhi_epi16(numers, _mm256_set1_epi16(denom->magic));
+        if (more & LIBDIVIDE_ADD_MARKER) {
+            // must be arithmetic shift
+            __m256i sign = _mm256_set1_epi16((int8_t)more >> 7);
+            // q += ((numer ^ sign) - sign);
+            q = _mm256_add_epi16(q, _mm256_sub_epi16(_mm256_xor_si256(numers, sign), sign));
+        }
+        // q >>= shift
+        q = _mm256_srai_epi16(q, more & LIBDIVIDE_16_SHIFT_MASK);
+        q = _mm256_add_epi16(q, _mm256_srli_epi16(q, 15));  // q += (q < 0)
+        return q;
+    }
 }
 
 __m256i libdivide_s16_branchfree_do_vec256(__m256i numers, const struct libdivide_s16_branchfree_t *denom) {
-    SIMPLE_VECTOR_DIVISION(int16_t, __m256i, s16_branchfree)
+    int16_t magic = denom->magic;
+    uint8_t more = denom->more;
+    uint8_t shift = more & LIBDIVIDE_16_SHIFT_MASK;
+    // must be arithmetic shift
+    __m256i sign = _mm256_set1_epi16((int8_t)more >> 7);
+    __m256i q = _mm256_mulhi_epi16(numers, _mm256_set1_epi16(magic));
+    q = _mm256_add_epi16(q, numers);  // q += numers
+
+    // If q is non-negative, we have nothing to do
+    // If q is negative, we want to add either (2**shift)-1 if d is
+    // a power of 2, or (2**shift) if it is not a power of 2
+    uint16_t is_power_of_2 = (magic == 0);
+    __m256i q_sign = _mm256_srai_epi16(q, 15);  // q_sign = q >> 15
+    __m256i mask = _mm256_set1_epi16(((uint16_t)1 << shift) - is_power_of_2);
+    q = _mm256_add_epi16(q, _mm256_and_si256(q_sign, mask));  // q = q + (q_sign & mask)
+    q = _mm256_srai_epi16(q, shift);                          // q >>= shift
+    q = _mm256_sub_epi16(_mm256_xor_si256(q, sign), sign);    // q = (q ^ sign) - sign
+    return q;
 }
 
 ////////// SINT32
