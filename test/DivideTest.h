@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string.h> // memcpy
 #include "outputs.h"
 
 #if defined(__AVR__)
@@ -121,18 +122,28 @@ class DivideTest {
     }
 
     template <typename VecType, Branching ALGO>
-    void test_vec(const T *numers, size_t count, T denom, const divider<T, ALGO> &div) {
-        size_t size = sizeof(VecType) / sizeof(T);
-        size_t iters = (sizeof(T)*count)/sizeof(VecType);
+    void test_vec(const T * numers, size_t count, T denom, const divider<T, ALGO> &div) {
+        // Number of T (E.g. in16_t) that will fit in one VecType (E.g. __m256i)
+        const size_t countTinVec = sizeof(VecType) / sizeof(T);
 
-        for (size_t j = 0; j < iters; j++, numers += size) {
-            VecType x = *((const VecType *)numers);
-            VecType resultVector = x / div;
-            T *results = (T *)&resultVector;
+        // In order to access the individual vector elements, we need this 
+        // union in order to handle alignment and aliasing issues.
+        union type_pun_vec {
+            VecType vec = {};
+            T arr[countTinVec];
+        };
 
-            for (size_t i = 0; i < size; i++) {
+        const size_t countVec = (sizeof(T)*count)/sizeof(VecType);
+        for (size_t j = 0; j < countVec; j++, numers += countTinVec) {
+            type_pun_vec vec_in;
+            memcpy(vec_in.arr, numers, sizeof(VecType));
+
+            type_pun_vec vec_result;
+            vec_result.vec = vec_in.vec / div;
+
+            for (size_t i = 0; i < countTinVec; i++) {
                 T numer = numers[i];
-                T result = results[i];
+                T result = vec_result.arr[i];
                 T expect = numer / denom;
 
                 if (result != expect) {
