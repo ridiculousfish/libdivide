@@ -114,7 +114,7 @@ void benchmark(tasks_t tasks, size_t max, size_t iters) {
     result_t branchfree = {0, 0};
 
     size_t st_max = std::min(max, (size_t)std::numeric_limits<T>::max());
-    iters = iters * (max/st_max);
+    iters = iters * (max / st_max);
     T t_max = (T)st_max;
     if (test_system) {
         using divider_type = T;
@@ -159,7 +159,8 @@ void benchmark(tasks_t tasks, size_t max, size_t iters) {
 }
 
 void usage() {
-    std::cout << "Usage: benchmark_branchfree [uu16] [u32] [u64] [s16] [s32] [s64] [branchfree] [branchfull] "
+    std::cout << "Usage: benchmark_branchfree [uu16] [u32] [u64] [s16] [s32] [s64] [branchfree] "
+                 "[branchfull] "
                  "[sys|system]\n"
                  "\n"
                  "The branchfree benchmark iterates over an array of dividers and computes\n"

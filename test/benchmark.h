@@ -22,10 +22,10 @@
 #endif
 
 #include "libdivide.h"
-#include "type_mappings.h"
 #include "outputs.h"
-#include "timer.hpp"
 #include "random_numerators.hpp"
+#include "timer.hpp"
+#include "type_mappings.h"
 
 using namespace libdivide;
 
@@ -67,7 +67,7 @@ template <typename IntT>
 inline uint64_t unsigned_sum_vals(const IntT *vals, size_t count) {
     typedef typename std::make_unsigned<IntT>::type UIntT;
     UIntT sum = 0;
-    for (size_t i=0; i < count; i++) {
+    for (size_t i = 0; i < count; i++) {
         sum += static_cast<UIntT>(vals[i]);
     }
     return sum;
@@ -120,34 +120,41 @@ NOINLINE uint64_t sum_quotients_vec(const random_numerators<IntT> &vals, const D
 #elif defined(LIBDIVIDE_NEON)
 
 // Helper to deduce NEON vector type for integral type.
-template <typename T> struct NeonVecFuncs {};
+template <typename T>
+struct NeonVecFuncs {};
 
-template <> struct NeonVecFuncs<uint16_t> {
+template <>
+struct NeonVecFuncs<uint16_t> {
     static inline uint16x8_t dup(uint16_t value) { return vdupq_n_u16(value); }
     static inline uint16x8_t add(uint16x8_t a, uint16x8_t b) { return vaddq_u16(a, b); }
 };
 
-template <> struct NeonVecFuncs<int16_t> { 
+template <>
+struct NeonVecFuncs<int16_t> {
     static inline int16x8_t dup(int16_t value) { return vdupq_n_s16(value); }
     static inline int16x8_t add(int16x8_t a, int16x8_t b) { return vaddq_s16(a, b); }
 };
 
-template <> struct NeonVecFuncs<uint32_t> {
+template <>
+struct NeonVecFuncs<uint32_t> {
     static inline uint32x4_t dup(uint32_t value) { return vdupq_n_u32(value); }
     static inline uint32x4_t add(uint32x4_t a, uint32x4_t b) { return vaddq_u32(a, b); }
 };
 
-template <> struct NeonVecFuncs<int32_t> { 
+template <>
+struct NeonVecFuncs<int32_t> {
     static inline int32x4_t dup(int32_t value) { return vdupq_n_s32(value); }
     static inline int32x4_t add(int32x4_t a, int32x4_t b) { return vaddq_s32(a, b); }
 };
 
-template <> struct NeonVecFuncs<uint64_t> {
+template <>
+struct NeonVecFuncs<uint64_t> {
     static inline uint64x2_t dup(uint64_t value) { return vdupq_n_u64(value); }
     static inline uint64x2_t add(uint64x2_t a, uint64x2_t b) { return vaddq_u64(a, b); }
 };
 
-template <> struct NeonVecFuncs<int64_t> {
+template <>
+struct NeonVecFuncs<int64_t> {
     static inline int64x2_t dup(int64_t value) { return vdupq_n_s64(value); }
     static inline int64x2_t add(int64x2_t a, int64x2_t b) { return vaddq_s64(a, b); }
 };
@@ -185,11 +192,12 @@ struct time_double {
     uint64_t result;
 };
 
-template<typename IntT, class DenomT>
-using pFuncToTime = uint64_t(*)(const random_numerators<IntT> &, const DenomT &);
+template <typename IntT, class DenomT>
+using pFuncToTime = uint64_t (*)(const random_numerators<IntT> &, const DenomT &);
 
-template<typename IntT, class DenomT>
-NOINLINE static time_double time_function(const random_numerators<IntT> &vals, DenomT denom, pFuncToTime<IntT, DenomT> timeFunc) {
+template <typename IntT, class DenomT>
+NOINLINE static time_double time_function(
+    const random_numerators<IntT> &vals, DenomT denom, pFuncToTime<IntT, DenomT> timeFunc) {
     time_double tresult;
 
     timer t;
@@ -226,8 +234,9 @@ NOINLINE TestResult test_one(const random_numerators<IntT> &vals, IntT denom) {
     divider<IntT, BRANCHFULL> div_bfull(denom);
     divider<IntT, BRANCHFREE> div_bfree(testBranchfree ? denom : 2);
 
-    uint64_t min_my_time = INT64_MAX, min_my_time_branchfree = INT64_MAX, min_my_time_vector = INT64_MAX,
-        min_my_time_vector_branchfree = INT64_MAX, min_his_time = INT64_MAX, min_gen_time = INT64_MAX;
+    uint64_t min_my_time = INT64_MAX, min_my_time_branchfree = INT64_MAX,
+             min_my_time_vector = INT64_MAX, min_my_time_vector_branchfree = INT64_MAX,
+             min_his_time = INT64_MAX, min_gen_time = INT64_MAX;
     time_double tresult;
     for (size_t iter = 0; iter < TEST_COUNT; iter++) {
         tresult = time_function(vals, denom, sum_quotients);
@@ -273,14 +282,14 @@ NOINLINE TestResult test_one(const random_numerators<IntT> &vals, IntT denom) {
     result.base_time = min_my_time / (double)vals.length();
     result.branchfree_time = testBranchfree ? min_my_time_branchfree / (double)vals.length() : -1;
     result.vector_time = min_my_time_vector / (double)vals.length();
-    result.vector_branchfree_time = testBranchfree ? min_my_time_vector_branchfree / (double)vals.length() : -1;
+    result.vector_branchfree_time =
+        testBranchfree ? min_my_time_vector_branchfree / (double)vals.length() : -1;
     result.hardware_time = min_his_time / (double)vals.length();
     return result;
 }
 
 template <typename _IntT>
-int32_t get_algorithm(_IntT d)
-{
+int32_t get_algorithm(_IntT d) {
     const auto denom = libdivide_gen(d);
     uint8_t more = denom.more;
     if (!denom.magic)
@@ -303,8 +312,9 @@ NOINLINE TestResult test_one(_IntT d, const random_numerators<_IntT> &data) {
 
 inline static void print_report_header(void) {
     char buffer[256];
-    sprintf(buffer, "%6s %" PRIcw "s %" PRIcw "s %" PRIcw "s %" PRIcw "s %" PRIcw "s %" PRIcw "s %6s\n", "#", "system", "scalar", "scl_bf", "vector", "vec_bf",
-        "gener", "algo");
+    sprintf(buffer,
+        "%6s %" PRIcw "s %" PRIcw "s %" PRIcw "s %" PRIcw "s %" PRIcw "s %" PRIcw "s %6s\n", "#",
+        "system", "scalar", "scl_bf", "vector", "vec_bf", "gener", "algo");
     PRINT_INFO(buffer);
 }
 
@@ -317,9 +327,10 @@ static void print_report_result(_IntT d, struct TestResult result) {
     char *pDenom = to_str(denom_buff, d);
 
     char report_buff[256];
-    sprintf(report_buff, "%6s %" PRIrc " %" PRIrc " %" PRIrc " %" PRIrc " %" PRIrc " %" PRIrc " %4d\n", pDenom, result.hardware_time, result.base_time,
-        result.branchfree_time, result.vector_time, result.vector_branchfree_time, result.gen_time,
-        result.algo);
+    sprintf(report_buff,
+        "%6s %" PRIrc " %" PRIrc " %" PRIrc " %" PRIrc " %" PRIrc " %" PRIrc " %4d\n", pDenom,
+        result.hardware_time, result.base_time, result.branchfree_time, result.vector_time,
+        result.vector_branchfree_time, result.gen_time, result.algo);
     PRINT_INFO(report_buff);
 }
 
@@ -347,5 +358,5 @@ void test_many() {
         } else {
             d++;
         }
-    }  
+    }
 }
