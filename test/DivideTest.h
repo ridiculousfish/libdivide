@@ -126,8 +126,8 @@ class DivideTest {
         // Number of T (E.g. in16_t) that will fit in one VecType (E.g. __m256i)
         const size_t countTinVec = sizeof(VecType) / sizeof(T);
 
-        // In order to access the individual vector elements, we need this 
-        // union in order to handle alignment and aliasing issues.
+        // Use a union to read a vector via pointer-to-integer, without violating strict
+        // aliasing.
         union type_pun_vec {
             VecType vec = {};
             T arr[countTinVec];

@@ -1683,11 +1683,8 @@ int64_t libdivide_s64_branchfree_recover(const struct libdivide_s64_branchfree_t
 // Simplest possible vector type division: treat the vector type as an array
 // of underlying native type.
 //
-// In order to access the individual vector elements, we need the type_pun_vec 
-// union in order to handle alignment and aliasing issues.
-// This means an extra copy of the input vector instance :-(
-// But SIMPLE_VECTOR_DIVISION is for 16-bit only and 16-bit division on
-// any CPU with vector hardware is probably very fast already.
+// Use a union to read a vector via pointer-to-integer, without violating strict
+// aliasing.
 #define SIMPLE_VECTOR_DIVISION(IntT, VecT, Algo) \
     const size_t count = sizeof(VecT) / sizeof(IntT); \
     union type_pun_vec { \
