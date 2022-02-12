@@ -12,11 +12,10 @@
 // Silence MSVC sprintf unsafe warnings
 #define _CRT_SECURE_NO_WARNINGS
 
+#include <string.h>
 #include "benchmark.h"
 
-#include <string.h>
-
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) {   
     // Disable printf buffering.
     // This is mainly required for Windows.
     setbuf(stdout, NULL);
