@@ -82,6 +82,13 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    // Issue #96: https://github.com/ridiculousfish/libdivide/issues/96
+    libdivide::divider<short> short_div{42};
+    libdivide::divider<int> int_div{42};
+    libdivide::divider<long> long_div{42};
+    libdivide::divider<long long> long_long_div{42};
+    libdivide::divider<std::ptrdiff_t> ptr_diff_div{42};
+
     std::string vecTypes = "";
 #if defined(LIBDIVIDE_SSE2)
     vecTypes += "sse2 ";

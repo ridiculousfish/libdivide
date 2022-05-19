@@ -17,8 +17,35 @@
 
 #include <stdint.h>
 #if !defined(__AVR__)
+#if defined(__cplusplus)
+#include <type_traits>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
+#else
+// AVR tool chain has no standard library so fill in the gaps
+//
+// We don't want to inject these into std:: namespace, just in case
+// it interferes with other libraries.
+namespace libdivide_avr_traits {
+    template< typename T > 
+    struct is_signed {
+        static const bool value = false;
+    }; // determine whether _Ty is a signed type
+
+    template<> 
+    struct is_signed<int16_t>{ 
+        static const bool value = true; 
+    };
+    template<> 
+    struct is_signed<int32_t>{ 
+        static const bool value = true; 
+    };    
+    template<> 
+    struct is_signed<int64_t>{ 
+        static const bool value = true; 
+    };
+}
 #endif
 
 #if defined(LIBDIVIDE_SSE2)
@@ -3057,55 +3084,55 @@ struct NeonVecFor<int64_t> {
 
 // The dispatcher selects a specific division algorithm for a given
 // type and ALGO using partial template specialization.
-template <typename _IntT, Branching ALGO>
+template <bool IS_INTEGRAL, bool IS_SIGNED, int SIZEOF, Branching ALGO>
 struct dispatcher {};
 
 template <>
-struct dispatcher<int16_t, BRANCHFULL> {
+struct dispatcher<true, true, sizeof(int16_t), BRANCHFULL> {
     DISPATCHER_GEN(int16_t, s16)
 };
 template <>
-struct dispatcher<int16_t, BRANCHFREE> {
+struct dispatcher<true, true, sizeof(int16_t), BRANCHFREE> {
     DISPATCHER_GEN(int16_t, s16_branchfree)
 };
 template <>
-struct dispatcher<uint16_t, BRANCHFULL> {
+struct dispatcher<true, false, sizeof(uint16_t), BRANCHFULL> {
     DISPATCHER_GEN(uint16_t, u16)
 };
 template <>
-struct dispatcher<uint16_t, BRANCHFREE> {
+struct dispatcher<true, false, sizeof(uint16_t), BRANCHFREE> {
     DISPATCHER_GEN(uint16_t, u16_branchfree)
 };
 template <>
-struct dispatcher<int32_t, BRANCHFULL> {
+struct dispatcher<true, true, sizeof(int32_t), BRANCHFULL> {
     DISPATCHER_GEN(int32_t, s32)
 };
 template <>
-struct dispatcher<int32_t, BRANCHFREE> {
+struct dispatcher<true, true, sizeof(int32_t), BRANCHFREE> {
     DISPATCHER_GEN(int32_t, s32_branchfree)
 };
 template <>
-struct dispatcher<uint32_t, BRANCHFULL> {
+struct dispatcher<true, false, sizeof(uint32_t), BRANCHFULL> {
     DISPATCHER_GEN(uint32_t, u32)
 };
 template <>
-struct dispatcher<uint32_t, BRANCHFREE> {
+struct dispatcher<true, false, sizeof(uint32_t), BRANCHFREE> {
     DISPATCHER_GEN(uint32_t, u32_branchfree)
 };
 template <>
-struct dispatcher<int64_t, BRANCHFULL> {
+struct dispatcher<true, true, sizeof(int64_t), BRANCHFULL> {
     DISPATCHER_GEN(int64_t, s64)
 };
 template <>
-struct dispatcher<int64_t, BRANCHFREE> {
+struct dispatcher<true, true, sizeof(int64_t), BRANCHFREE> {
     DISPATCHER_GEN(int64_t, s64_branchfree)
 };
 template <>
-struct dispatcher<uint64_t, BRANCHFULL> {
+struct dispatcher<true, false, sizeof(uint64_t), BRANCHFULL> {
     DISPATCHER_GEN(uint64_t, u64)
 };
 template <>
-struct dispatcher<uint64_t, BRANCHFREE> {
+struct dispatcher<true, false, sizeof(uint64_t), BRANCHFREE> {
     DISPATCHER_GEN(uint64_t, u64_branchfree)
 };
 
@@ -3114,9 +3141,6 @@ struct dispatcher<uint64_t, BRANCHFREE> {
 // based on the integer and algorithm template parameters.
 template <typename T, Branching ALGO = BRANCHFULL>
 class divider {
-   private:
-    typedef dispatcher<T, ALGO> dispatcher_t;
-
    public:
     // We leave the default constructor empty so that creating
     // an array of dividers and then initializing them
@@ -3159,7 +3183,11 @@ class divider {
 
    private:
     // Storage for the actual divisor
-    dispatcher_t div;
+#if defined(__AVR__)
+    dispatcher<true, libdivide_avr_traits::is_signed<T>::value, sizeof(T), ALGO> div;
+#else
+    dispatcher<std::is_integral<T>::value, std::is_signed<T>::value, sizeof(T), ALGO> div;
+#endif
 };
 
 // Overload of operator / for scalar division
