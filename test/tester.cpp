@@ -19,6 +19,23 @@
 #include "DivideTest.h"
 #include "libdivide.h"
 
+// This is simply a regression test for #96: that the following all compile (and don't crash).
+static void test_primitives_compile() {
+    libdivide::divider<short> d0(1);
+    libdivide::divider<int> d1(1);
+    libdivide::divider<long> d2(1);
+    libdivide::divider<long long> d3(1);
+
+    libdivide::divider<unsigned short> u0(1);
+    libdivide::divider<unsigned int> u1(1);
+    libdivide::divider<unsigned long> u2(1);
+    libdivide::divider<unsigned long long> u3(1);
+
+    // These should fail to compile.
+    // libdivide::divider<float> f0(1);
+    // libdivide::divider<double> f1(1);
+}
+
 enum TestType {
     type_s16,
     type_u16,
@@ -50,6 +67,8 @@ void launch_test_thread(std::vector<std::thread> &test_threads) {
 int main(int argc, char *argv[]) {
     bool default_do_test = (argc <= 1);
     std::vector<bool> do_tests(6, default_do_test);
+
+    test_primitives_compile();
 
     for (int i = 1; i < argc; i++) {
         const std::string arg(argv[i]);

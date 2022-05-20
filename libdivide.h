@@ -2963,40 +2963,52 @@ enum Branching {
     BRANCHFREE   // use branchfree algorithms
 };
 
+enum Signedness {
+    SIGNED,
+    UNSIGNED,
+};
+
 #if defined(LIBDIVIDE_NEON)
 // Helper to deduce NEON vector type for integral type.
-template <typename T>
-struct NeonVecFor {};
+template <int _WIDTH, Signedness _SIGN>
+struct NeonVec {};
 
 template <>
-struct NeonVecFor<uint16_t> {
+struct NeonVec<16, UNSIGNED> {
     typedef uint16x8_t type;
 };
 
 template <>
-struct NeonVecFor<int16_t> {
+struct NeonVec<16, SIGNED> {
     typedef int16x8_t type;
 };
 
 template <>
-struct NeonVecFor<uint32_t> {
+struct NeonVec<32, UNSIGNED> {
     typedef uint32x4_t type;
 };
 
 template <>
-struct NeonVecFor<int32_t> {
+struct NeonVec<32, SIGNED> {
     typedef int32x4_t type;
 };
 
 template <>
-struct NeonVecFor<uint64_t> {
+struct NeonVec<64, UNSIGNED> {
     typedef uint64x2_t type;
 };
 
 template <>
-struct NeonVecFor<int64_t> {
+struct NeonVec<64, SIGNED> {
     typedef int64x2_t type;
 };
+
+template <typename T>
+struct NeonVecFor {
+    // See 'class divider' for an explanation of these template parameters.
+    typedef typename NeonVec<sizeof(T) * 8, ((T(0) >> 0) > T(-1) ? SIGNED : UNSIGNED)>::type type;
+};
+
 #endif
 
 // Versions of our algorithms for SIMD.
@@ -3050,66 +3062,70 @@ struct NeonVecFor<int64_t> {
     LIBDIVIDE_DIVIDE_AVX512(ALGO)
 
 // The dispatcher selects a specific division algorithm for a given
-// type and ALGO using partial template specialization.
-template <typename _IntT, Branching ALGO>
+// width, signedness, and ALGO using partial template specialization.
+template <int _WIDTH, Signedness _SIGN, Branching _ALGO>
 struct dispatcher {};
 
 template <>
-struct dispatcher<int16_t, BRANCHFULL> {
+struct dispatcher<16, SIGNED, BRANCHFULL> {
     DISPATCHER_GEN(int16_t, s16)
 };
 template <>
-struct dispatcher<int16_t, BRANCHFREE> {
+struct dispatcher<16, SIGNED, BRANCHFREE> {
     DISPATCHER_GEN(int16_t, s16_branchfree)
 };
 template <>
-struct dispatcher<uint16_t, BRANCHFULL> {
+struct dispatcher<16, UNSIGNED, BRANCHFULL> {
     DISPATCHER_GEN(uint16_t, u16)
 };
 template <>
-struct dispatcher<uint16_t, BRANCHFREE> {
+struct dispatcher<16, UNSIGNED, BRANCHFREE> {
     DISPATCHER_GEN(uint16_t, u16_branchfree)
 };
 template <>
-struct dispatcher<int32_t, BRANCHFULL> {
+struct dispatcher<32, SIGNED, BRANCHFULL> {
     DISPATCHER_GEN(int32_t, s32)
 };
 template <>
-struct dispatcher<int32_t, BRANCHFREE> {
+struct dispatcher<32, SIGNED, BRANCHFREE> {
     DISPATCHER_GEN(int32_t, s32_branchfree)
 };
 template <>
-struct dispatcher<uint32_t, BRANCHFULL> {
+struct dispatcher<32, UNSIGNED, BRANCHFULL> {
     DISPATCHER_GEN(uint32_t, u32)
 };
 template <>
-struct dispatcher<uint32_t, BRANCHFREE> {
+struct dispatcher<32, UNSIGNED, BRANCHFREE> {
     DISPATCHER_GEN(uint32_t, u32_branchfree)
 };
 template <>
-struct dispatcher<int64_t, BRANCHFULL> {
+struct dispatcher<64, SIGNED, BRANCHFULL> {
     DISPATCHER_GEN(int64_t, s64)
 };
 template <>
-struct dispatcher<int64_t, BRANCHFREE> {
+struct dispatcher<64, SIGNED, BRANCHFREE> {
     DISPATCHER_GEN(int64_t, s64_branchfree)
 };
 template <>
-struct dispatcher<uint64_t, BRANCHFULL> {
+struct dispatcher<64, UNSIGNED, BRANCHFULL> {
     DISPATCHER_GEN(uint64_t, u64)
 };
 template <>
-struct dispatcher<uint64_t, BRANCHFREE> {
+struct dispatcher<64, UNSIGNED, BRANCHFREE> {
     DISPATCHER_GEN(uint64_t, u64_branchfree)
 };
 
 // This is the main divider class for use by the user (C++ API).
 // The actual division algorithm is selected using the dispatcher struct
-// based on the integer and algorithm template parameters.
+// based on the integer width and algorithm template parameters.
 template <typename T, Branching ALGO = BRANCHFULL>
 class divider {
    private:
-    typedef dispatcher<T, ALGO> dispatcher_t;
+    // Dispatch based on the size and signedness.
+    // We avoid using type_traits as it's not available in AVR.
+    // Detect signedness by checking if T(-1) is less than T(0).
+    // Also throw in a shift by 0, which prevents floating point types from being passed.
+    typedef dispatcher<sizeof(T) * 8, ((T(0) >> 0) > T(-1) ? SIGNED : UNSIGNED), ALGO> dispatcher_t;
 
    public:
     // We leave the default constructor empty so that creating
