@@ -15,6 +15,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+
 #include "DivideTest.h"
 #include "libdivide.h"
 
@@ -33,21 +34,19 @@ void wait_for_threads(std::vector<std::thread> &test_threads) {
     }
 }
 
-uint8_t get_max_threads() {
-    return (uint8_t)std::max(1U, std::thread::hardware_concurrency());
-}
+uint8_t get_max_threads() { return (uint8_t)std::max(1U, std::thread::hardware_concurrency()); }
 
-template<typename _IntT>
+template <typename _IntT>
 void launch_test_thread(std::vector<std::thread> &test_threads) {
     static uint8_t max_threads = get_max_threads();
-    
-    if (max_threads==test_threads.size()) {
+
+    if (max_threads == test_threads.size()) {
         wait_for_threads(test_threads);
         test_threads.clear();
-    }    
+    }
     test_threads.emplace_back(run_test<_IntT>);
 }
-    
+
 int main(int argc, char *argv[]) {
     bool default_do_test = (argc <= 1);
     std::vector<bool> do_tests(6, default_do_test);
@@ -122,7 +121,7 @@ int main(int argc, char *argv[]) {
     if (do_tests[type_u64]) {
         launch_test_thread<uint64_t>(test_threads);
     }
-    
+
     wait_for_threads(test_threads);
 
     std::cout << "\nAll tests passed successfully!" << std::endl;

@@ -1,10 +1,12 @@
 #pragma once
 
-#include <string.h> // memcpy
+#include <string.h>  // memcpy
+
 #include "outputs.h"
 
 #if defined(__AVR__)
 #include <Arduino.h>
+
 #include "avr_type_helpers.h"
 typedef String string_class;
 // AVR targets do not have enough memory to track which denominatores
@@ -35,13 +37,14 @@ using namespace libdivide;
 
 #define UNUSED(x) (void)(x)
 
-#if defined(LIBDIVIDE_SSE2) || defined(LIBDIVIDE_AVX2) || defined(LIBDIVIDE_AVX512) || defined(LIBDIVIDE_NEON)
+#if defined(LIBDIVIDE_SSE2) || defined(LIBDIVIDE_AVX2) || defined(LIBDIVIDE_AVX512) || \
+    defined(LIBDIVIDE_NEON)
 #define VECTOR_TESTS
 #endif
 
 #ifdef _MSC_VER
 #pragma warning(push)
-#pragma warning(disable: 4127) // disable "conditional expression is constant""
+#pragma warning(disable : 4127)  // disable "conditional expression is constant""
 #endif
 
 template <typename T>
@@ -79,11 +82,11 @@ class DivideTest {
     }
 
     T random_denominator() {
-      T denom = get_random();
-      while (denom == 0) {
-          denom = get_random();
-      }
-      return denom;
+        T denom = get_random();
+        while (denom == 0) {
+            denom = get_random();
+        }
+        return denom;
     }
 
     string_class testcase_name(int algo) const {
@@ -116,13 +119,13 @@ class DivideTest {
             PRINT_ERROR(expect);
             PRINT_ERROR(F(", but got "));
             PRINT_ERROR(result);
-            PRINT_ERROR(F("\n"));            
+            PRINT_ERROR(F("\n"));
             exit(1);
         }
     }
 
     template <typename VecType, Branching ALGO>
-    void test_vec(const T * numers, size_t count, T denom, const divider<T, ALGO> &div) {
+    void test_vec(const T *numers, size_t count, T denom, const divider<T, ALGO> &div) {
         // Number of T (E.g. in16_t) that will fit in one VecType (E.g. __m256i)
         const size_t countTinVec = sizeof(VecType) / sizeof(T);
 
@@ -133,7 +136,7 @@ class DivideTest {
             T arr[countTinVec];
         };
 
-        const size_t countVec = (sizeof(T)*count)/sizeof(VecType);
+        const size_t countVec = (sizeof(T) * count) / sizeof(VecType);
         for (size_t j = 0; j < countVec; j++, numers += countTinVec) {
             type_pun_vec vec_in;
             memcpy(vec_in.arr, numers, sizeof(VecType));
@@ -154,15 +157,15 @@ class DivideTest {
                     PRINT_ERROR(F(" / "));
                     PRINT_ERROR(denom);
                     PRINT_ERROR(F(" = "));
-                    PRINT_ERROR(expect );
+                    PRINT_ERROR(expect);
                     PRINT_ERROR(F(", but got "));
                     PRINT_ERROR(result);
                     PRINT_ERROR(F("\n"));
                     exit(1);
                 } else {
-    #if 0
+#if 0
                         std::cout << "vec" << (CHAR_BIT * sizeof(VecType)) << " success for: " << numer << " / " << denom << " = " << result << std::endl;
-    #endif
+#endif
                 }
             }
         }
@@ -183,42 +186,36 @@ class DivideTest {
 #endif
 #ifdef LIBDIVIDE_NEON
         typename NeonVecFor<T>::type s5;
-#endif  
-    };    
-    static const size_t min_vector_count = sizeof(union vector_size_u)/sizeof(T);
+#endif
+    };
+    static const size_t min_vector_count = sizeof(union vector_size_u) / sizeof(T);
 
     static constexpr T min = (std::numeric_limits<T>::min)();
-    static constexpr T max = (std::numeric_limits<T>::max)(); 
-    static constexpr T edgeCases[] = {
-        0,					(T)(1),				(T)(2),					(T)(3),				(T)(4),				(T)(5),
-        (T)(6),				(T)(7),				(T)(8),					(T)(9),				(T)(10),			(T)(11),
-        (T)(12),			(T)(13),			(T)(14),				(T)(15),			(T)(16),			(T)(17),
-        (T)(18),			(T)(19),			(T)(20),				(T)(21),			(T)(22),			(T)(23),
-        (T)(24),			(T)(25),			(T)(26),				(T)(27),			(T)(28),			(T)(29),
-        (T)(30),			(T)(31),			(T)(32),				(T)(33),			(T)(34),			(T)(35),
-        (T)(36),			(T)(37),			(T)(38),				(T)(39),			(T)(40),			(T)(41),
-        (T)(42),			(T)(43),			(T)(44),				(T)(45),			(T)(46),			(T)(47),
-        (T)(48),			(T)(49),			(T)(123),				(T)(1232),			(T)(36847),			(T)(506838),
-        (T)(3000003),		(T)(70000007),		
+    static constexpr T max = (std::numeric_limits<T>::max)();
+    static constexpr T edgeCases[] = {0, (T)(1), (T)(2), (T)(3), (T)(4), (T)(5), (T)(6), (T)(7),
+        (T)(8), (T)(9), (T)(10), (T)(11), (T)(12), (T)(13), (T)(14), (T)(15), (T)(16), (T)(17),
+        (T)(18), (T)(19), (T)(20), (T)(21), (T)(22), (T)(23), (T)(24), (T)(25), (T)(26), (T)(27),
+        (T)(28), (T)(29), (T)(30), (T)(31), (T)(32), (T)(33), (T)(34), (T)(35), (T)(36), (T)(37),
+        (T)(38), (T)(39), (T)(40), (T)(41), (T)(42), (T)(43), (T)(44), (T)(45), (T)(46), (T)(47),
+        (T)(48), (T)(49), (T)(123), (T)(1232), (T)(36847), (T)(506838), (T)(3000003), (T)(70000007),
 
-        (T)(max),			(T)(max - 1),		(T)(max - 2),			(T)(max - 3),		(T)(max - 4),		(T)(max - 5),
-        (T)(max - 3213),	(T)(max - 2453242),	(T)(max - 432234231),	
+        (T)(max), (T)(max - 1), (T)(max - 2), (T)(max - 3), (T)(max - 4), (T)(max - 5),
+        (T)(max - 3213), (T)(max - 2453242), (T)(max - 432234231),
 
-        (T)(min),			(T)(min + 1),		(T)(min + 2),			(T)(min + 3),		(T)(min + 4),		(T)(min + 5),
-        (T)(min + 3213),	(T)(min + 2453242),	(T)(min + 432234231),	
+        (T)(min), (T)(min + 1), (T)(min + 2), (T)(min + 3), (T)(min + 4), (T)(min + 5),
+        (T)(min + 3213), (T)(min + 2453242), (T)(min + 432234231),
 
-        (T)(max / 2),		(T)(max / 2 + 1),	(T)(max / 2 - 1),		(T)(max / 3),		(T)(max / 3 + 1),	(T)(max / 3 - 1),	
-        (T)(max / 4),		(T)(max / 4 + 1),	(T)(max / 4 - 1),
+        (T)(max / 2), (T)(max / 2 + 1), (T)(max / 2 - 1), (T)(max / 3), (T)(max / 3 + 1),
+        (T)(max / 3 - 1), (T)(max / 4), (T)(max / 4 + 1), (T)(max / 4 - 1),
 
-        (T)(min / 2),		(T)(min / 2 + 1),	(T)(min / 2 - 1),		(T)(min / 3),		(T)(min / 3 + 1),	(T)(min / 3 - 1),
-        (T)(min / 4),		(T)(min / 4 + 1),	(T)(min / 4 - 1)
-    };
+        (T)(min / 2), (T)(min / 2 + 1), (T)(min / 2 - 1), (T)(min / 3), (T)(min / 3 + 1),
+        (T)(min / 3 - 1), (T)(min / 4), (T)(min / 4 + 1), (T)(min / 4 - 1)};
 
     template <Branching ALGO>
     void test_edgecase_numerators(T denom, const divider<T, ALGO> &the_divider) {
         for (auto numerator : edgeCases) {
             test_one((T)numerator, denom, the_divider);
-        }        
+        }
     }
 
     template <Branching ALGO>
@@ -241,7 +238,7 @@ class DivideTest {
 
     template <Branching ALGO>
     void test_pow2_numerators(T denom, const divider<T, ALGO> &the_divider) {
-       // test power of 2 numerators: 2^i-1, 2^i, 2^i+1
+        // test power of 2 numerators: 2^i-1, 2^i, 2^i+1
         for (int i = 1; i < limits::digits; i++) {
             for (int j = -1; j <= 1; j++) {
                 T numerator = static_cast<T>((static_cast<T>(1) << i) + j);
@@ -269,12 +266,12 @@ class DivideTest {
             for (size_t j = 0; j < min_vector_count; j++) {
                 test_one(get_random(), denom, the_divider);
             }
-        }        
+        }
     }
 
     template <Branching ALGO>
     void test_vectordivide_numerators(T denom, const divider<T, ALGO> &the_divider) {
-#if defined(VECTOR_TESTS)        
+#if defined(VECTOR_TESTS)
         // Align memory to 64 byte boundary for AVX512
         char mem[min_vector_count * sizeof(T) + 64];
         size_t offset = 64 - (size_t)&mem % 64;
@@ -299,13 +296,13 @@ class DivideTest {
         }
 #else
         UNUSED(denom);
-        UNUSED(the_divider);        
+        UNUSED(the_divider);
 #endif
     }
 
     template <Branching ALGO>
     void test_all_numerators(T denom, const divider<T, ALGO> &the_divider) {
-        for (T numerator=(min); numerator!=(max); ++numerator) {
+        for (T numerator = (min); numerator != (max); ++numerator) {
             test_one((T)numerator, denom, the_divider);
         }
     }
@@ -343,7 +340,7 @@ class DivideTest {
     static uint32_t randomSeed() {
 #if defined(__AVR__)
         return (uint32_t)analogRead(A0);
-#else   
+#else
         std::random_device randomDevice;
         std::mt19937 randGen(randomDevice());
         std::uniform_int_distribution<uint32_t> randDist(1, std::numeric_limits<uint32_t>::max());
@@ -353,7 +350,7 @@ class DivideTest {
 
     void test_all_algorithms(T denom, set_t<T> &tested_denom) {
 #if !defined(__AVR__)
-        if(tested_denom.end()==tested_denom.find(denom)) {
+        if (tested_denom.end() == tested_denom.find(denom)) {
 #endif
             PRINT_PROGRESS_MSG(F("Testing deom "));
             PRINT_PROGRESS_MSG(denom);
@@ -362,7 +359,7 @@ class DivideTest {
             test_many<BRANCHFREE>(denom);
 #if !defined(__AVR__)
             tested_denom.insert(denom);
-        } 
+        }
 #else
         UNUSED(tested_denom);
 #endif
@@ -373,11 +370,10 @@ class DivideTest {
 
         if (limits::is_signed) {
             test_all_algorithms(-denom, tested_denom);
-        }        
+        }
     }
 
-public:
-
+   public:
     DivideTest() {
         seed = randomSeed();
         rand_n = (UT)randomSeed();
@@ -388,8 +384,10 @@ public:
 
         // Test small values
 #if defined(__AVR__)
-        UT primes[] = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173};
-        for (size_t index = 0; index < sizeof(primes)/sizeof(primes[0]); ++index) {
+        UT primes[] = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71,
+            73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163,
+            167, 173};
+        for (size_t index = 0; index < sizeof(primes) / sizeof(primes[0]); ++index) {
             test_both_signs(primes[index], tested_denom);
         }
 #else
@@ -431,7 +429,7 @@ public:
 
         // Test random denominators
 #if !defined(__AVR__)
-        PRINT_PROGRESS_MSG(F("Test random denominators\n"));        
+        PRINT_PROGRESS_MSG(F("Test random denominators\n"));
         for (int i = 0; i < 10000; ++i) {
             test_all_algorithms(random_denominator(), tested_denom);
         }
@@ -439,7 +437,7 @@ public:
     }
 };
 
-template<typename IntT>
+template <typename IntT>
 constexpr IntT DivideTest<IntT>::edgeCases[];
 
 template <typename T>
