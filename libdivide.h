@@ -2963,6 +2963,7 @@ enum Branching {
     BRANCHFREE   // use branchfree algorithms
 };
 
+namespace detail {
 enum Signedness {
     SIGNED,
     UNSIGNED,
@@ -3009,10 +3010,6 @@ struct NeonVecFor {
     typedef typename NeonVec<sizeof(T) * 8, ((T(0) >> 0) > T(-1) ? SIGNED : UNSIGNED)>::type type;
 };
 
-#endif
-
-// Versions of our algorithms for SIMD.
-#if defined(LIBDIVIDE_NEON)
 #define LIBDIVIDE_DIVIDE_NEON(ALGO, INT_TYPE)                    \
     LIBDIVIDE_INLINE typename NeonVecFor<INT_TYPE>::type divide( \
         typename NeonVecFor<INT_TYPE>::type n) const {           \
@@ -3021,6 +3018,7 @@ struct NeonVecFor {
 #else
 #define LIBDIVIDE_DIVIDE_NEON(ALGO, INT_TYPE)
 #endif
+
 #if defined(LIBDIVIDE_SSE2)
 #define LIBDIVIDE_DIVIDE_SSE2(ALGO)                     \
     LIBDIVIDE_INLINE __m128i divide(__m128i n) const {  \
@@ -3114,6 +3112,15 @@ template <>
 struct dispatcher<64, UNSIGNED, BRANCHFREE> {
     DISPATCHER_GEN(uint64_t, u64_branchfree)
 };
+}  // namespace detail
+
+#if defined(LIBDIVIDE_NEON)
+// Allow NeonVecFor outside of detail namespace.
+template <typename T>
+struct NeonVecFor {
+    typedef typename detail::NeonVecFor<T>::type type;
+};
+#endif
 
 // This is the main divider class for use by the user (C++ API).
 // The actual division algorithm is selected using the dispatcher struct
@@ -3125,7 +3132,9 @@ class divider {
     // We avoid using type_traits as it's not available in AVR.
     // Detect signedness by checking if T(-1) is less than T(0).
     // Also throw in a shift by 0, which prevents floating point types from being passed.
-    typedef dispatcher<sizeof(T) * 8, ((T(0) >> 0) > T(-1) ? SIGNED : UNSIGNED), ALGO> dispatcher_t;
+    typedef detail::dispatcher<sizeof(T) * 8,
+        ((T(0) >> 0) > T(-1) ? detail::SIGNED : detail::UNSIGNED), ALGO>
+        dispatcher_t;
 
    public:
     // We leave the default constructor empty so that creating
