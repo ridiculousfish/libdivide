@@ -113,4 +113,6 @@ int main (int argc, char *argv[]) {
    test_s32();
    test_u64();
    test_s64();
+
+   return 0;
 }
