@@ -49,7 +49,7 @@
       } \
    }
 
-void test_u16() {
+void test_u16(void) {
 #define U16_DENOM 953 // Prime
    struct libdivide_u16_t divider = libdivide_u16_gen(U16_DENOM);
 #define OP_U16_DO(numer, divider) libdivide_u16_do(numer, &divider)
@@ -60,7 +60,7 @@ void test_u16() {
    TEST_BODY(uint16_t, UINT16_MAX, U16_DENOM, U16_DENOM, PRIu16, CONSTANT_OP_U16)
 }
 
-void test_s16() {
+void test_s16(void) {
    int16_t denom = (int16_t)-4003;  // Prime
    struct libdivide_s16_t divider = libdivide_s16_gen(denom);
 #define OP_S16(numer, divider) libdivide_s16_do(numer, &divider)
@@ -75,28 +75,28 @@ void test_s16() {
    TEST_BODY(int16_t, INT16_MAX, -4003, 4003, PRId16, CONSTANT_OP_NEG_S16)  
 }
 
-void test_u32() {
+void test_u32(void) {
    uint32_t denom = ((uint32_t)2 << 21) - 19; // Prime - see https://primes.utm.edu/lists/2small/0bit.html
    struct libdivide_u32_t divider = libdivide_u32_gen(denom);
 #define OP_U32(numer, divider) libdivide_u32_do(numer, &divider)
    TEST_BODY(uint32_t, UINT32_MAX, denom, divider, PRIu32, OP_U32)
 }
 
-void test_s32() {
+void test_s32(void) {
    int32_t denom = -(((int32_t)2 << 21) - 55); // Prime - see https://primes.utm.edu/lists/2small/0bit.html
    struct libdivide_s32_t divider = libdivide_s32_gen(denom);
 #define OP_S32(numer, divider) libdivide_s32_do(numer, &divider)
    TEST_BODY(int32_t, INT32_MAX, denom, divider, PRId32, OP_S32)
 }
 
-void test_u64() {
+void test_u64(void) {
    uint64_t denom = ((uint64_t)2 << 29) - 43;  // Prime - see https://primes.utm.edu/lists/2small/0bit.html
    struct libdivide_u64_t divider = libdivide_u64_gen(denom);
 #define OP_U64(numer, divider) libdivide_u64_do(numer, &divider)
    TEST_BODY(uint64_t, (UINT64_MAX/2) /* For speed */, denom, divider, PRIu64, OP_U64)
 }
 
-void test_s64() {
+void test_s64(void) {
    int64_t denom =  -(((int64_t)2 << 29) - 121); // Prime - see https://primes.utm.edu/lists/2small/0bit.html
    struct libdivide_s64_t divider = libdivide_s64_gen(denom);
 #define OP_S64(numer, divider) libdivide_s64_do(numer, &divider)
