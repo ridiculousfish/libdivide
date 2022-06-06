@@ -10,10 +10,13 @@ CMakeCache.txt
 CMakeFiles
 CMakeScripts
 Makefile
+Make.dep
 cmake_install.cmake
 install_manifest.txt
 CTestTestfile.cmake
 .DS_Store
+.built
+.depend
 .pio
 .vscode/*
 !.vscode/extensions.json
