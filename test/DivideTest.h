@@ -35,6 +35,7 @@ using set_t = std::set<IntT>;
 
 using namespace libdivide;
 
+#undef UNUSED
 #define UNUSED(x) (void)(x)
 
 #if defined(LIBDIVIDE_SSE2) || defined(LIBDIVIDE_AVX2) || defined(LIBDIVIDE_AVX512) || \

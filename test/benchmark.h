@@ -11,6 +11,7 @@
 #include <type_traits>
 #endif
 
+#undef UNUSED
 #define UNUSED(x) (void)(x)
 
 #if defined(_WIN32) || defined(WIN32)
