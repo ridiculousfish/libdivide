@@ -147,7 +147,7 @@ void print_disclaimer()
                 << "// See " << __FILE__ << "\n";
 }
 
-int main(int argc, char *argv[]) {
+extern "C" int main(int argc, char *argv[]) {
     if (argc!=3) {
         std::cout
                 << "Usage: fast_div_generator [DATATYPE] [STYLE]\n"

@@ -16,7 +16,7 @@
 
 #include <string.h>
 
-int main(int argc, char *argv[]) {
+extern "C" int main(int argc, char *argv[]) {
     // Disable printf buffering.
     // This is mainly required for Windows.
     setbuf(stdout, NULL);
