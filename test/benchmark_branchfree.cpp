@@ -138,13 +138,13 @@ void benchmark(tasks_t tasks, size_t max, size_t iters) {
     }
 
     if (test_system && test_branchfull && branchfull.sum != sys.sum) {
-        std::cerr << "Error: branchfull_divider<" << typeid(T).name() << "> sum: " << branchfull.sum
+        std::cerr << "Error: branchfull_divider<" << type_tag<T>::get_tag() << "> sum: " << branchfull.sum
                   << ", but system sum: " << sys.sum << std::endl;
         std::exit(1);
     }
 
     if (test_system && test_branchfree && branchfree.sum != sys.sum) {
-        std::cerr << "Error: branchfree_divider<" << typeid(T).name() << "> sum: " << branchfree.sum
+        std::cerr << "Error: branchfree_divider<" << type_tag<T>::get_tag() << "> sum: " << branchfree.sum
                   << ", but system sum: " << sys.sum << std::endl;
         std::exit(1);
     }
