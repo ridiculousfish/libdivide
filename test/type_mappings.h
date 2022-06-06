@@ -34,12 +34,12 @@ template <typename _IntT> struct struct_selector {};
 LIB_DIVIDE_GENERATOR(DECLARE_STRUCT_SELECTOR, NULL)
 
 template <typename _IntT>
-typename struct_selector<_IntT>::struct_t libdivide_gen(_IntT)
+static inline typename struct_selector<_IntT>::struct_t libdivide_gen(_IntT)
 {
 }
 #define LIBDIVDE_GEN(type, tag, ...) \
     template <> \
-    typename struct_selector<type>::struct_t libdivide_gen(type d) \
+    inline typename struct_selector<type>::struct_t libdivide_gen(type d) \
     { \
         return libdivide::libdivide_ ## tag ## _gen(d);\
     }
