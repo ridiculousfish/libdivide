@@ -12,7 +12,7 @@
 // AVR doesn't support (s)printf() of 64-bit numbers.
 // PRId64 is undefined & GCC will issue a warning
 // So manually convert
-char *to_str(char *buffer, uint64_t n) {
+static inline char *to_str(char *buffer, uint64_t n) {
     buffer += 20;
     *buffer-- = 0;
     while (n) {
@@ -21,7 +21,7 @@ char *to_str(char *buffer, uint64_t n) {
     }
     return buffer + 1;
 }
-char *to_str(char *buffer, int64_t n) {
+static inline char *to_str(char *buffer, int64_t n) {
     if (n<0){
         buffer = to_str(buffer+1, (uint64_t)(n*-1))-1;
         *buffer = '-';
@@ -31,15 +31,15 @@ char *to_str(char *buffer, int64_t n) {
 }
 
 template <typename _T>
-void print_serial(const _T &item) { Serial.print(item); }
+static inline void print_serial(const _T &item) { Serial.print(item); }
 template <>
-void print_serial(const uint64_t &item) 
+static inline void print_serial(const uint64_t &item)
 { 
     char buffer[32];
     Serial.print(to_str(buffer, item));
 }
 template <>
-void print_serial(const int64_t &item) 
+static inline void print_serial(const int64_t &item)
 { 
     char buffer[32];
     Serial.print(to_str(buffer, item));
@@ -50,11 +50,11 @@ void print_serial(const int64_t &item)
 
 #else
 
-char *to_str(char *buffer, uint64_t n) {
+static inline char *to_str(char *buffer, uint64_t n) {
     sprintf(buffer, "%" PRIu64, n);
     return buffer;
 }
-char *to_str(char *buffer, int64_t n) {
+static inline char *to_str(char *buffer, int64_t n) {
     sprintf(buffer, "%" PRId64, n);
     return buffer;
 }
@@ -73,20 +73,20 @@ char *to_str(char *buffer, int64_t n) {
 #define PRINT_PROGRESS_MSG(item)
 #endif
 
-char *to_str(char *buffer, uint32_t n) {
+static inline char *to_str(char *buffer, uint32_t n) {
     sprintf(buffer, "%" PRIu32, n);
     return buffer;
 }
-char *to_str(char *buffer, int32_t n) {
+static inline char *to_str(char *buffer, int32_t n) {
     sprintf(buffer, "%" PRId32, n);
     return buffer;
 }
 
-char *to_str(char *buffer, uint16_t n) {
+static inline char *to_str(char *buffer, uint16_t n) {
     sprintf(buffer, "%" PRIu16, n);
     return buffer;
 }
-char *to_str(char *buffer, int16_t n) {
+static inline char *to_str(char *buffer, int16_t n) {
     sprintf(buffer, "%" PRId16, n);
     return buffer;
 }
