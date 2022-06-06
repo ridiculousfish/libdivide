@@ -16,6 +16,7 @@
 #pragma warning(disable : 4146)
 #endif
 
+#undef UNUSED
 #define UNUSED(x) (void)(x)
 #define MIN_RANGE (UINT16_MAX/4U)
 #define LOOP_STEP 3
