@@ -3007,7 +3007,7 @@ struct NeonVec<64, SIGNED> {
 template <typename T>
 struct NeonVecFor {
     // See 'class divider' for an explanation of these template parameters.
-    typedef typename NeonVec<sizeof(T) * 8, ((T(0) >> 0) > T(-1) ? SIGNED : UNSIGNED)>::type type;
+    typedef typename NeonVec<sizeof(T) * 8, (((T)0 >> 0) > (T)(-1) ? SIGNED : UNSIGNED)>::type type;
 };
 
 #define LIBDIVIDE_DIVIDE_NEON(ALGO, INT_TYPE)                    \
@@ -3133,7 +3133,7 @@ class divider {
     // Detect signedness by checking if T(-1) is less than T(0).
     // Also throw in a shift by 0, which prevents floating point types from being passed.
     typedef detail::dispatcher<sizeof(T) * 8,
-        ((T(0) >> 0) > T(-1) ? detail::SIGNED : detail::UNSIGNED), ALGO>
+        (((T)0 >> 0) > (T)(-1) ? detail::SIGNED : detail::UNSIGNED), ALGO>
         dispatcher_t;
 
    public:
