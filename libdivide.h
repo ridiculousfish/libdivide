@@ -1,8 +1,8 @@
 // libdivide.h - Optimized integer division
 // https://libdivide.com
 //
-// Copyright (C) 2010 - 2021 ridiculous_fish, <libdivide@ridiculousfish.com>
-// Copyright (C) 2016 - 2021 Kim Walisch, <kim.walisch@gmail.com>
+// Copyright (C) 2010 - 2022 ridiculous_fish, <libdivide@ridiculousfish.com>
+// Copyright (C) 2016 - 2022 Kim Walisch, <kim.walisch@gmail.com>
 //
 // libdivide is dual-licensed under the Boost or zlib licenses.
 // You may use libdivide under the terms of either of these.
@@ -561,6 +561,9 @@ static LIBDIVIDE_INLINE uint64_t libdivide_128_div_64_to_64(
 #endif
 }
 
+#if !(defined(HAS_INT128_T) && \
+      defined(HAS_INT128_DIV))
+
 // Bitshift a u128 in place, left (signed_shift > 0) or right (signed_shift < 0)
 static LIBDIVIDE_INLINE void libdivide_u128_shift(
     uint64_t *u1, uint64_t *u0, int32_t signed_shift) {
@@ -576,6 +579,8 @@ static LIBDIVIDE_INLINE void libdivide_u128_shift(
         *u1 >>= shift;
     }
 }
+
+#endif
 
 // Computes a 128 / 128 -> 64 bit division, with a 128 bit remainder.
 static LIBDIVIDE_INLINE uint64_t libdivide_128_div_128_to_64(
