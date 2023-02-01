@@ -518,13 +518,11 @@ static LIBDIVIDE_INLINE uint64_t libdivide_128_div_64_to_64(
     // least half b. In binary this means just shifting left by the number of leading zeros, so that
     // there's a 1 in the MSB.
     // We also shift numer by the same amount. This cannot overflow because numhi < den.
-    // The expression (-shift & 63) is the same as (64 - shift), except it avoids the UB of shifting
-    // by 64. The funny bitwise 'and' ensures that numlo does not get shifted into numhi if shift is
-    // 0. clang 11 has an x86 codegen bug here: see LLVM bug 50118. The sequence below avoids it.
+    // Clang 11 had x86 codegen bug here: see LLVM bug 50118. The sequence below does not avoid it.
     shift = libdivide_count_leading_zeros64(den);
     den <<= shift;
     numhi <<= shift;
-    numhi |= (numlo >> (-shift & 63)) & (-(int64_t)shift >> 63);
+    if (shift > 0) numhi |= (numlo >> (64 - shift));
     numlo <<= shift;
 
     // Extract the low digits of the numerator and both digits of the denominator.
