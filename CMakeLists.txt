@@ -295,6 +295,7 @@ endif()
 # Enable testing ###############################################
 
 if (LIBDIVIDE_BUILD_TESTS)
+    include(CTest)
     enable_testing()
     add_test(tester tester)
     add_test(benchmark_branchfree benchmark_branchfree)
