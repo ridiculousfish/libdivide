@@ -23,8 +23,8 @@ add_compile_options(
 
 # Build options ################################################
 
-option(BUILD_TESTS   "Build the test programs" ON)
-option(BUILD_FUZZERS "Build the fuzzers (requires clang)" OFF)
+option(LIBDIVIDE_BUILD_TESTS   "Build the test programs" ON)
+option(LIBDIVIDE_BUILD_FUZZERS "Build the fuzzers (requires clang)" OFF)
 
 # By default we automatically enable vectors supported by
 # the host CPU. You may also set these explicitly to OFF or ON.
@@ -68,7 +68,7 @@ endif()
 # cross-compiling otherwise the following error will occur:
 # CMake Error: TRY_RUN() invoked in cross-compiling mode, ...
 
-if (BUILD_TESTS AND NOT CMAKE_CROSSCOMPILING)
+if (LIBDIVIDE_BUILD_TESTS AND NOT CMAKE_CROSSCOMPILING)
     check_cxx_source_compiles("
         int main()
         {
@@ -262,7 +262,7 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libdivideConfigVersion.cmake"
 
 # Build test programs ##########################################
 
-if (BUILD_TESTS)
+if (LIBDIVIDE_BUILD_TESTS)
     find_package(Threads REQUIRED QUIET)
 
     add_executable(tester test/tester.cpp)
@@ -294,7 +294,7 @@ endif()
 
 # Enable testing ###############################################
 
-if (BUILD_TESTS)
+if (LIBDIVIDE_BUILD_TESTS)
     enable_testing()
     add_test(tester tester)
     add_test(benchmark_branchfree benchmark_branchfree)
@@ -307,7 +307,7 @@ endif()
 
 # Build the fuzzers (requires clang) ###########################
 
-if (BUILD_FUZZERS)
+if (LIBDIVIDE_BUILD_FUZZERS)
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         set(fuzzflags "-fsanitize=fuzzer,address")
 
