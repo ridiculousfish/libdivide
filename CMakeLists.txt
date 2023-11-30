@@ -23,7 +23,13 @@ add_compile_options(
 
 # Build options ################################################
 
-option(LIBDIVIDE_BUILD_TESTS   "Build the test programs" ON)
+if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+  set(MAIN_PROJECT ON)
+else()
+  set(MAIN_PROJECT OFF)
+endif()
+
+option(LIBDIVIDE_BUILD_TESTS   "Build the test programs" "${MAIN_PROJECT}")
 option(LIBDIVIDE_BUILD_FUZZERS "Build the fuzzers (requires clang)" OFF)
 
 # By default we automatically enable vectors supported by
