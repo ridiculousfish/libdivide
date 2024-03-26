@@ -3158,7 +3158,7 @@ class divider {
     T recover() const { return div.recover(); }
 
     bool operator==(const divider<T, ALGO> &other) const {
-        return div.denom.magic == other.denom.magic && div.denom.more == other.denom.more;
+        return div.denom.magic == other.div.denom.magic && div.denom.more == other.div.denom.more;
     }
 
     bool operator!=(const divider<T, ALGO> &other) const { return !(*this == other); }
