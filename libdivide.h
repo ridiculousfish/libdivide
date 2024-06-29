@@ -2963,6 +2963,28 @@ __m128i libdivide_s64_branchfree_do_vec128(
 
 #ifdef __cplusplus
 
+//for constexpr zero initialization,
+//c++11 might handle things ok,
+//but just limit to at least c++14 to ensure
+//we don't break anyone's code:
+
+// for gcc and clang, use https://en.cppreference.com/w/cpp/feature_test#cpp_constexpr
+#if (defined(__GNUC__) || defined(__clang__)) && (__cpp_constexpr >= 201304L)
+#define LIBDIVIDE_CONSTEXPR constexpr
+
+// supposedly, MSVC might not implement feature test macros right (https://stackoverflow.com/questions/49316752/feature-test-macros-not-working-properly-in-visual-c)
+// so check that _MSVC_LANG corresponds to at least c++14, and _MSC_VER corresponds to at least VS 2017 15.0 (for extended constexpr support https://learn.microsoft.com/en-us/cpp/overview/visual-cpp-language-conformance?view=msvc-170)
+#elif defined(_MSC_VER) && _MSC_VER >= 1910 && defined(_MSVC_LANG) && _MSVC_LANG >=201402L
+#define LIBDIVIDE_CONSTEXPR constexpr
+
+// in case some other obscure compiler has the right __cpp_constexpr :
+#elif defined(__cpp_constexpr) && __cpp_constexpr >= 201304L
+#define LIBDIVIDE_CONSTEXPR constexpr
+
+#else
+#define LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE
+#endif
+
 enum Branching {
     BRANCHFULL,  // use branching algorithms
     BRANCHFREE   // use branchfree algorithms
@@ -3056,6 +3078,7 @@ struct NeonVecFor {
 #define DISPATCHER_GEN(T, ALGO)                                                       \
     libdivide_##ALGO##_t denom;                                                       \
     LIBDIVIDE_INLINE dispatcher() {}                                                  \
+    explicit LIBDIVIDE_CONSTEXPR dispatcher(std::nullptr_t) : denom{} {}              \
     LIBDIVIDE_INLINE dispatcher(T d) : denom(libdivide_##ALGO##_gen(d)) {}            \
     LIBDIVIDE_INLINE T divide(T n) const { return libdivide_##ALGO##_do(n, &denom); } \
     LIBDIVIDE_INLINE T recover() const { return libdivide_##ALGO##_recover(&denom); } \
@@ -3146,6 +3169,9 @@ class divider {
     // an array of dividers and then initializing them
     // later doesn't slow us down.
     divider() {}
+
+    // constexpr zero-initialization to allow for use w/ static constinit
+    explicit LIBDIVIDE_CONSTEXPR divider(std::nullptr_t) : div(nullptr) {}
 
     // Constructor that takes the divisor as a parameter
     LIBDIVIDE_INLINE divider(T d) : div(d) {}
