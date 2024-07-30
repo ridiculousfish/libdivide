@@ -513,7 +513,7 @@ static LIBDIVIDE_INLINE uint64_t libdivide_128_div_64_to_64(
 
     // Check for overflow and divide by 0.
     if (numhi >= den) {
-        if (r != NULL) *r = ~0ull;
+        if (r) *r = ~0ull;
         return ~0ull;
     }
 
@@ -559,7 +559,7 @@ static LIBDIVIDE_INLINE uint64_t libdivide_128_div_64_to_64(
     q0 = (uint32_t)qhat;
 
     // Return remainder if requested.
-    if (r != NULL) *r = (rem * b + num0 - q0 * den) >> shift;
+    if (r) *r = (rem * b + num0 - q0 * den) >> shift;
     return ((uint64_t)q1 << 32) | q0;
 #endif
 }
