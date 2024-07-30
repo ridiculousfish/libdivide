@@ -31,15 +31,17 @@ static inline char *to_str(char *buffer, int64_t n) {
 }
 
 template <typename _T>
-static inline void print_serial(const _T &item) { Serial.print(item); }
+void print_serial(const _T &item) { Serial.print(item); }
+
 template <>
-static inline void print_serial(const uint64_t &item)
+void print_serial(const uint64_t &item)
 { 
     char buffer[32];
     Serial.print(to_str(buffer, item));
 }
+
 template <>
-static inline void print_serial(const int64_t &item)
+void print_serial(const int64_t &item)
 { 
     char buffer[32];
     Serial.print(to_str(buffer, item));
