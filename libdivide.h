@@ -11,22 +11,30 @@
 #ifndef LIBDIVIDE_H
 #define LIBDIVIDE_H
 
-#define LIBDIVIDE_VERSION "5.0"
+#define LIBDIVIDE_VERSION "5.1"
 #define LIBDIVIDE_VERSION_MAJOR 5
-#define LIBDIVIDE_VERSION_MINOR 0
+#define LIBDIVIDE_VERSION_MINOR 1
 
 #include <stdint.h>
+
 #if !defined(__AVR__)
 #include <stdio.h>
 #include <stdlib.h>
 #endif
 
+#ifdef __cplusplus
+// Required for std::nullptr_t
+#include <cstddef>
+#endif
+
 #if defined(LIBDIVIDE_SSE2)
 #include <emmintrin.h>
 #endif
+
 #if defined(LIBDIVIDE_AVX2) || defined(LIBDIVIDE_AVX512)
 #include <immintrin.h>
 #endif
+
 #if defined(LIBDIVIDE_NEON)
 #include <arm_neon.h>
 #endif
