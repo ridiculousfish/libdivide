@@ -22,11 +22,6 @@
 #include <stdlib.h>
 #endif
 
-#ifdef __cplusplus
-// Required for std::nullptr_t
-#include <cstddef>
-#endif
-
 #if defined(LIBDIVIDE_SSE2)
 #include <emmintrin.h>
 #endif
@@ -3086,7 +3081,7 @@ struct NeonVecFor {
 #define DISPATCHER_GEN(T, ALGO)                                                       \
     libdivide_##ALGO##_t denom;                                                       \
     LIBDIVIDE_INLINE dispatcher() {}                                                  \
-    explicit LIBDIVIDE_CONSTEXPR dispatcher(std::nullptr_t) : denom{} {}              \
+    explicit LIBDIVIDE_CONSTEXPR dispatcher(decltype(nullptr)) : denom{} {}              \
     LIBDIVIDE_INLINE dispatcher(T d) : denom(libdivide_##ALGO##_gen(d)) {}            \
     LIBDIVIDE_INLINE T divide(T n) const { return libdivide_##ALGO##_do(n, &denom); } \
     LIBDIVIDE_INLINE T recover() const { return libdivide_##ALGO##_recover(&denom); } \
@@ -3179,7 +3174,7 @@ class divider {
     divider() {}
 
     // constexpr zero-initialization to allow for use w/ static constinit
-    explicit LIBDIVIDE_CONSTEXPR divider(std::nullptr_t) : div(nullptr) {}
+    explicit LIBDIVIDE_CONSTEXPR divider(decltype(nullptr)) : div(nullptr) {}
 
     // Constructor that takes the divisor as a parameter
     LIBDIVIDE_INLINE divider(T d) : div(d) {}
