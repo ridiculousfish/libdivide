@@ -122,65 +122,25 @@ namespace libdivide {
 // by up to 10% because of reduced memory bandwidth.
 #pragma pack(push, 1)
 
-struct libdivide_u16_t {
-    uint16_t magic;
-    uint8_t more;
-};
+#define STRUCT_NAME(tag) libdivide_ ##tag ##_t
+#define STRUCT_BRANCHFREE_NAME(tag) libdivide_ ##tag ##_branchfree_t
 
-struct libdivide_s16_t {
-    int16_t magic;
-    uint8_t more;
-};
+#define DEFINE_STRUCTS(tag, type) \
+    struct STRUCT_NAME(tag) { \
+        type magic; \
+        uint8_t more; \
+    }; \
+    struct STRUCT_BRANCHFREE_NAME(tag) { \
+        type magic; \
+        uint8_t more; \
+    };
 
-struct libdivide_u32_t {
-    uint32_t magic;
-    uint8_t more;
-};
-
-struct libdivide_s32_t {
-    int32_t magic;
-    uint8_t more;
-};
-
-struct libdivide_u64_t {
-    uint64_t magic;
-    uint8_t more;
-};
-
-struct libdivide_s64_t {
-    int64_t magic;
-    uint8_t more;
-};
-
-struct libdivide_u16_branchfree_t {
-    uint16_t magic;
-    uint8_t more;
-};
-
-struct libdivide_s16_branchfree_t {
-    int16_t magic;
-    uint8_t more;
-};
-
-struct libdivide_u32_branchfree_t {
-    uint32_t magic;
-    uint8_t more;
-};
-
-struct libdivide_s32_branchfree_t {
-    int32_t magic;
-    uint8_t more;
-};
-
-struct libdivide_u64_branchfree_t {
-    uint64_t magic;
-    uint8_t more;
-};
-
-struct libdivide_s64_branchfree_t {
-    int64_t magic;
-    uint8_t more;
-};
+DEFINE_STRUCTS(s16, int16_t)
+DEFINE_STRUCTS(u16, uint16_t)
+DEFINE_STRUCTS(s32, int32_t)
+DEFINE_STRUCTS(u32, uint32_t)
+DEFINE_STRUCTS(s64, int64_t)
+DEFINE_STRUCTS(u64, uint64_t)
 
 #pragma pack(pop)
 
