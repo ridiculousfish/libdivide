@@ -195,8 +195,21 @@ enum {
     static LIBDIVIDE_INLINE type FUNC_NAME_BUILDER(tag, _branchfree_recover_raw)(type magic, uint8_t more); \
 
 // Both the declaration of these AND the implementation of these can be automated
-// See WRAPPER_FUNCTION_IMPLEMENTATIONS
-#define WRAPPER_FUNCTION_DECLARATIONS(tag, type) \
+// See WRAPPER_FUNCTION_IMPLEMENTATIONS_CPP
+#if defined(__cplusplus)
+#define WRAPPER_FUNCTION_DECLARATIONS_CPP(tag, type) \
+    static LIBDIVIDE_INLINE type FUNC_NAME_BUILDER(tag, _do)(type numer, const STRUCT_NAME(tag) &denom); \
+    static LIBDIVIDE_INLINE type FUNC_NAME_BUILDER(tag, _branchfree_do)(type numer, const STRUCT_BRANCHFREE_NAME(tag) &denom); \
+    static LIBDIVIDE_INLINE type FUNC_NAME_BUILDER(tag, _recover)(const STRUCT_NAME(tag) &denom); \
+    static LIBDIVIDE_INLINE type FUNC_NAME_BUILDER(tag, _branchfree_recover)(const STRUCT_BRANCHFREE_NAME(tag) &denom);
+#else
+#define WRAPPER_FUNCTION_DECLARATIONS_CPP(tag, type)
+#endif
+
+
+// Both the declaration of these AND the implementation of these can be automated
+// See WRAPPER_FUNCTION_IMPLEMENTATIONS_CORE
+#define WRAPPER_FUNCTION_DECLARATIONS_CORE(tag, type) \
     static LIBDIVIDE_INLINE type FUNC_NAME_BUILDER(tag, _do)(type numer, const struct STRUCT_NAME(tag) *denom); \
     static LIBDIVIDE_INLINE type FUNC_NAME_BUILDER(tag, _recover)(const struct STRUCT_NAME(tag) *denom); \
     static LIBDIVIDE_INLINE type FUNC_NAME_BUILDER(tag, _branchfree_do)(type numer, const struct STRUCT_BRANCHFREE_NAME(tag) *denom); \
@@ -205,7 +218,8 @@ enum {
 #define DECLARE_TYPE(tag, type) \
     DEFINE_STRUCTS(tag, type) \
     CORE_FUNCTION_DECLARATIONS(tag, type) \
-    WRAPPER_FUNCTION_DECLARATIONS(tag, type)
+    WRAPPER_FUNCTION_DECLARATIONS_CORE(tag, type) \
+    WRAPPER_FUNCTION_DECLARATIONS_CPP(tag, type)
 
 DECLARE_TYPE(s16, int16_t)
 DECLARE_TYPE(u16, uint16_t)
@@ -611,7 +625,7 @@ static LIBDIVIDE_INLINE uint64_t libdivide_128_div_128_to_64(
 #endif
 }
 
-#define WRAPPER_FUNCTION_IMPLEMENTATIONS(tag, type) \
+#define WRAPPER_FUNCTION_IMPLEMENTATIONS_CORE(tag, type) \
     type FUNC_NAME_BUILDER(tag, _do)(type numer, const struct STRUCT_NAME(tag) *denom) {\
         return FUNC_NAME_BUILDER(tag, _do_raw)(numer, denom->magic, denom->more); \
     } \
@@ -624,6 +638,29 @@ static LIBDIVIDE_INLINE uint64_t libdivide_128_div_128_to_64(
     type FUNC_NAME_BUILDER(tag, _branchfree_recover)(const struct STRUCT_BRANCHFREE_NAME(tag) *denom) {\
         return FUNC_NAME_BUILDER(tag, _branchfree_recover_raw)(denom->magic, denom->more); \
     }
+
+
+#if defined(__cplusplus)
+#define WRAPPER_FUNCTION_IMPLEMENTATIONS_CPP(tag, type) \
+    type FUNC_NAME_BUILDER(tag, _do)(type numer, const STRUCT_NAME(tag) &denom) {\
+        return FUNC_NAME_BUILDER(tag, _do_raw)(numer, denom.magic, denom.more); \
+    } \
+    type FUNC_NAME_BUILDER(tag, _branchfree_do)(type numer, const STRUCT_BRANCHFREE_NAME(tag) &denom) {\
+        return FUNC_NAME_BUILDER(tag, _branchfree_do_raw)(numer, denom.magic, denom.more); \
+    } \
+    type FUNC_NAME_BUILDER(tag, _recover)(const STRUCT_NAME(tag) &denom) {\
+        return FUNC_NAME_BUILDER(tag, _recover_raw)(denom.magic, denom.more); \
+    } \
+    type FUNC_NAME_BUILDER(tag, _branchfree_recover)(const STRUCT_BRANCHFREE_NAME(tag) &denom) {\
+        return FUNC_NAME_BUILDER(tag, _branchfree_recover_raw)(denom.magic, denom.more); \
+    }
+#else
+#define WRAPPER_FUNCTION_IMPLEMENTATIONS_CPP(tag, type)
+#endif
+
+#define WRAPPER_FUNCTION_IMPLEMENTATIONS(tag, type) \
+    WRAPPER_FUNCTION_IMPLEMENTATIONS_CORE(tag, type) \
+    WRAPPER_FUNCTION_IMPLEMENTATIONS_CPP(tag, type)
 
 ////////// UINT16
 
