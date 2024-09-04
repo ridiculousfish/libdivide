@@ -381,83 +381,69 @@ static LIBDIVIDE_INLINE int32_t libdivide_count_leading_zeros64(uint64_t val) {
 #endif
 }
 
+struct libdivide_32_div_16_result_t {
+    uint16_t quot;
+    uint16_t rem;
+};
 // libdivide_32_div_16_to_16: divides a 32-bit uint {u1, u0} by a 16-bit
 // uint {v}. The result must fit in 16 bits.
 // Returns the quotient directly and the remainder in *r
-static LIBDIVIDE_INLINE uint16_t libdivide_32_div_16_to_16(
-    uint16_t u1, uint16_t u0, uint16_t v, uint16_t *r) {
+static LIBDIVIDE_INLINE struct libdivide_32_div_16_result_t libdivide_32_div_16_to_16(
+    uint16_t u1, uint16_t u0, uint16_t v) {
     uint32_t n = ((uint32_t)u1 << 16) | u0;
-    uint16_t result = (uint16_t)(n / v);
-    *r = (uint16_t)(n - result * (uint32_t)v);
+    struct libdivide_32_div_16_result_t result = { 0U, 0U };
+    result.quot = (uint16_t)(n / v);
+    result.rem = (uint16_t)(n - result.quot * (uint32_t)v);
+    return result;
+}
+
+struct libdivide_64_div_32_result_t {
+    uint32_t quot;
+    uint32_t rem;
+};
+
+static LIBDIVIDE_INLINE struct libdivide_64_div_32_result_t libdivide_64_div_32_to_32_software(
+    uint32_t u1, uint32_t u0, uint32_t v) {
+    uint64_t n = ((uint64_t)u1 << 32) | u0;
+    struct libdivide_64_div_32_result_t result = { 0U, 0U };
+    result.quot = (uint32_t)(n / v);
+    result.rem = (uint32_t)(n - result.quot * (uint64_t)v);\
     return result;
 }
 
 // libdivide_64_div_32_to_32: divides a 64-bit uint {u1, u0} by a 32-bit
 // uint {v}. The result must fit in 32 bits.
 // Returns the quotient directly and the remainder in *r
-static LIBDIVIDE_INLINE uint32_t libdivide_64_div_32_to_32(
-    uint32_t u1, uint32_t u0, uint32_t v, uint32_t *r) {
+static LIBDIVIDE_INLINE struct libdivide_64_div_32_result_t libdivide_64_div_32_to_32(
+    uint32_t u1, uint32_t u0, uint32_t v) {
 #if (defined(LIBDIVIDE_i386) || defined(LIBDIVIDE_X86_64)) && defined(LIBDIVIDE_GCC_STYLE_ASM)
-    uint32_t result;
-    __asm__("divl %[v]" : "=a"(result), "=d"(*r) : [v] "r"(v), "a"(u0), "d"(u1));
+    struct libdivide_64_div_32_result_t result = { 0U, 0U };
+    __asm__("divl %[v]" : "=a"(result.quot), "=d"(result.rem) : [v] "r"(v), "a"(u0), "d"(u1));
     return result;
 #else
-    uint64_t n = ((uint64_t)u1 << 32) | u0;
-    uint32_t result = (uint32_t)(n / v);
-    *r = (uint32_t)(n - result * (uint64_t)v);
-    return result;
+    return libdivide_64_div_32_to_32_software(u1, u0, v);
 #endif
 }
 
-// libdivide_128_div_64_to_64: divides a 128-bit uint {numhi, numlo} by a 64-bit uint {den}. The
-// result must fit in 64 bits. Returns the quotient directly and the remainder in *r
-static LIBDIVIDE_INLINE uint64_t libdivide_128_div_64_to_64(
-    uint64_t numhi, uint64_t numlo, uint64_t den, uint64_t *r) {
-    // N.B. resist the temptation to use __uint128_t here.
-    // In LLVM compiler-rt, it performs a 128/128 -> 128 division which is many times slower than
-    // necessary. In gcc it's better but still slower than the divlu implementation, perhaps because
-    // it's not LIBDIVIDE_INLINEd.
-#if defined(LIBDIVIDE_X86_64) && defined(LIBDIVIDE_GCC_STYLE_ASM)
-    uint64_t result;
-    __asm__("divq %[v]" : "=a"(result), "=d"(*r) : [v] "r"(den), "a"(numlo), "d"(numhi));
-    return result;
-#else
+struct libdivide_128_div_64_result_t {
+    uint64_t quot;
+    uint64_t rem;
+};
+
+static LIBDIVIDE_INLINE struct libdivide_128_div_64_result_t libdivide_128_div_64_to_64_software(
+    uint64_t numhi, uint64_t numlo, uint64_t den, int32_t leading_zeroes) {
+
+    // Check for overflow and divide by 0.
+    if (numhi >= den) {
+        struct libdivide_128_div_64_result_t result = { ~0ull, ~0ull };
+        return result;
+    }
+    
     // We work in base 2**32.
     // A uint32 holds a single digit. A uint64 holds two digits.
     // Our numerator is conceptually [num3, num2, num1, num0].
     // Our denominator is [den1, den0].
     const uint64_t b = ((uint64_t)1 << 32);
-
-    // The high and low digits of our computed quotient.
-    uint32_t q1;
-    uint32_t q0;
-
-    // The normalization shift factor.
-    int shift;
-
-    // The high and low digits of our denominator (after normalizing).
-    // Also the low 2 digits of our numerator (after normalizing).
-    uint32_t den1;
-    uint32_t den0;
-    uint32_t num1;
-    uint32_t num0;
-
-    // A partial remainder.
-    uint64_t rem;
-
-    // The estimated quotient, and its corresponding remainder (unrelated to true remainder).
-    uint64_t qhat;
-    uint64_t rhat;
-
-    // Variables used to correct the estimated quotient.
-    uint64_t c1;
-    uint64_t c2;
-
-    // Check for overflow and divide by 0.
-    if (numhi >= den) {
-        if (r) *r = ~0ull;
-        return ~0ull;
-    }
 
     // Determine the normalization factor. We multiply den by this, so that its leading digit is at
     // least half b. In binary this means just shifting left by the number of leading zeros, so that
@@ -466,30 +452,37 @@ static LIBDIVIDE_INLINE uint64_t libdivide_128_div_64_to_64(
     // The expression (-shift & 63) is the same as (64 - shift), except it avoids the UB of shifting
     // by 64. The funny bitwise 'and' ensures that numlo does not get shifted into numhi if shift is
     // 0. clang 11 has an x86 codegen bug here: see LLVM bug 50118. The sequence below avoids it.
-    shift = libdivide_count_leading_zeros64(den);
+
+    // The normalization shift factor.
+    int shift = leading_zeroes;
     den <<= shift;
     numhi <<= shift;
     numhi |= (numlo >> (-shift & 63)) & (-(int64_t)shift >> 63);
     numlo <<= shift;
 
+    // The high and low digits of our denominator (after normalizing).
+    // Also the low 2 digits of our numerator (after normalizing).
     // Extract the low digits of the numerator and both digits of the denominator.
-    num1 = (uint32_t)(numlo >> 32);
-    num0 = (uint32_t)(numlo & 0xFFFFFFFFu);
-    den1 = (uint32_t)(den >> 32);
-    den0 = (uint32_t)(den & 0xFFFFFFFFu);
+    uint32_t num1 = (uint32_t)(numlo >> 32);
+    uint32_t num0 = (uint32_t)(numlo & 0xFFFFFFFFu);
+    uint32_t den1 = (uint32_t)(den >> 32);
+    uint32_t den0 = (uint32_t)(den & 0xFFFFFFFFu);
 
     // We wish to compute q1 = [n3 n2 n1] / [d1 d0].
     // Estimate q1 as [n3 n2] / [d1], and then correct it.
     // Note while qhat may be 2 digits, q1 is always 1 digit.
-    qhat = numhi / den1;
-    rhat = numhi % den1;
-    c1 = qhat * den0;
-    c2 = rhat * b + num1;
+    // The estimated quotient, and its corresponding remainder (unrelated to true remainder).
+    uint64_t qhat = numhi / den1;
+    uint64_t rhat = numhi % den1;
+    // Variables used to correct the estimated quotient.
+    uint64_t c1 = qhat * den0;
+    uint64_t c2 = rhat * b + num1;
     if (c1 > c2) qhat -= (c1 - c2 > den) ? 2 : 1;
-    q1 = (uint32_t)qhat;
+    // The high and low digits of our computed quotient.
+    uint32_t q1 = (uint32_t)qhat;
 
     // Compute the true (partial) remainder.
-    rem = numhi * b + num1 - q1 * den;
+    uint64_t rem = numhi * b + num1 - q1 * den;
 
     // We wish to compute q0 = [rem1 rem0 n0] / [d1 d0].
     // Estimate q0 as [rem1 rem0] / [d1] and correct it.
@@ -498,11 +491,27 @@ static LIBDIVIDE_INLINE uint64_t libdivide_128_div_64_to_64(
     c1 = qhat * den0;
     c2 = rhat * b + num0;
     if (c1 > c2) qhat -= (c1 - c2 > den) ? 2 : 1;
-    q0 = (uint32_t)qhat;
+    // The high and low digits of our computed quotient.
+    uint32_t q0 = (uint32_t)qhat;
 
-    // Return remainder if requested.
-    if (r) *r = (rem * b + num0 - q0 * den) >> shift;
-    return ((uint64_t)q1 << 32) | q0;
+    struct libdivide_128_div_64_result_t result = { ((uint64_t)q1 << 32) | q0, (rem * b + num0 - q0 * den) >> shift };
+    return result;
+}
+
+// libdivide_128_div_64_to_64: divides a 128-bit uint {numhi, numlo} by a 64-bit uint {den}. The
+// result must fit in 64 bits. Returns the quotient directly and the remainder in *r
+static LIBDIVIDE_INLINE struct libdivide_128_div_64_result_t libdivide_128_div_64_to_64(
+    uint64_t numhi, uint64_t numlo, uint64_t den) {
+    // N.B. resist the temptation to use __uint128_t here.
+    // In LLVM compiler-rt, it performs a 128/128 -> 128 division which is many times slower than
+    // necessary. In gcc it's better but still slower than the divlu implementation, perhaps because
+    // it's not LIBDIVIDE_INLINEd.
+#if defined(LIBDIVIDE_X86_64) && defined(LIBDIVIDE_GCC_STYLE_ASM)
+    struct libdivide_128_div_64_result_t result;
+    __asm__("divq %[v]" : "=a"(result.quot), "=d"(result.rem) : [v] "r"(den), "a"(numlo), "d"(numhi));
+    return result;
+#else
+    return libdivide_128_div_64_to_64_software(numhi, numlo, den, libdivide_count_leading_zeros64(den));
 #endif
 }
 
@@ -556,7 +565,9 @@ static LIBDIVIDE_INLINE uint64_t libdivide_128_div_128_to_64(
         // the quotient fits in 64 bits whereas Hacker's Delight demands a full
         // 128 bit quotient
         *r_hi = 0;
-        return libdivide_128_div_64_to_64(u.hi, u.lo, v.lo, r_lo);
+        struct libdivide_128_div_64_result_t div_result = libdivide_128_div_64_to_64(u.hi, u.lo, v.lo);
+        *r_lo = div_result.rem;
+        return div_result.quot;
     }
     // Here v >= 2**64
     // We know that v.hi != 0, so count leading zeros is OK
@@ -573,8 +584,7 @@ static LIBDIVIDE_INLINE uint64_t libdivide_128_div_128_to_64(
     libdivide_u128_shift(&u1.hi, &u1.lo, -1);
 
     // Get quotient from divide unsigned insn.
-    uint64_t rem_ignored;
-    uint64_t q1 = libdivide_128_div_64_to_64(u1.hi, u1.lo, v1, &rem_ignored);
+    uint64_t q1 = libdivide_128_div_64_to_64(u1.hi, u1.lo, v1).quot;
 
     // Undo normalization and division of u by 2.
     u128_t q0 = {0, q1};
@@ -683,11 +693,10 @@ static LIBDIVIDE_INLINE struct libdivide_u16_t libdivide_internal_u16_gen(
         result.more = (uint8_t)(floor_log_2_d - (branchfree != 0));
     } else {
         uint8_t more;
-        uint16_t rem, proposed_m;
-        proposed_m = libdivide_32_div_16_to_16((uint16_t)1 << floor_log_2_d, 0, d, &rem);
+        struct libdivide_32_div_16_result_t proposed_m = libdivide_32_div_16_to_16((uint16_t)1 << floor_log_2_d, 0, d);
 
-        LIBDIVIDE_ASSERT(rem > 0 && rem < d);
-        const uint16_t e = d - rem;
+        LIBDIVIDE_ASSERT(proposed_m.rem > 0 && proposed_m.rem < d);
+        const uint16_t e = d - proposed_m.rem;
 
         // This power works if e < 2**floor_log_2_d.
         if (!branchfree && (e < ((uint16_t)1 << floor_log_2_d))) {
@@ -699,12 +708,12 @@ static LIBDIVIDE_INLINE struct libdivide_u16_t libdivide_internal_u16_gen(
             // its remainder.  By doubling both, and then correcting the
             // remainder, we can compute the larger division.
             // don't care about overflow here - in fact, we expect it
-            proposed_m += proposed_m;
-            const uint16_t twice_rem = rem + rem;
-            if (twice_rem >= d || twice_rem < rem) proposed_m += 1;
+            proposed_m.quot += proposed_m.quot;
+            const uint16_t twice_rem = proposed_m.rem + proposed_m.rem;
+            if (twice_rem >= d || twice_rem < proposed_m.rem) proposed_m.quot += 1;
             more = floor_log_2_d | LIBDIVIDE_ADD_MARKER;
         }
-        result.magic = 1 + proposed_m;
+        result.magic = 1 + proposed_m.quot;
         result.more = more;
         // result.more's shift should in general be ceil_log_2_d. But if we
         // used the smaller power, we subtract one from the shift because we're
@@ -766,8 +775,7 @@ uint16_t libdivide_u16_recover_raw(uint16_t magic, uint8_t more) {
         // We know d is not a power of 2, so m is not a power of 2,
         // so we can just add 1 to the floor
         uint16_t hi_dividend = (uint16_t)1 << shift;
-        uint16_t rem_ignored;
-        return 1 + libdivide_32_div_16_to_16(hi_dividend, 0, magic, &rem_ignored);
+        return 1 + libdivide_32_div_16_to_16(hi_dividend, 0, magic).quot;
     } else {
         // Here we wish to compute d = 2^(16+shift+1)/(m+2^16).
         // Notice (m + 2^16) is a 17 bit number. Use 32 bit division for now
@@ -843,11 +851,10 @@ static LIBDIVIDE_INLINE struct libdivide_u32_t libdivide_internal_u32_gen(
         result.more = (uint8_t)(floor_log_2_d - (branchfree != 0));
     } else {
         uint8_t more;
-        uint32_t rem, proposed_m;
-        proposed_m = libdivide_64_div_32_to_32((uint32_t)1 << floor_log_2_d, 0, d, &rem);
+        struct libdivide_64_div_32_result_t proposed_m = libdivide_64_div_32_to_32((uint32_t)1 << floor_log_2_d, 0, d);
 
-        LIBDIVIDE_ASSERT(rem > 0 && rem < d);
-        const uint32_t e = d - rem;
+        LIBDIVIDE_ASSERT(proposed_m.rem > 0 && proposed_m.rem < d);
+        const uint32_t e = d - proposed_m.rem;
 
         // This power works if e < 2**floor_log_2_d.
         if (!branchfree && (e < ((uint32_t)1 << floor_log_2_d))) {
@@ -859,12 +866,12 @@ static LIBDIVIDE_INLINE struct libdivide_u32_t libdivide_internal_u32_gen(
             // its remainder.  By doubling both, and then correcting the
             // remainder, we can compute the larger division.
             // don't care about overflow here - in fact, we expect it
-            proposed_m += proposed_m;
-            const uint32_t twice_rem = rem + rem;
-            if (twice_rem >= d || twice_rem < rem) proposed_m += 1;
+            proposed_m.quot += proposed_m.quot;
+            const uint32_t twice_rem = proposed_m.rem + proposed_m.rem;
+            if (twice_rem >= d || twice_rem < proposed_m.rem) proposed_m.quot += 1;
             more = (uint8_t)(floor_log_2_d | LIBDIVIDE_ADD_MARKER);
         }
-        result.magic = 1 + proposed_m;
+        result.magic = 1 + proposed_m.quot;
         result.more = more;
         // result.more's shift should in general be ceil_log_2_d. But if we
         // used the smaller power, we subtract one from the shift because we're
@@ -923,8 +930,7 @@ uint32_t libdivide_u32_recover_raw(uint32_t magic, uint8_t more) {
         // We know d is not a power of 2, so m is not a power of 2,
         // so we can just add 1 to the floor
         uint32_t hi_dividend = (uint32_t)1 << shift;
-        uint32_t rem_ignored;
-        return 1 + libdivide_64_div_32_to_32(hi_dividend, 0, magic, &rem_ignored);
+        return 1 + libdivide_64_div_32_to_32(hi_dividend, 0, magic).quot;
     } else {
         // Here we wish to compute d = 2^(32+shift+1)/(m+2^32).
         // Notice (m + 2^32) is a 33 bit number. Use 64 bit division for now
@@ -998,13 +1004,12 @@ static LIBDIVIDE_INLINE struct libdivide_u64_t libdivide_internal_u64_gen(
         result.magic = 0;
         result.more = (uint8_t)(floor_log_2_d - (branchfree != 0));
     } else {
-        uint64_t proposed_m, rem;
         uint8_t more;
         // (1 << (64 + floor_log_2_d)) / d
-        proposed_m = libdivide_128_div_64_to_64((uint64_t)1 << floor_log_2_d, 0, d, &rem);
+        struct libdivide_128_div_64_result_t proposed_m = libdivide_128_div_64_to_64((uint64_t)1 << floor_log_2_d, 0, d);
 
-        LIBDIVIDE_ASSERT(rem > 0 && rem < d);
-        const uint64_t e = d - rem;
+        LIBDIVIDE_ASSERT(proposed_m.rem > 0 && proposed_m.rem < d);
+        const uint64_t e = d - proposed_m.rem;
 
         // This power works if e < 2**floor_log_2_d.
         if (!branchfree && e < ((uint64_t)1 << floor_log_2_d)) {
@@ -1016,12 +1021,12 @@ static LIBDIVIDE_INLINE struct libdivide_u64_t libdivide_internal_u64_gen(
             // its remainder. By doubling both, and then correcting the
             // remainder, we can compute the larger division.
             // don't care about overflow here - in fact, we expect it
-            proposed_m += proposed_m;
-            const uint64_t twice_rem = rem + rem;
-            if (twice_rem >= d || twice_rem < rem) proposed_m += 1;
+            proposed_m.quot += proposed_m.quot;
+            const uint64_t twice_rem = proposed_m.rem + proposed_m.rem;
+            if (twice_rem >= d || twice_rem < proposed_m.rem) proposed_m.quot += 1;
             more = (uint8_t)(floor_log_2_d | LIBDIVIDE_ADD_MARKER);
         }
-        result.magic = 1 + proposed_m;
+        result.magic = 1 + proposed_m.quot;
         result.more = more;
         // result.more's shift should in general be ceil_log_2_d. But if we
         // used the smaller power, we subtract one from the shift because we're
@@ -1082,8 +1087,7 @@ uint64_t libdivide_u64_recover_raw(uint64_t magic, uint8_t more) {
         // We know d is not a power of 2, so m is not a power of 2,
         // so we can just add 1 to the floor
         uint64_t hi_dividend = (uint64_t)1 << shift;
-        uint64_t rem_ignored;
-        return 1 + libdivide_128_div_64_to_64(hi_dividend, 0, magic, &rem_ignored);
+        return 1 + libdivide_128_div_64_to_64(hi_dividend, 0, magic).quot;
     } else {
         // Here we wish to compute d = 2^(64+shift+1)/(m+2^64).
         // Notice (m + 2^64) is a 65 bit number. This gets hairy. See
@@ -1180,9 +1184,8 @@ static LIBDIVIDE_INLINE struct libdivide_s16_t libdivide_internal_s16_gen(
         uint8_t more;
         // the dividend here is 2**(floor_log_2_d + 31), so the low 16 bit word
         // is 0 and the high word is floor_log_2_d - 1
-        uint16_t rem, proposed_m;
-        proposed_m = libdivide_32_div_16_to_16((uint16_t)1 << (floor_log_2_d - 1), 0, absD, &rem);
-        const uint16_t e = absD - rem;
+        struct libdivide_32_div_16_result_t proposed_m = libdivide_32_div_16_to_16((uint16_t)1 << (floor_log_2_d - 1), 0, absD);
+        const uint16_t e = absD - proposed_m.rem;
 
         // We are going to start with a power of floor_log_2_d - 1.
         // This works if works if e < 2**floor_log_2_d.
@@ -1193,14 +1196,14 @@ static LIBDIVIDE_INLINE struct libdivide_s16_t libdivide_internal_s16_gen(
             // We need to go one higher. This should not make proposed_m
             // overflow, but it will make it negative when interpreted as an
             // int16_t.
-            proposed_m += proposed_m;
-            const uint16_t twice_rem = rem + rem;
-            if (twice_rem >= absD || twice_rem < rem) proposed_m += 1;
+            proposed_m.quot += proposed_m.quot;
+            const uint16_t twice_rem = proposed_m.rem + proposed_m.rem;
+            if (twice_rem >= absD || twice_rem < proposed_m.rem) proposed_m.quot += 1;
             more = (uint8_t)(floor_log_2_d | LIBDIVIDE_ADD_MARKER);
         }
 
-        proposed_m += 1;
-        int16_t magic = (int16_t)proposed_m;
+        proposed_m.quot += 1;
+        int16_t magic = (int16_t)proposed_m.quot;
 
         // Mark if we are negative. Note we only negate the magic number in the
         // branchfull case.
@@ -1350,9 +1353,8 @@ static LIBDIVIDE_INLINE struct libdivide_s32_t libdivide_internal_s32_gen(
         uint8_t more;
         // the dividend here is 2**(floor_log_2_d + 31), so the low 32 bit word
         // is 0 and the high word is floor_log_2_d - 1
-        uint32_t rem, proposed_m;
-        proposed_m = libdivide_64_div_32_to_32((uint32_t)1 << (floor_log_2_d - 1), 0, absD, &rem);
-        const uint32_t e = absD - rem;
+        struct libdivide_64_div_32_result_t proposed_m = libdivide_64_div_32_to_32((uint32_t)1 << (floor_log_2_d - 1), 0, absD);
+        const uint32_t e = absD - proposed_m.rem;
 
         // We are going to start with a power of floor_log_2_d - 1.
         // This works if works if e < 2**floor_log_2_d.
@@ -1363,14 +1365,14 @@ static LIBDIVIDE_INLINE struct libdivide_s32_t libdivide_internal_s32_gen(
             // We need to go one higher. This should not make proposed_m
             // overflow, but it will make it negative when interpreted as an
             // int32_t.
-            proposed_m += proposed_m;
-            const uint32_t twice_rem = rem + rem;
-            if (twice_rem >= absD || twice_rem < rem) proposed_m += 1;
+            proposed_m.quot += proposed_m.quot;
+            const uint32_t twice_rem = proposed_m.rem + proposed_m.rem;
+            if (twice_rem >= absD || twice_rem < proposed_m.rem) proposed_m.quot += 1;
             more = (uint8_t)(floor_log_2_d | LIBDIVIDE_ADD_MARKER);
         }
 
-        proposed_m += 1;
-        int32_t magic = (int32_t)proposed_m;
+        proposed_m.quot += 1;
+        int32_t magic = (int32_t)proposed_m.quot;
 
         // Mark if we are negative. Note we only negate the magic number in the
         // branchfull case.
@@ -1515,9 +1517,8 @@ static LIBDIVIDE_INLINE struct libdivide_s64_t libdivide_internal_s64_gen(
         // the dividend here is 2**(floor_log_2_d + 63), so the low 64 bit word
         // is 0 and the high word is floor_log_2_d - 1
         uint8_t more;
-        uint64_t rem, proposed_m;
-        proposed_m = libdivide_128_div_64_to_64((uint64_t)1 << (floor_log_2_d - 1), 0, absD, &rem);
-        const uint64_t e = absD - rem;
+        struct libdivide_128_div_64_result_t proposed_m = libdivide_128_div_64_to_64((uint64_t)1 << (floor_log_2_d - 1), 0, absD);
+        const uint64_t e = absD - proposed_m.rem;
 
         // We are going to start with a power of floor_log_2_d - 1.
         // This works if works if e < 2**floor_log_2_d.
@@ -1528,17 +1529,17 @@ static LIBDIVIDE_INLINE struct libdivide_s64_t libdivide_internal_s64_gen(
             // We need to go one higher. This should not make proposed_m
             // overflow, but it will make it negative when interpreted as an
             // int32_t.
-            proposed_m += proposed_m;
-            const uint64_t twice_rem = rem + rem;
-            if (twice_rem >= absD || twice_rem < rem) proposed_m += 1;
+            proposed_m.quot += proposed_m.quot;
+            const uint64_t twice_rem = proposed_m.rem + proposed_m.rem;
+            if (twice_rem >= absD || twice_rem < proposed_m.rem) proposed_m.quot += 1;
             // note that we only set the LIBDIVIDE_NEGATIVE_DIVISOR bit if we
             // also set ADD_MARKER this is an annoying optimization that
             // enables algorithm #4 to avoid the mask. However we always set it
             // in the branchfree case
             more = (uint8_t)(floor_log_2_d | LIBDIVIDE_ADD_MARKER);
         }
-        proposed_m += 1;
-        int64_t magic = (int64_t)proposed_m;
+        proposed_m.quot += 1;
+        int64_t magic = (int64_t)proposed_m.quot;
 
         // Mark if we are negative
         if (d < 0) {
@@ -1629,8 +1630,7 @@ int64_t libdivide_s64_recover_raw(int64_t magic, uint8_t more) {
 
         uint64_t d = (uint64_t)(magic_was_negated ? -magic : magic);
         uint64_t n_hi = (uint64_t)1 << shift, n_lo = 0;
-        uint64_t rem_ignored;
-        uint64_t q = libdivide_128_div_64_to_64(n_hi, n_lo, d, &rem_ignored);
+        uint64_t q = libdivide_128_div_64_to_64(n_hi, n_lo, d).quot;
         int64_t result = (int64_t)(q + 1);
         if (negative_divisor) {
             result = -result;
