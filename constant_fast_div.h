@@ -23,9 +23,6 @@
 #include "u16_ldparams.h"
 #include "s16_ldparams.h"
 
-#define CAT_HELPER(a, b) a ## b
-#define CONCAT(A, B) CAT_HELPER(A, B)
-
 // GCC will optimise division by a power of 2
 // So allow that.
 #define S16_ISPOW2_NEG(denom) \
