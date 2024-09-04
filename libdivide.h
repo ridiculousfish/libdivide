@@ -304,7 +304,22 @@ static LIBDIVIDE_INLINE int64_t libdivide_mullhi_s64(int64_t x, int64_t y) {
 #endif
 }
 
-static LIBDIVIDE_INLINE int16_t libdivide_count_leading_zeros16(uint16_t val) {
+static LIBDIVIDE_INLINE uint8_t libdivide_count_leading_zeros16_software(uint16_t val) {
+    if (val == 0) return 16;
+    uint8_t result = 4;
+    uint16_t hi = 0xFU << 12;
+    while ((val & hi) == 0) {
+        hi >>= 4;
+        result += 4U;
+    }
+    while (val & hi) {
+        result -= 1U;
+        hi <<= 1;
+    }
+    return result;
+}
+
+static LIBDIVIDE_INLINE uint8_t libdivide_count_leading_zeros16(uint16_t val) {
 #if defined(__AVR__)
     // Fast way to count leading zeros
     // On the AVR 8-bit architecture __builtin_clz() works on a int16_t.
@@ -319,65 +334,66 @@ static LIBDIVIDE_INLINE int16_t libdivide_count_leading_zeros16(uint16_t val) {
     }
     return 0;
 #else
-    if (val == 0) return 16;
-    int16_t result = 4;
-    uint16_t hi = 0xFU << 12;
-    while ((val & hi) == 0) {
-        hi >>= 4;
-        result += 4;
-    }
-    while (val & hi) {
-        result -= 1;
-        hi <<= 1;
-    }
-    return result;
+    return libdivide_count_leading_zeros16_software(val);
 #endif
 }
 
-static LIBDIVIDE_INLINE int32_t libdivide_count_leading_zeros32(uint32_t val) {
+static LIBDIVIDE_INLINE uint8_t libdivide_count_leading_zeros32_software(uint32_t val) {
+    if (val == 0) return 32U;
+    uint8_t result = 8;
+    uint32_t hi = 0xFFU << 24U;
+    while ((val & hi) == 0) {
+        hi >>= 8;
+        result += 8U;
+    }
+    while (val & hi) {
+        result -= 1U;
+        hi <<= 1;
+    }
+    return (uint8_t)result;
+}
+
+static LIBDIVIDE_INLINE uint8_t libdivide_count_leading_zeros32(uint32_t val) {
 #if defined(__AVR__)
     // Fast way to count leading zeros
-    return __builtin_clzl(val);
+    return (uint8_t)__builtin_clzl(val);
 #elif defined(__GNUC__) || __has_builtin(__builtin_clz)
     // Fast way to count leading zeros
-    return __builtin_clz(val);
+    return (uint8_t)__builtin_clz(val);
 #elif defined(LIBDIVIDE_VC)
     unsigned long result;
     if (_BitScanReverse(&result, val)) {
-        return 31 - result;
+        return (uint8_t)(31U - result);
     }
     return 0;
 #else
-    if (val == 0) return 32;
-    int32_t result = 8;
-    uint32_t hi = 0xFFU << 24;
-    while ((val & hi) == 0) {
-        hi >>= 8;
-        result += 8;
-    }
-    while (val & hi) {
-        result -= 1;
-        hi <<= 1;
-    }
-    return result;
+    return libdivide_count_leading_zeros32_software(val);
 #endif
 }
 
-static LIBDIVIDE_INLINE int32_t libdivide_count_leading_zeros64(uint64_t val) {
+
+static LIBDIVIDE_INLINE uint8_t libdivide_count_leading_zeros64_software(uint64_t val) {
+    uint32_t hi = val >> 32;
+    uint32_t lo = val & 0xFFFFFFFF;
+    if (hi != 0) return libdivide_count_leading_zeros32_software(hi);
+    return 32U + libdivide_count_leading_zeros32_software(lo);
+}
+
+static LIBDIVIDE_INLINE uint8_t libdivide_count_leading_zeros64(uint64_t val) {
 #if defined(__GNUC__) || __has_builtin(__builtin_clzll)
     // Fast way to count leading zeros
-    return __builtin_clzll(val);
+    return (uint8_t)__builtin_clzll(val);
 #elif defined(LIBDIVIDE_VC) && defined(_WIN64)
     unsigned long result;
     if (_BitScanReverse64(&result, val)) {
-        return 63 - result;
+        return (uint8_t)(63U - result);
     }
     return 0;
 #else
     uint32_t hi = val >> 32;
     uint32_t lo = val & 0xFFFFFFFF;
     if (hi != 0) return libdivide_count_leading_zeros32(hi);
-    return 32 + libdivide_count_leading_zeros32(lo);
+    return 32U + libdivide_count_leading_zeros32(lo);
 #endif
 }
 
