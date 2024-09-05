@@ -344,7 +344,7 @@ static LIBDIVIDE_INLINE int64_t libdivide_mullhi_s64(int64_t x, int64_t y) {
 #endif
 }
 
-static LIBDIVIDE_INLINE uint8_t libdivide_count_leading_zeros16_software(uint16_t val) {
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE uint8_t libdivide_count_leading_zeros16_software(uint16_t val) {
     if (val == 0) return 16;
     uint8_t result = 4;
     uint16_t hi = 0xFU << 12;
@@ -444,7 +444,7 @@ struct libdivide_32_div_16_result_t {
 // libdivide_32_div_16_to_16: divides a 32-bit uint {u1, u0} by a 16-bit
 // uint {v}. The result must fit in 16 bits.
 // Returns the quotient directly and the remainder in *r
-static LIBDIVIDE_INLINE struct libdivide_32_div_16_result_t libdivide_32_div_16_to_16(
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_32_div_16_result_t libdivide_32_div_16_to_16(
     uint16_t u1, uint16_t u0, uint16_t v) {
     uint32_t n = ((uint32_t)u1 << 16) | u0;
     struct libdivide_32_div_16_result_t result = { 0U, 0U };
@@ -730,31 +730,29 @@ static LIBDIVIDE_INLINE uint64_t libdivide_128_div_128_to_64(
 
 ////////// UINT16
 
-static LIBDIVIDE_INLINE struct libdivide_u16_t libdivide_internal_u16_gen(
-    uint16_t d, int branchfree) {
-    if (d == 0) {
-        LIBDIVIDE_ERROR("divider must be != 0");
-    }
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE bool libdivide_internal_u16_ispow2(uint16_t d) {
+    return (d & (d - 1)) == 0;
+}
 
-    struct libdivide_u16_t result;
-    uint8_t floor_log_2_d = (uint8_t)(15 - libdivide_count_leading_zeros16(d));
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE uint8_t libdivide_internal_u16_floor_log_2_d(uint8_t leading_zeroes) {
+    return (uint8_t)15U - leading_zeroes;
+}
 
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_u16_t libdivide_internal_u16_gen_gen(
+    uint16_t d, bool branchfree, uint8_t floor_log_2_d, struct libdivide_32_div_16_result_t proposed_m) {
     // Power of 2
-    if ((d & (d - 1)) == 0) {
+    if (libdivide_internal_u16_ispow2(d)) {
         // We need to subtract 1 from the shift value in case of an unsigned
         // branchfree divider because there is a hardcoded right shift by 1
         // in its division algorithm. Because of this we also need to add back
         // 1 in its recovery algorithm.
-        result.magic = 0;
-        result.more = (uint8_t)(floor_log_2_d - (branchfree != 0));
+        return libdivide_internal_construct_u16(0U, (uint8_t)(floor_log_2_d - (branchfree ? 1U : 0U)));
     } else {
-        uint8_t more;
-        struct libdivide_32_div_16_result_t proposed_m = libdivide_32_div_16_to_16((uint16_t)1 << floor_log_2_d, 0, d);
-
         LIBDIVIDE_ASSERT(proposed_m.rem > 0 && proposed_m.rem < d);
         const uint16_t e = d - proposed_m.rem;
 
         // This power works if e < 2**floor_log_2_d.
+        uint8_t more = 0U;
         if (!branchfree && (e < ((uint16_t)1 << floor_log_2_d))) {
             // This power works
             more = floor_log_2_d;
@@ -769,15 +767,24 @@ static LIBDIVIDE_INLINE struct libdivide_u16_t libdivide_internal_u16_gen(
             if (twice_rem >= d || twice_rem < proposed_m.rem) proposed_m.quot += 1;
             more = floor_log_2_d | LIBDIVIDE_ADD_MARKER;
         }
-        result.magic = 1 + proposed_m.quot;
-        result.more = more;
+        return libdivide_internal_construct_u16(1U + proposed_m.quot, more);
         // result.more's shift should in general be ceil_log_2_d. But if we
         // used the smaller power, we subtract one from the shift because we're
         // using the smaller power. If we're using the larger power, we
         // subtract one from the shift because it's taken care of by the add
         // indicator. So floor_log_2_d happens to be correct in both cases.
     }
-    return result;
+}
+static LIBDIVIDE_INLINE struct libdivide_u16_t libdivide_internal_u16_gen(
+    uint16_t d, int branchfree) {
+    if (d == 0) {
+        LIBDIVIDE_ERROR("divider must be != 0");
+    }
+
+    uint8_t floor_log_2_d = libdivide_internal_u16_floor_log_2_d(libdivide_count_leading_zeros16(d));
+    struct libdivide_32_div_16_result_t null_proposed_m = { 0U, 0U };
+    struct libdivide_32_div_16_result_t proposed_m = libdivide_internal_u16_ispow2(d) ? null_proposed_m : libdivide_32_div_16_to_16((uint16_t)1 << floor_log_2_d, 0, d);
+    return libdivide_internal_u16_gen_gen(d, branchfree, floor_log_2_d, proposed_m);
 }
 
 struct libdivide_u16_t libdivide_u16_gen(uint16_t d) {
@@ -789,10 +796,33 @@ struct libdivide_u16_branchfree_t libdivide_u16_branchfree_gen(uint16_t d) {
         LIBDIVIDE_ERROR("branchfree divider must be != 1");
     }
     struct libdivide_u16_t tmp = libdivide_internal_u16_gen(d, 1);
-    struct libdivide_u16_branchfree_t ret = {
-        tmp.magic, (uint8_t)(tmp.more & LIBDIVIDE_16_SHIFT_MASK)};
-    return ret;
+    return libdivide_internal_construct_u16_branchfree(tmp.magic, (uint8_t)(tmp.more & LIBDIVIDE_16_SHIFT_MASK));
 }
+
+#if LIBDIVIDE_HAS_CONSTEXPR!=0
+
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_u16_t libdivide_internal_u16_gen_c(
+    uint16_t d, bool branchfree) {
+    if (d == 0) {
+        LIBDIVIDE_ERROR("divider must be != 0");
+    }
+
+    uint8_t floor_log_2_d = libdivide_internal_u16_floor_log_2_d(libdivide_count_leading_zeros16_software(d));
+    struct libdivide_32_div_16_result_t null_proposed_m = { 0U, 0U };
+    struct libdivide_32_div_16_result_t proposed_m = libdivide_internal_u16_ispow2(d) ? null_proposed_m : libdivide_32_div_16_to_16((uint16_t)1 << floor_log_2_d, 0, d);
+    return libdivide_internal_u16_gen_gen(d, branchfree, floor_log_2_d, proposed_m);
+}
+
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_u16_t libdivide_u16_gen_c(uint16_t d) {
+    return libdivide_internal_u16_gen_c(d, false);
+}
+
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_u16_branchfree_t libdivide_u16_branchfree_gen_c(uint16_t d) {
+    struct libdivide_u16_t tmp = libdivide_internal_u16_gen_c(d, true);
+    return libdivide_internal_construct_u16_branchfree(tmp.magic, (uint8_t)(tmp.more & LIBDIVIDE_32_SHIFT_MASK));
+}
+
+#endif
 
 // The original libdivide_u16_do takes a const pointer. However, this cannot be used
 // with a compile time constant libdivide_u16_t: it will generate a warning about
@@ -954,11 +984,8 @@ struct libdivide_u32_branchfree_t libdivide_u32_branchfree_gen(uint32_t d) {
         LIBDIVIDE_ERROR("branchfree divider must be != 1");
     }
     struct libdivide_u32_t tmp = libdivide_internal_u32_gen(d, 1);
-    struct libdivide_u32_branchfree_t ret = {
-        tmp.magic, (uint8_t)(tmp.more & LIBDIVIDE_32_SHIFT_MASK)};
-    return ret;
+    return libdivide_internal_construct_u32_branchfree(tmp.magic, (uint8_t)(tmp.more & LIBDIVIDE_32_SHIFT_MASK));
 }
-
 
 #if LIBDIVIDE_HAS_CONSTEXPR!=0
 

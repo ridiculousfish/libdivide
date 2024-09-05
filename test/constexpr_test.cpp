@@ -30,14 +30,12 @@ void test_constexpr(void) {
     //     assert_constexpr(libdivide::libdivide_s16_do(dividend, constexprS16), dividend, divisor);
     //     std::cout << "Branch free "; assert_constexpr(libdivide::libdivide_s16_branchfree_do(dividend, constexprS16BF), dividend, divisor);
     // }
-    // {
-    //     constexpr uint16_t dividend = 17359;
-    //     constexpr uint16_t divisor = 99;
-    //     constexpr auto constexprU16 = libdivide::libdivide_u16_gen(divisor);
-    //     assert_constexpr(libdivide::libdivide_u16_do(dividend, constexprU16), dividend, divisor);
-    //     constexpr auto constexprU16BF = libdivide::libdivide_u16_branchfree_gen(divisor);
-    //     std::cout << "Branch free "; assert_constexpr(libdivide::libdivide_u16_branchfree_do(dividend, constexprU16BF), dividend, divisor);
-    // }
+    {
+        constexpr uint16_t dividend = 17359;
+        uint16_t divisor = libdivide::libdivide_u16_recover(constexprU16);
+        assert_constexpr(libdivide::libdivide_u16_do(dividend, constexprU16), dividend, divisor);
+        std::cout << "Branch free "; assert_constexpr(libdivide::libdivide_u16_branchfree_do(dividend, constexprU16BF), dividend, divisor);
+    }
     {
         constexpr int32_t dividend = INT32_MAX/7U;
         int32_t divisor = libdivide::libdivide_s32_recover(constexprS32);
