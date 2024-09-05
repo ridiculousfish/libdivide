@@ -1,16 +1,27 @@
-#include <iostream>
 #include "constexpr_test.h"
-
+#include "outputs.h"
 
 template <typename _IntT>
 static void assert_constexpr(_IntT result, _IntT dividend, _IntT divisor) {
     _IntT expected = dividend / divisor;
-    std::cout << typeid(_IntT).name() << " constexpr generation: " 
-        << dividend << " / " << divisor << " = "  << result 
-        << " (" << expected << (result==expected ? ") passed" : ") **FAILED") << std::endl;
+    PRINT_INFO(F("Testing constexpr generation: "));
+    PRINT_INFO(__PRETTY_FUNCTION__);
+    PRINT_INFO(": ");
+    PRINT_INFO(dividend);
+    PRINT_INFO(" / ");
+    PRINT_INFO(divisor);
+    PRINT_INFO(" = ");
+    PRINT_INFO(expected);
+    if (result!=expected) {
+        PRINT_ERROR(F(" FAILED  ("));
+        PRINT_ERROR(result);
+        PRINT_ERROR(F(")"));
+        PRINT_ERROR(F("\n"));
+        exit(1);
+    } else {
+        PRINT_INFO(F("\n"));
+    }
 }
-
-
 void test_constexpr(void) {
     // {
     //     constexpr int16_t dividend = -17359;
@@ -42,14 +53,12 @@ void test_constexpr(void) {
     //     constexpr auto constexprU32BF = libdivide::libdivide_u32_branchfree_gen(divisor);
     //     std::cout << "Branch free "; assert_constexpr(libdivide::libdivide_u32_branchfree_do(dividend, constexprU32BF), dividend, divisor);
     // }   
-    // {
-    //     constexpr int64_t dividend = INT64_MAX/7U;
-    //     constexpr int64_t divisor = INT64_MAX/-123;
-    //     constexpr auto constexprS64 = libdivide::libdivide_s64_gen(divisor);
-    //     assert_constexpr(libdivide::libdivide_s64_do(dividend, constexprS64), dividend, divisor);
-    //     constexpr auto constexprS64BF = libdivide::libdivide_s64_branchfree_gen(divisor);
-    //     std::cout << "Branch free "; assert_constexpr(libdivide::libdivide_s64_branchfree_do(dividend, constexprS64BF), dividend, divisor);
-    // } 
+    {
+        constexpr int64_t dividend = INT64_MAX/7U;
+        int64_t divisor = libdivide::libdivide_s64_recover(constexprS64);
+        assert_constexpr(libdivide::libdivide_s64_do(dividend, constexprS64), dividend, divisor);
+        std::cout << "Branch free "; assert_constexpr(libdivide::libdivide_s64_branchfree_do(dividend, constexprS64BF), dividend, divisor);
+    } 
     {
         constexpr uint64_t dividend = UINT64_MAX/7U;
         uint64_t divisor = libdivide::libdivide_u64_recover(constexprU64);

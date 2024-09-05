@@ -1579,38 +1579,37 @@ WRAPPER_FUNCTION_IMPLEMENTATIONS(s32, int32_t)
 
 ///////////// SINT64
 
-static LIBDIVIDE_INLINE struct libdivide_s64_t libdivide_internal_s64_gen(
-    int64_t d, int branchfree) {
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE uint64_t libdivide_internal_s64_abs(int64_t d) {
+    uint64_t ud = (uint64_t)d;
+    return (d < 0) ? -ud : ud;    
+}
+
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_s64_t libdivide_internal_s64_gen_gen(
+    int64_t d, bool branchfree, uint32_t floor_log_2_d, struct libdivide_128_div_64_result_t proposed_m) {
     if (d == 0) {
         LIBDIVIDE_ERROR("divider must be != 0");
     }
-
-    struct libdivide_s64_t result;
-
     // If d is a power of 2, or negative a power of 2, we have to use a shift.
     // This is especially important because the magic algorithm fails for -1.
     // To check if d is a power of 2 or its inverse, it suffices to check
     // whether its absolute value has exactly one bit set.  This works even for
     // INT_MIN, because abs(INT_MIN) == INT_MIN, and INT_MIN has one bit set
     // and is a power of 2.
-    uint64_t ud = (uint64_t)d;
-    uint64_t absD = (d < 0) ? -ud : ud;
-    uint32_t floor_log_2_d = 63 - libdivide_count_leading_zeros64(absD);
+    uint64_t absD = libdivide_internal_s64_abs(d);
+
     // check if exactly one bit is set,
     // don't care if absD is 0 since that's divide by zero
-    if ((absD & (absD - 1)) == 0) {
+    if (libdivide_internal_u64_ispow2(absD)) {
         // Branchfree and non-branchfree cases are the same
-        result.magic = 0;
-        result.more = (uint8_t)(floor_log_2_d | (d < 0 ? LIBDIVIDE_NEGATIVE_DIVISOR : 0));
+        return libdivide_internal_construct_s64(0, (uint8_t)(floor_log_2_d | (d < 0 ? LIBDIVIDE_NEGATIVE_DIVISOR : 0)));
     } else {
         // the dividend here is 2**(floor_log_2_d + 63), so the low 64 bit word
         // is 0 and the high word is floor_log_2_d - 1
-        uint8_t more;
-        struct libdivide_128_div_64_result_t proposed_m = libdivide_128_div_64_to_64((uint64_t)1 << (floor_log_2_d - 1), 0, absD);
         const uint64_t e = absD - proposed_m.rem;
 
         // We are going to start with a power of floor_log_2_d - 1.
         // This works if works if e < 2**floor_log_2_d.
+        uint8_t more = 0U;
         if (!branchfree && e < ((uint64_t)1 << floor_log_2_d)) {
             // This power works
             more = (uint8_t)(floor_log_2_d - 1);
@@ -1638,21 +1637,58 @@ static LIBDIVIDE_INLINE struct libdivide_s64_t libdivide_internal_s64_gen(
             }
         }
 
-        result.more = more;
-        result.magic = magic;
+        return libdivide_internal_construct_s64(magic, more);
     }
-    return result;
+}
+
+static LIBDIVIDE_INLINE struct libdivide_s64_t libdivide_internal_s64_gen(int64_t d, bool branchfree) {
+    if (d == 0) {
+        LIBDIVIDE_ERROR("divider must be != 0");
+    }
+
+    uint64_t absD = libdivide_internal_s64_abs(d);
+    uint32_t floor_log_2_d = libdivide_internal_u64_floor_log_2_d(libdivide_count_leading_zeros64(absD));
+    struct libdivide_128_div_64_result_t null_proposed_m = { 0U, 0U };
+    struct libdivide_128_div_64_result_t proposed_m = libdivide_internal_u64_ispow2(absD) ? null_proposed_m : libdivide_128_div_64_to_64((uint64_t)1 << (floor_log_2_d - 1), 0, absD);
+    return libdivide_internal_s64_gen_gen(d, branchfree, floor_log_2_d, proposed_m);
 }
 
 struct libdivide_s64_t libdivide_s64_gen(int64_t d) {
-    return libdivide_internal_s64_gen(d, 0);
+    return libdivide_internal_s64_gen(d, false);
 }
 
 struct libdivide_s64_branchfree_t libdivide_s64_branchfree_gen(int64_t d) {
-    struct libdivide_s64_t tmp = libdivide_internal_s64_gen(d, 1);
-    struct libdivide_s64_branchfree_t ret = {tmp.magic, tmp.more};
-    return ret;
+    struct libdivide_s64_t tmp = libdivide_internal_s64_gen(d, true);
+    return libdivide_internal_construct_s64_branchfree(tmp.magic, tmp.more);
 }
+
+#if LIBDIVIDE_HAS_CONSTEXPR!=0
+
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_s64_t libdivide_internal_s64_gen_c(
+    uint64_t d, bool branchfree) {
+    if (d == 0) {
+        LIBDIVIDE_ERROR("divider must be != 0");
+    }
+
+    uint64_t absD = libdivide_internal_s64_abs(d);
+    uint8_t leading_zeroes = libdivide_count_leading_zeros64_software(absD);
+    uint32_t floor_log_2_d = libdivide_internal_u64_floor_log_2_d(leading_zeroes);
+    struct libdivide_128_div_64_result_t null_proposed_m = { 0U, 0U };
+    struct libdivide_128_div_64_result_t proposed_m = libdivide_internal_u64_ispow2(absD) ? null_proposed_m : libdivide_128_div_64_to_64_software((uint64_t)1 << (floor_log_2_d - 1), 0, absD, leading_zeroes);
+    return libdivide_internal_s64_gen_gen(d, branchfree, floor_log_2_d, proposed_m);
+}
+
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_s64_t libdivide_s64_gen_c(int64_t d) {
+    return libdivide_internal_s64_gen_c(d, false);
+}
+
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_s64_branchfree_t libdivide_s64_branchfree_gen_c(int64_t d) {
+    struct libdivide_s64_t tmp = libdivide_internal_s64_gen_c(d, true);
+    return libdivide_internal_construct_s64_branchfree(tmp.magic, tmp.more);
+}
+
+#endif
+
 
 int64_t libdivide_s64_do_raw(int64_t numer, int64_t magic, uint8_t more) {
     uint8_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
