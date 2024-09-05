@@ -16,6 +16,7 @@
 #define LIBDIVIDE_VERSION_MINOR 1
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #if !defined(__AVR__)
 #include <stdio.h>
@@ -112,6 +113,32 @@
 #define LIBDIVIDE_ASSERT(x)
 #endif
 
+//for constexpr zero initialization,
+//c++11 might handle things ok,
+//but just limit to at least c++14 to ensure
+//we don't break anyone's code:
+
+// for gcc and clang, use https://en.cppreference.com/w/cpp/feature_test#cpp_constexpr
+#if (defined(__GNUC__) || defined(__clang__)) && (__cpp_constexpr >= 201304L)
+#define LIBDIVIDE_CONSTEXPR constexpr
+#define LIBDIVIDE_HAS_CONSTEXPR 1
+
+// supposedly, MSVC might not implement feature test macros right (https://stackoverflow.com/questions/49316752/feature-test-macros-not-working-properly-in-visual-c)
+// so check that _MSVC_LANG corresponds to at least c++14, and _MSC_VER corresponds to at least VS 2017 15.0 (for extended constexpr support https://learn.microsoft.com/en-us/cpp/overview/visual-cpp-language-conformance?view=msvc-170)
+#elif defined(_MSC_VER) && _MSC_VER >= 1910 && defined(_MSVC_LANG) && _MSVC_LANG >=201402L
+#define LIBDIVIDE_CONSTEXPR constexpr
+#define LIBDIVIDE_HAS_CONSTEXPR 1
+
+// in case some other obscure compiler has the right __cpp_constexpr :
+#elif defined(__cpp_constexpr) && __cpp_constexpr >= 201304L
+#define LIBDIVIDE_CONSTEXPR constexpr
+#define LIBDIVIDE_HAS_CONSTEXPR 1
+
+#else
+#define LIBDIVIDE_CONSTEXPR
+#define LIBDIVIDE_HAS_CONSTEXPR 0
+#endif
+
 #ifdef __cplusplus
 namespace libdivide {
 #endif
@@ -167,6 +194,17 @@ enum {
 #define STRUCT_NAME(tag) _STRUCT_NAME(tag, STRUCT_POSTFIX)
 #define STRUCT_BRANCHFREE_NAME(tag) _STRUCT_NAME(tag, BRANCHFREE_POSTFIX)
 
+#define INLINE_CONSTRUCT_STRUCT(tag, type) \
+    static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct STRUCT_NAME(tag) libdivide_internal_construct_ ##tag (type magic, uint8_t more) { \
+        struct STRUCT_NAME(tag) result =  { magic, more }; \
+        return result; \
+    }
+#define INLINE_CONSTRUCT_STRUCT_BRANCHFREE(tag, type) \
+    static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct STRUCT_BRANCHFREE_NAME(tag) libdivide_internal_construct_ ##tag ##_branchfree(type magic, uint8_t more) { \
+        struct STRUCT_BRANCHFREE_NAME(tag) result =  { magic, more }; \
+        return result; \
+    }
+
 // pack divider structs to prevent compilers from padding.
 // This reduces memory usage by up to 43% when using a large
 // array of libdivide dividers and improves performance
@@ -177,10 +215,12 @@ enum {
         type magic; \
         uint8_t more; \
     }; \
+    INLINE_CONSTRUCT_STRUCT(tag, type) \
     struct STRUCT_BRANCHFREE_NAME(tag) { \
         type magic; \
         uint8_t more; \
     }; \
+    INLINE_CONSTRUCT_STRUCT_BRANCHFREE(tag, type) \
     _Pragma("pack(pop)")
 
 #define FUNC_NAME_BUILDER(tag, postfix) CONCAT(libdivide_, CONCAT(tag, postfix))
@@ -338,7 +378,7 @@ static LIBDIVIDE_INLINE uint8_t libdivide_count_leading_zeros16(uint16_t val) {
 #endif
 }
 
-static LIBDIVIDE_INLINE uint8_t libdivide_count_leading_zeros32_software(uint32_t val) {
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE uint8_t libdivide_count_leading_zeros32_software(uint32_t val) {
     if (val == 0) return 32U;
     uint8_t result = 8;
     uint32_t hi = 0xFFU << 24U;
@@ -372,7 +412,7 @@ static LIBDIVIDE_INLINE uint8_t libdivide_count_leading_zeros32(uint32_t val) {
 }
 
 
-static LIBDIVIDE_INLINE uint8_t libdivide_count_leading_zeros64_software(uint64_t val) {
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE uint8_t libdivide_count_leading_zeros64_software(uint64_t val) {
     uint32_t hi = val >> 32;
     uint32_t lo = val & 0xFFFFFFFF;
     if (hi != 0) return libdivide_count_leading_zeros32_software(hi);
@@ -446,7 +486,7 @@ struct libdivide_128_div_64_result_t {
     uint64_t rem;
 };
 
-static LIBDIVIDE_INLINE struct libdivide_128_div_64_result_t libdivide_128_div_64_to_64_software(
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_128_div_64_result_t libdivide_128_div_64_to_64_software(
     uint64_t numhi, uint64_t numlo, uint64_t den, int32_t leading_zeroes) {
 
     // Check for overflow and divide by 0.
@@ -1002,32 +1042,30 @@ WRAPPER_FUNCTION_IMPLEMENTATIONS(u32, uint32_t)
 
 /////////// UINT64
 
-static LIBDIVIDE_INLINE struct libdivide_u64_t libdivide_internal_u64_gen(
-    uint64_t d, int branchfree) {
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE bool libdivide_internal_u64_ispow2(uint64_t d) {
+    return (d & (d - 1)) == 0;
+}
+
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_u64_t libdivide_internal_u64_gen_gen(
+    uint64_t d, bool branchfree, uint32_t floor_log_2_d, struct libdivide_128_div_64_result_t proposed_m) {
     if (d == 0) {
         LIBDIVIDE_ERROR("divider must be != 0");
     }
 
-    struct libdivide_u64_t result;
-    uint32_t floor_log_2_d = 63 - libdivide_count_leading_zeros64(d);
-
     // Power of 2
-    if ((d & (d - 1)) == 0) {
+    if (libdivide_internal_u64_ispow2(d)) {
         // We need to subtract 1 from the shift value in case of an unsigned
         // branchfree divider because there is a hardcoded right shift by 1
         // in its division algorithm. Because of this we also need to add back
         // 1 in its recovery algorithm.
-        result.magic = 0;
-        result.more = (uint8_t)(floor_log_2_d - (branchfree != 0));
+        return libdivide_internal_construct_u64(0U, (uint8_t)(floor_log_2_d - (branchfree ? 1U : 0U)));
     } else {
-        uint8_t more;
         // (1 << (64 + floor_log_2_d)) / d
-        struct libdivide_128_div_64_result_t proposed_m = libdivide_128_div_64_to_64((uint64_t)1 << floor_log_2_d, 0, d);
-
         LIBDIVIDE_ASSERT(proposed_m.rem > 0 && proposed_m.rem < d);
         const uint64_t e = d - proposed_m.rem;
 
         // This power works if e < 2**floor_log_2_d.
+        uint8_t more = 0U;
         if (!branchfree && e < ((uint64_t)1 << floor_log_2_d)) {
             // This power works
             more = (uint8_t)floor_log_2_d;
@@ -1042,31 +1080,66 @@ static LIBDIVIDE_INLINE struct libdivide_u64_t libdivide_internal_u64_gen(
             if (twice_rem >= d || twice_rem < proposed_m.rem) proposed_m.quot += 1;
             more = (uint8_t)(floor_log_2_d | LIBDIVIDE_ADD_MARKER);
         }
-        result.magic = 1 + proposed_m.quot;
-        result.more = more;
         // result.more's shift should in general be ceil_log_2_d. But if we
         // used the smaller power, we subtract one from the shift because we're
         // using the smaller power. If we're using the larger power, we
         // subtract one from the shift because it's taken care of by the add
         // indicator. So floor_log_2_d happens to be correct in both cases,
         // which is why we do it outside of the if statement.
+        return libdivide_internal_construct_u64(1 + proposed_m.quot, more);
     }
-    return result;
+}
+
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE uint8_t libdivide_internal_u64_floor_log_2_d(uint8_t leading_zeroes) {
+    return (uint8_t)63U - leading_zeroes;
+}
+
+static LIBDIVIDE_INLINE struct libdivide_u64_t libdivide_internal_u64_gen(
+    uint64_t d, bool branchfree) {
+    if (d == 0) {
+        LIBDIVIDE_ERROR("divider must be != 0");
+    }
+
+    uint32_t floor_log_2_d = libdivide_internal_u64_floor_log_2_d(libdivide_count_leading_zeros64(d));
+    struct libdivide_128_div_64_result_t null_proposed_m = { 0U, 0U };
+    struct libdivide_128_div_64_result_t proposed_m = libdivide_internal_u64_ispow2(d) ? null_proposed_m : libdivide_128_div_64_to_64((uint64_t)1 << floor_log_2_d, 0, d);  
+    return libdivide_internal_u64_gen_gen(d, branchfree, floor_log_2_d, proposed_m);
 }
 
 struct libdivide_u64_t libdivide_u64_gen(uint64_t d) {
-    return libdivide_internal_u64_gen(d, 0);
+    return libdivide_internal_u64_gen(d, false);
 }
 
 struct libdivide_u64_branchfree_t libdivide_u64_branchfree_gen(uint64_t d) {
-    if (d == 1) {
-        LIBDIVIDE_ERROR("branchfree divider must be != 1");
-    }
-    struct libdivide_u64_t tmp = libdivide_internal_u64_gen(d, 1);
-    struct libdivide_u64_branchfree_t ret = {
-        tmp.magic, (uint8_t)(tmp.more & LIBDIVIDE_64_SHIFT_MASK)};
-    return ret;
+    struct libdivide_u64_t tmp = libdivide_internal_u64_gen(d, true);
+    return libdivide_internal_construct_u64_branchfree(tmp.magic, (uint8_t)(tmp.more & LIBDIVIDE_64_SHIFT_MASK));
 }
+
+#if LIBDIVIDE_HAS_CONSTEXPR!=0
+
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_u64_t libdivide_internal_u64_gen_c(
+    uint64_t d, bool branchfree) {
+    if (d == 0) {
+        LIBDIVIDE_ERROR("divider must be != 0");
+    }
+
+    uint8_t leading_zeroes = libdivide_count_leading_zeros64_software(d);
+    uint32_t floor_log_2_d = libdivide_internal_u64_floor_log_2_d(leading_zeroes);
+    struct libdivide_128_div_64_result_t null_proposed_m = { 0U, 0U };
+    struct libdivide_128_div_64_result_t proposed_m = libdivide_internal_u64_ispow2(d) ? null_proposed_m : libdivide_128_div_64_to_64_software((uint64_t)1 << floor_log_2_d, 0, d, leading_zeroes);  
+    return libdivide_internal_u64_gen_gen(d, branchfree, floor_log_2_d, proposed_m);
+}
+
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_u64_t libdivide_u64_gen_c(uint64_t d) {
+    return libdivide_internal_u64_gen_c(d, false);
+}
+
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_u64_branchfree_t libdivide_u64_branchfree_gen_c(uint64_t d) {
+    struct libdivide_u64_t tmp = libdivide_internal_u64_gen_c(d, true);
+    return libdivide_internal_construct_u64_branchfree(tmp.magic, (uint8_t)(tmp.more & LIBDIVIDE_64_SHIFT_MASK));
+}
+
+#endif
 
 uint64_t libdivide_u64_do_raw(uint64_t numer, uint64_t magic, uint8_t more) {
     if (!magic) {
@@ -2944,28 +3017,6 @@ __m128i libdivide_s64_branchfree_do_vec128(
 /////////// C++ stuff
 
 #ifdef __cplusplus
-
-//for constexpr zero initialization,
-//c++11 might handle things ok,
-//but just limit to at least c++14 to ensure
-//we don't break anyone's code:
-
-// for gcc and clang, use https://en.cppreference.com/w/cpp/feature_test#cpp_constexpr
-#if (defined(__GNUC__) || defined(__clang__)) && (__cpp_constexpr >= 201304L)
-#define LIBDIVIDE_CONSTEXPR constexpr
-
-// supposedly, MSVC might not implement feature test macros right (https://stackoverflow.com/questions/49316752/feature-test-macros-not-working-properly-in-visual-c)
-// so check that _MSVC_LANG corresponds to at least c++14, and _MSC_VER corresponds to at least VS 2017 15.0 (for extended constexpr support https://learn.microsoft.com/en-us/cpp/overview/visual-cpp-language-conformance?view=msvc-170)
-#elif defined(_MSC_VER) && _MSC_VER >= 1910 && defined(_MSVC_LANG) && _MSVC_LANG >=201402L
-#define LIBDIVIDE_CONSTEXPR constexpr
-
-// in case some other obscure compiler has the right __cpp_constexpr :
-#elif defined(__cpp_constexpr) && __cpp_constexpr >= 201304L
-#define LIBDIVIDE_CONSTEXPR constexpr
-
-#else
-#define LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE
-#endif
 
 enum Branching {
     BRANCHFULL,  // use branching algorithms

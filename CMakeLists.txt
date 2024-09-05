@@ -271,7 +271,7 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libdivideConfigVersion.cmake"
 if (LIBDIVIDE_BUILD_TESTS)
     find_package(Threads REQUIRED QUIET)
 
-    add_executable(tester test/tester.cpp)
+    add_executable(tester test/tester.cpp test/constexpr_test.cpp)
     add_executable(test_c99 test/test_c99.c)
     add_executable(fast_div_generator test/fast_div_generator.cpp)
     add_executable(benchmark test/benchmark.cpp)

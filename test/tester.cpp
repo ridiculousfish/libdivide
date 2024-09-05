@@ -18,6 +18,7 @@
 
 #include "DivideTest.h"
 #include "libdivide.h"
+#include "constexpr_test.h"
 
 // This is simply a regression test for #96: that the following all compile (and don't crash).
 static void test_primitives_compile() {
@@ -69,6 +70,7 @@ extern "C" int main(int argc, char *argv[]) {
     std::vector<bool> do_tests(6, default_do_test);
 
     test_primitives_compile();
+    test_constexpr();
 
     for (int i = 1; i < argc; i++) {
         const std::string arg(argv[i]);
