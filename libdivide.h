@@ -1304,40 +1304,36 @@ WRAPPER_FUNCTION_IMPLEMENTATIONS(u64, uint64_t)
 
 /////////// SINT16
 
-static LIBDIVIDE_INLINE struct libdivide_s16_t libdivide_internal_s16_gen(
-    int16_t d, int branchfree) {
-    if (d == 0) {
-        LIBDIVIDE_ERROR("divider must be != 0");
-    }
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE uint16_t libdivide_internal_s16_abs(int16_t d) {
+    uint16_t ud = (uint16_t)d;
+    return (d < 0) ? -ud : ud;    
+}
 
-    struct libdivide_s16_t result;
-
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_s16_t libdivide_internal_s16_gen_gen(
+    int16_t d, int branchfree, uint8_t floor_log_2_d, struct libdivide_32_div_16_result_t proposed_m) {
     // If d is a power of 2, or negative a power of 2, we have to use a shift.
     // This is especially important because the magic algorithm fails for -1.
     // To check if d is a power of 2 or its inverse, it suffices to check
     // whether its absolute value has exactly one bit set. This works even for
     // INT_MIN, because abs(INT_MIN) == INT_MIN, and INT_MIN has one bit set
     // and is a power of 2.
-    uint16_t ud = (uint16_t)d;
-    uint16_t absD = (d < 0) ? -ud : ud;
-    uint16_t floor_log_2_d = 15 - libdivide_count_leading_zeros16(absD);
+    uint16_t absD = libdivide_internal_s16_abs(d);
+
     // check if exactly one bit is set,
     // don't care if absD is 0 since that's divide by zero
-    if ((absD & (absD - 1)) == 0) {
+    if (libdivide_internal_u16_ispow2(absD)) {
         // Branchfree and normal paths are exactly the same
-        result.magic = 0;
-        result.more = (uint8_t)(floor_log_2_d | (d < 0 ? LIBDIVIDE_NEGATIVE_DIVISOR : 0));
+        return libdivide_internal_construct_s16(0U, (uint8_t)(floor_log_2_d | (d < 0 ? LIBDIVIDE_NEGATIVE_DIVISOR : 0)));
     } else {
         LIBDIVIDE_ASSERT(floor_log_2_d >= 1);
 
-        uint8_t more;
         // the dividend here is 2**(floor_log_2_d + 31), so the low 16 bit word
         // is 0 and the high word is floor_log_2_d - 1
-        struct libdivide_32_div_16_result_t proposed_m = libdivide_32_div_16_to_16((uint16_t)1 << (floor_log_2_d - 1), 0, absD);
         const uint16_t e = absD - proposed_m.rem;
 
         // We are going to start with a power of floor_log_2_d - 1.
         // This works if works if e < 2**floor_log_2_d.
+        uint8_t more = 0U;
         if (!branchfree && e < ((uint16_t)1 << floor_log_2_d)) {
             // This power works
             more = (uint8_t)(floor_log_2_d - 1);
@@ -1362,22 +1358,56 @@ static LIBDIVIDE_INLINE struct libdivide_s16_t libdivide_internal_s16_gen(
                 magic = -magic;
             }
         }
-
-        result.more = more;
-        result.magic = magic;
+        return libdivide_internal_construct_s16(magic, more);
     }
-    return result;
+}
+static LIBDIVIDE_INLINE struct libdivide_s16_t libdivide_internal_s16_gen(
+    int16_t d, int branchfree) {
+    if (d == 0) {
+        LIBDIVIDE_ERROR("divider must be != 0");
+    }
+
+    uint16_t absD = libdivide_internal_s16_abs(d);
+    uint8_t floor_log_2_d = libdivide_internal_u16_floor_log_2_d(libdivide_count_leading_zeros16(absD));
+    struct libdivide_32_div_16_result_t null_proposed_m = { 0U, 0U };
+    struct libdivide_32_div_16_result_t proposed_m = libdivide_internal_u16_ispow2(absD) ? null_proposed_m : libdivide_32_div_16_to_16((uint16_t)1 << (floor_log_2_d - 1), 0, absD);;
+    return libdivide_internal_s16_gen_gen(d, branchfree, floor_log_2_d, proposed_m);
 }
 
 struct libdivide_s16_t libdivide_s16_gen(int16_t d) {
-    return libdivide_internal_s16_gen(d, 0);
+    return libdivide_internal_s16_gen(d, false);
 }
 
 struct libdivide_s16_branchfree_t libdivide_s16_branchfree_gen(int16_t d) {
-    struct libdivide_s16_t tmp = libdivide_internal_s16_gen(d, 1);
-    struct libdivide_s16_branchfree_t result = {tmp.magic, tmp.more};
-    return result;
+    struct libdivide_s16_t tmp = libdivide_internal_s16_gen(d, true);
+    return libdivide_internal_construct_s16_branchfree(tmp.magic, tmp.more);
 }
+
+#if LIBDIVIDE_HAS_CONSTEXPR!=0
+
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_s16_t libdivide_internal_s16_gen_c(
+    int16_t d, bool branchfree) {
+    if (d == 0) {
+        LIBDIVIDE_ERROR("divider must be != 0");
+    }
+
+    uint16_t absD = libdivide_internal_s16_abs(d);
+    uint8_t floor_log_2_d = libdivide_internal_u16_floor_log_2_d(libdivide_count_leading_zeros16_software(absD));
+    struct libdivide_32_div_16_result_t null_proposed_m = { 0U, 0U };
+    struct libdivide_32_div_16_result_t proposed_m = libdivide_internal_u16_ispow2(absD) ? null_proposed_m : libdivide_32_div_16_to_16((uint16_t)1 << (floor_log_2_d - 1), 0, absD);
+    return libdivide_internal_s16_gen_gen(d, branchfree, floor_log_2_d, proposed_m);
+}
+
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_s16_t libdivide_s16_gen_c(int16_t d) {
+    return libdivide_internal_s16_gen_c(d, false);
+}
+
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_s16_branchfree_t libdivide_s16_branchfree_gen_c(int16_t d) {
+    struct libdivide_s16_t tmp = libdivide_internal_s16_gen_c(d, true);
+    return libdivide_internal_construct_s16_branchfree(tmp.magic, tmp.more);
+}
+
+#endif
 
 // The original libdivide_s16_do takes a const pointer. However, this cannot be used
 // with a compile time constant libdivide_s16_t: it will generate a warning about
@@ -1552,7 +1582,6 @@ struct libdivide_s32_branchfree_t libdivide_s32_branchfree_gen(int32_t d) {
     struct libdivide_s32_t tmp = libdivide_internal_s32_gen(d, 1);
     return libdivide_internal_construct_s32_branchfree(tmp.magic, tmp.more);
 }
-
 
 #if LIBDIVIDE_HAS_CONSTEXPR!=0
 
