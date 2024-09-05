@@ -496,7 +496,7 @@ struct libdivide_128_div_64_result_t {
 };
 
 static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_128_div_64_result_t libdivide_128_div_64_to_64_software(
-    uint64_t numhi, uint64_t numlo, uint64_t den, int32_t leading_zeroes) {
+    uint64_t numhi, uint64_t numlo, uint64_t den, uint8_t leading_zeroes) {
 
     // Check for overflow and divide by 0.
     if (numhi >= den) {
@@ -508,7 +508,7 @@ static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_128_div_64_result_t
     // A uint32 holds a single digit. A uint64 holds two digits.
     // Our numerator is conceptually [num3, num2, num1, num0].
     // Our denominator is [den1, den0].
-    const uint64_t b = ((uint64_t)1 << 32);
+    const uint64_t b = ((uint64_t)1U << 32U);
 
     // Determine the normalization factor. We multiply den by this, so that its leading digit is at
     // least half b. In binary this means just shifting left by the number of leading zeros, so that
@@ -1004,7 +1004,7 @@ static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_u32_t libdivide_int
         LIBDIVIDE_ERROR("divider must be != 0");
     }
 
-    uint32_t floor_log_2_d = libdivide_internal_u32_floor_log_2_d(libdivide_count_leading_zeros32_software(d));
+    uint8_t floor_log_2_d = libdivide_internal_u32_floor_log_2_d(libdivide_count_leading_zeros32_software(d));
     struct libdivide_64_div_32_result_t null_proposed_m = { 0U, 0U };
     struct libdivide_64_div_32_result_t proposed_m = libdivide_internal_u32_ispow2(d) ? null_proposed_m : libdivide_64_div_32_to_32_software((uint32_t)1 << floor_log_2_d, 0, d);  
     return libdivide_internal_u32_gen_gen(d, branchfree, floor_log_2_d, proposed_m);
@@ -1116,7 +1116,7 @@ static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE bool libdivide_internal_u64_ispow2(u
 }
 
 static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_u64_t libdivide_internal_u64_gen_gen(
-    uint64_t d, bool branchfree, uint32_t floor_log_2_d, struct libdivide_128_div_64_result_t proposed_m) {
+    uint64_t d, bool branchfree, uint8_t floor_log_2_d, struct libdivide_128_div_64_result_t proposed_m) {
     if (d == 0) {
         LIBDIVIDE_ERROR("divider must be != 0");
     }
@@ -1169,7 +1169,7 @@ static LIBDIVIDE_INLINE struct libdivide_u64_t libdivide_internal_u64_gen(
         LIBDIVIDE_ERROR("divider must be != 0");
     }
 
-    uint32_t floor_log_2_d = libdivide_internal_u64_floor_log_2_d(libdivide_count_leading_zeros64(d));
+    uint8_t floor_log_2_d = libdivide_internal_u64_floor_log_2_d(libdivide_count_leading_zeros64(d));
     struct libdivide_128_div_64_result_t null_proposed_m = { 0U, 0U };
     struct libdivide_128_div_64_result_t proposed_m = libdivide_internal_u64_ispow2(d) ? null_proposed_m : libdivide_128_div_64_to_64((uint64_t)1 << floor_log_2_d, 0, d);  
     return libdivide_internal_u64_gen_gen(d, branchfree, floor_log_2_d, proposed_m);
@@ -1193,7 +1193,7 @@ static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_u64_t libdivide_int
     }
 
     uint8_t leading_zeroes = libdivide_count_leading_zeros64_software(d);
-    uint32_t floor_log_2_d = libdivide_internal_u64_floor_log_2_d(leading_zeroes);
+    uint8_t floor_log_2_d = libdivide_internal_u64_floor_log_2_d(leading_zeroes);
     struct libdivide_128_div_64_result_t null_proposed_m = { 0U, 0U };
     struct libdivide_128_div_64_result_t proposed_m = libdivide_internal_u64_ispow2(d) ? null_proposed_m : libdivide_128_div_64_to_64_software((uint64_t)1 << floor_log_2_d, 0, d, leading_zeroes);  
     return libdivide_internal_u64_gen_gen(d, branchfree, floor_log_2_d, proposed_m);
@@ -1715,7 +1715,7 @@ static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE uint64_t libdivide_internal_s64_abs(
 }
 
 static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_s64_t libdivide_internal_s64_gen_gen(
-    int64_t d, bool branchfree, uint32_t floor_log_2_d, struct libdivide_128_div_64_result_t proposed_m) {
+    int64_t d, bool branchfree, uint8_t floor_log_2_d, struct libdivide_128_div_64_result_t proposed_m) {
     if (d == 0) {
         LIBDIVIDE_ERROR("divider must be != 0");
     }
@@ -1777,7 +1777,7 @@ static LIBDIVIDE_INLINE struct libdivide_s64_t libdivide_internal_s64_gen(int64_
     }
 
     uint64_t absD = libdivide_internal_s64_abs(d);
-    uint32_t floor_log_2_d = libdivide_internal_u64_floor_log_2_d(libdivide_count_leading_zeros64(absD));
+    uint8_t floor_log_2_d = libdivide_internal_u64_floor_log_2_d(libdivide_count_leading_zeros64(absD));
     struct libdivide_128_div_64_result_t null_proposed_m = { 0U, 0U };
     struct libdivide_128_div_64_result_t proposed_m = libdivide_internal_u64_ispow2(absD) ? null_proposed_m : libdivide_128_div_64_to_64((uint64_t)1 << (floor_log_2_d - 1), 0, absD);
     return libdivide_internal_s64_gen_gen(d, branchfree, floor_log_2_d, proposed_m);
@@ -1802,7 +1802,7 @@ static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_s64_t libdivide_int
 
     uint64_t absD = libdivide_internal_s64_abs(d);
     uint8_t leading_zeroes = libdivide_count_leading_zeros64_software(absD);
-    uint32_t floor_log_2_d = libdivide_internal_u64_floor_log_2_d(leading_zeroes);
+    uint8_t floor_log_2_d = libdivide_internal_u64_floor_log_2_d(leading_zeroes);
     struct libdivide_128_div_64_result_t null_proposed_m = { 0U, 0U };
     struct libdivide_128_div_64_result_t proposed_m = libdivide_internal_u64_ispow2(absD) ? null_proposed_m : libdivide_128_div_64_to_64_software((uint64_t)1 << (floor_log_2_d - 1), 0, absD, leading_zeroes);
     return libdivide_internal_s64_gen_gen(d, branchfree, floor_log_2_d, proposed_m);
