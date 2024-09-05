@@ -1,18 +1,19 @@
 #include "constexpr_test.h"
 #include "outputs.h"
+#include "type_mappings.h"
 
 template <typename _IntT>
 static void assert_constexpr(_IntT result, _IntT dividend, _IntT divisor) {
     _IntT expected = dividend / divisor;
     PRINT_INFO(F("Testing constexpr generation: "));
-    PRINT_INFO(__PRETTY_FUNCTION__);
-    PRINT_INFO(": ");
-    PRINT_INFO(dividend);
-    PRINT_INFO(" / ");
-    PRINT_INFO(divisor);
-    PRINT_INFO(" = ");
-    PRINT_INFO(expected);
+    PRINT_INFO(type_name<_IntT>::get_name());
     if (result!=expected) {
+        PRINT_INFO(": ");
+        PRINT_INFO(dividend);
+        PRINT_INFO(" / ");
+        PRINT_INFO(divisor);
+        PRINT_INFO(" = ");
+        PRINT_INFO(expected);
         PRINT_ERROR(F(" FAILED  ("));
         PRINT_ERROR(result);
         PRINT_ERROR(F(")"));
@@ -37,14 +38,12 @@ void test_constexpr(void) {
     //     constexpr auto constexprU16BF = libdivide::libdivide_u16_branchfree_gen(divisor);
     //     std::cout << "Branch free "; assert_constexpr(libdivide::libdivide_u16_branchfree_do(dividend, constexprU16BF), dividend, divisor);
     // }
-    // {
-    //     constexpr int32_t dividend = INT32_MAX/7U;
-    //     constexpr int32_t divisor = INT32_MAX/-123;
-    //     constexpr auto constexprS32 = libdivide::libdivide_s32_gen(divisor);
-    //     assert_constexpr(libdivide::libdivide_s32_do(dividend, constexprS32), dividend, divisor);
-    //     constexpr auto constexprS32BF = libdivide::libdivide_s32_branchfree_gen(divisor);
-    //     std::cout << "Branch free "; assert_constexpr(libdivide::libdivide_s32_branchfree_do(dividend, constexprS32BF), dividend, divisor);
-    // }    
+    {
+        constexpr int32_t dividend = INT32_MAX/7U;
+        int32_t divisor = libdivide::libdivide_s32_recover(constexprS32);
+        assert_constexpr(libdivide::libdivide_s32_do(dividend, constexprS32), dividend, divisor);
+        std::cout << "Branch free "; assert_constexpr(libdivide::libdivide_s32_branchfree_do(dividend, constexprS32BF), dividend, divisor);
+    }    
     {
         constexpr uint32_t dividend = UINT32_MAX/7U;
         uint32_t divisor = libdivide::libdivide_u32_recover(constexprU32);
