@@ -232,7 +232,15 @@ enum {
     static LIBDIVIDE_INLINE type FUNC_NAME_BUILDER(tag, _recover_raw)(type magic, uint8_t more); \
     static LIBDIVIDE_INLINE struct STRUCT_BRANCHFREE_NAME(tag) FUNC_NAME_BUILDER(tag, _branchfree_gen)(type d); \
     static LIBDIVIDE_INLINE type FUNC_NAME_BUILDER(tag, _branchfree_do_raw)(type numer, type magic, uint8_t more); \
-    static LIBDIVIDE_INLINE type FUNC_NAME_BUILDER(tag, _branchfree_recover_raw)(type magic, uint8_t more); \
+    static LIBDIVIDE_INLINE type FUNC_NAME_BUILDER(tag, _branchfree_recover_raw)(type magic, uint8_t more);
+
+#if defined(__cplusplus) && defined(LIBDIVIDE_HAS_CONSTEXPR) && LIBDIVIDE_HAS_CONSTEXPR>0
+#define CONSTEXPR_FUNCTION_DECLARATIONS(tag, type) \
+    static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct STRUCT_NAME(tag) FUNC_NAME_BUILDER(tag, _gen_c)(type d); \
+    static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct STRUCT_BRANCHFREE_NAME(tag) FUNC_NAME_BUILDER(tag, _branchfree_gen_c)(type d);
+#else
+#define CONSTEXPR_FUNCTION_DECLARATIONS(tag, type)
+#endif
 
 // Both the declaration of these AND the implementation of these can be automated
 // See WRAPPER_FUNCTION_IMPLEMENTATIONS_CPP
@@ -258,6 +266,7 @@ enum {
 #define DECLARE_TYPE(tag, type) \
     DEFINE_STRUCTS(tag, type) \
     CORE_FUNCTION_DECLARATIONS(tag, type) \
+    CONSTEXPR_FUNCTION_DECLARATIONS(tag, type) \
     WRAPPER_FUNCTION_DECLARATIONS_CORE(tag, type) \
     WRAPPER_FUNCTION_DECLARATIONS_CPP(tag, type)
 
