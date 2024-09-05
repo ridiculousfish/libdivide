@@ -458,7 +458,7 @@ struct libdivide_64_div_32_result_t {
     uint32_t rem;
 };
 
-static LIBDIVIDE_INLINE struct libdivide_64_div_32_result_t libdivide_64_div_32_to_32_software(
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_64_div_32_result_t libdivide_64_div_32_to_32_software(
     uint32_t u1, uint32_t u0, uint32_t v) {
     uint64_t n = ((uint64_t)u1 << 32) | u0;
     struct libdivide_64_div_32_result_t result = { 0U, 0U };
@@ -885,34 +885,31 @@ uint16_t libdivide_u16_branchfree_recover_raw(uint16_t magic, uint8_t more) {
 
 WRAPPER_FUNCTION_IMPLEMENTATIONS(u16, uint16_t)
 
-
 ////////// UINT32
 
-static LIBDIVIDE_INLINE struct libdivide_u32_t libdivide_internal_u32_gen(
-    uint32_t d, int branchfree) {
-    if (d == 0) {
-        LIBDIVIDE_ERROR("divider must be != 0");
-    }
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE bool libdivide_internal_u32_ispow2(uint32_t d) {
+    return (d & (d - 1)) == 0;
+}
 
-    struct libdivide_u32_t result;
-    uint32_t floor_log_2_d = 31 - libdivide_count_leading_zeros32(d);
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE uint8_t libdivide_internal_u32_floor_log_2_d(uint8_t leading_zeroes) {
+    return (uint8_t)31U - leading_zeroes;
+}
 
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_u32_t libdivide_internal_u32_gen_gen(
+    uint32_t d, bool branchfree, uint8_t floor_log_2_d, struct libdivide_64_div_32_result_t proposed_m) {
     // Power of 2
-    if ((d & (d - 1)) == 0) {
+    if (libdivide_internal_u32_ispow2(d)) {
         // We need to subtract 1 from the shift value in case of an unsigned
         // branchfree divider because there is a hardcoded right shift by 1
         // in its division algorithm. Because of this we also need to add back
         // 1 in its recovery algorithm.
-        result.magic = 0;
-        result.more = (uint8_t)(floor_log_2_d - (branchfree != 0));
+        return libdivide_internal_construct_u32(0U, (uint8_t)(floor_log_2_d - (branchfree ? 1U : 0U)));
     } else {
-        uint8_t more;
-        struct libdivide_64_div_32_result_t proposed_m = libdivide_64_div_32_to_32((uint32_t)1 << floor_log_2_d, 0, d);
-
         LIBDIVIDE_ASSERT(proposed_m.rem > 0 && proposed_m.rem < d);
         const uint32_t e = d - proposed_m.rem;
 
         // This power works if e < 2**floor_log_2_d.
+        uint8_t more = 0;
         if (!branchfree && (e < ((uint32_t)1 << floor_log_2_d))) {
             // This power works
             more = (uint8_t)floor_log_2_d;
@@ -927,15 +924,25 @@ static LIBDIVIDE_INLINE struct libdivide_u32_t libdivide_internal_u32_gen(
             if (twice_rem >= d || twice_rem < proposed_m.rem) proposed_m.quot += 1;
             more = (uint8_t)(floor_log_2_d | LIBDIVIDE_ADD_MARKER);
         }
-        result.magic = 1 + proposed_m.quot;
-        result.more = more;
+        return libdivide_internal_construct_u32(1U + proposed_m.quot, more);
         // result.more's shift should in general be ceil_log_2_d. But if we
         // used the smaller power, we subtract one from the shift because we're
         // using the smaller power. If we're using the larger power, we
         // subtract one from the shift because it's taken care of by the add
         // indicator. So floor_log_2_d happens to be correct in both cases.
     }
-    return result;
+}
+
+static LIBDIVIDE_INLINE struct libdivide_u32_t libdivide_internal_u32_gen(
+    uint32_t d, bool branchfree) {
+    if (d == 0) {
+        LIBDIVIDE_ERROR("divider must be != 0");
+    }
+
+    uint8_t floor_log_2_d = libdivide_internal_u32_floor_log_2_d(libdivide_count_leading_zeros32(d));
+    struct libdivide_64_div_32_result_t null_proposed_m = { 0U, 0U };
+    struct libdivide_64_div_32_result_t proposed_m = libdivide_internal_u32_ispow2(d) ? null_proposed_m : libdivide_64_div_32_to_32((uint32_t)1 << floor_log_2_d, 0, d);  
+    return libdivide_internal_u32_gen_gen(d, branchfree, floor_log_2_d, proposed_m);
 }
 
 struct libdivide_u32_t libdivide_u32_gen(uint32_t d) {
@@ -951,6 +958,32 @@ struct libdivide_u32_branchfree_t libdivide_u32_branchfree_gen(uint32_t d) {
         tmp.magic, (uint8_t)(tmp.more & LIBDIVIDE_32_SHIFT_MASK)};
     return ret;
 }
+
+
+#if LIBDIVIDE_HAS_CONSTEXPR!=0
+
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_u32_t libdivide_internal_u32_gen_c(
+    uint32_t d, bool branchfree) {
+    if (d == 0) {
+        LIBDIVIDE_ERROR("divider must be != 0");
+    }
+
+    uint32_t floor_log_2_d = libdivide_internal_u32_floor_log_2_d(libdivide_count_leading_zeros32_software(d));
+    struct libdivide_64_div_32_result_t null_proposed_m = { 0U, 0U };
+    struct libdivide_64_div_32_result_t proposed_m = libdivide_internal_u32_ispow2(d) ? null_proposed_m : libdivide_64_div_32_to_32_software((uint32_t)1 << floor_log_2_d, 0, d);  
+    return libdivide_internal_u32_gen_gen(d, branchfree, floor_log_2_d, proposed_m);
+}
+
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_u32_t libdivide_u32_gen_c(uint32_t d) {
+    return libdivide_internal_u32_gen_c(d, false);
+}
+
+static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_u32_branchfree_t libdivide_u32_branchfree_gen_c(uint32_t d) {
+    struct libdivide_u32_t tmp = libdivide_internal_u32_gen_c(d, true);
+    return libdivide_internal_construct_u32_branchfree(tmp.magic, (uint8_t)(tmp.more & LIBDIVIDE_32_SHIFT_MASK));
+}
+
+#endif
 
 uint32_t libdivide_u32_do_raw(uint32_t numer, uint32_t magic, uint8_t more) {
     if (!magic) {
