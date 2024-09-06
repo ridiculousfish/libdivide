@@ -3,8 +3,8 @@
 #include <stdint.h>
 
 #define CAT_HELPER(a, b) a ## b
-#define CONCAT(A, B) CAT_HELPER(A, B)
-#define TEST_FUNC_NAME(Op, Denom) CONCAT(CONCAT(test, Op), Denom)
+#define LD_CONCAT(A, B) CAT_HELPER(A, B)
+#define TEST_FUNC_NAME(Op, Denom) LD_CONCAT(LD_CONCAT(test, Op), Denom)
 
 #if TEST_UNSIGNED
 typedef uint16_t test_t;

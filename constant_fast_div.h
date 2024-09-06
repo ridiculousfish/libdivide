@@ -70,8 +70,8 @@
 * constant.
 * E.g. FAST_DIV16U(value, 100)
 */
-#define U16_MAGIC(d) CONCAT(CONCAT(U16LD_DENOM_, d), _MAGIC)
-#define U16_MORE(d) CONCAT(CONCAT(U16LD_DENOM_, d), _MORE)
+#define U16_MAGIC(d) LD_CONCAT(LD_CONCAT(U16LD_DENOM_, d), _MAGIC)
+#define U16_MORE(d) LD_CONCAT(LD_CONCAT(U16LD_DENOM_, d), _MORE)
 #define FAST_DIV16U(a, d) (U16_ISPOW2(d) ? a/d : LIB_DIV_NAMESPACE libdivide_u16_do_raw(a, U16_MAGIC(d), U16_MORE(d)))
 
 /*
@@ -81,8 +81,8 @@
 * This only works for positive parmeters :-(
 * A negative number results in a hypen in the macro name, which is not allowed
 */
-#define S16_MAGIC(d) CONCAT(CONCAT(S16LD_DENOM_, d), _MAGIC)
-#define S16_MORE(d) CONCAT(CONCAT(S16LD_DENOM_, d), _MORE)
+#define S16_MAGIC(d) LD_CONCAT(LD_CONCAT(S16LD_DENOM_, d), _MAGIC)
+#define S16_MORE(d) LD_CONCAT(LD_CONCAT(S16LD_DENOM_, d), _MORE)
 #define FAST_DIV16(a, d) (S16_ISPOW2(d) ? a/d : LIB_DIV_NAMESPACE libdivide_s16_do_raw(a, S16_MAGIC(d), S16_MORE(d))) 
 
 /*
@@ -92,8 +92,8 @@
 * This only works for positive parmeters :-(
 * A negative number results in a hypen in the macro name, which is not allowed
 */
-#define S16_MAGIC_NEG(d) CONCAT(CONCAT(S16LD_DENOM_MINUS_, d), _MAGIC)
-#define S16_MORE_NEG(d) CONCAT(CONCAT(S16LD_DENOM_MINUS_, d), _MORE)
+#define S16_MAGIC_NEG(d) LD_CONCAT(LD_CONCAT(S16LD_DENOM_MINUS_, d), _MAGIC)
+#define S16_MORE_NEG(d) LD_CONCAT(LD_CONCAT(S16LD_DENOM_MINUS_, d), _MORE)
 #define FAST_DIV16_NEG(a, d) (S16_ISPOW2(d) ? a/-d : LIB_DIV_NAMESPACE libdivide_s16_do_raw(a, S16_MAGIC_NEG(d), S16_MORE_NEG(d))) 
 
 /*

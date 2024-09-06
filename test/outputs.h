@@ -51,6 +51,8 @@ void print_serial(const int64_t &item)
 #define PRINT_INFO(item) print_serial(item)
 
 #else
+#pragma warning( push )
+#pragma warning( disable : 4996 )
 
 static inline char *to_str(char *buffer, uint64_t n) {
     sprintf(buffer, "%" PRIu64, n);
@@ -60,6 +62,7 @@ static inline char *to_str(char *buffer, int64_t n) {
     sprintf(buffer, "%" PRId64, n);
     return buffer;
 }
+#pragma warning( pop )
 
 #include <iostream>
 
@@ -74,6 +77,8 @@ static inline char *to_str(char *buffer, int64_t n) {
 #else
 #define PRINT_PROGRESS_MSG(item)
 #endif
+#pragma warning( push )
+#pragma warning( disable : 4996 )
 
 static inline char *to_str(char *buffer, uint32_t n) {
     sprintf(buffer, "%" PRIu32, n);
@@ -92,3 +97,4 @@ static inline char *to_str(char *buffer, int16_t n) {
     sprintf(buffer, "%" PRId16, n);
     return buffer;
 }
+#pragma warning( pop )

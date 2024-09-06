@@ -183,13 +183,12 @@ enum {
     LIBDIVIDE_NEGATIVE_DIVISOR = 0x80
 };
 
-#undef _CONCAT
-#define _CONCAT(x,y) x ## y
-#define CONCAT(x,y)  _CONCAT(x,y)
+#define _LD_CONCAT(x,y) x ## y
+#define LD_CONCAT(x,y) _LD_CONCAT(x,y)
 
 #define STRUCT_POSTFIX _t
 #define BRANCHFREE_POSTFIX _branchfree_t
-#define _STRUCT_NAME(tag, postfix) CONCAT(libdivide_, CONCAT(tag, postfix))
+#define _STRUCT_NAME(tag, postfix) LD_CONCAT(libdivide_, LD_CONCAT(tag, postfix))
 
 #define STRUCT_NAME(tag) _STRUCT_NAME(tag, STRUCT_POSTFIX)
 #define STRUCT_BRANCHFREE_NAME(tag) _STRUCT_NAME(tag, BRANCHFREE_POSTFIX)
@@ -205,12 +204,7 @@ enum {
         return result; \
     }
 
-// pack divider structs to prevent compilers from padding.
-// This reduces memory usage by up to 43% when using a large
-// array of libdivide dividers and improves performance
-// by up to 10% because of reduced memory bandwidth.
 #define DEFINE_STRUCTS(tag, type) \
-    _Pragma("pack(push, 1)") \
     struct STRUCT_NAME(tag) { \
         type magic; \
         uint8_t more; \
@@ -221,9 +215,8 @@ enum {
         uint8_t more; \
     }; \
     INLINE_CONSTRUCT_STRUCT_BRANCHFREE(tag, type) \
-    _Pragma("pack(pop)")
 
-#define FUNC_NAME_BUILDER(tag, postfix) CONCAT(libdivide_, CONCAT(tag, postfix))
+#define FUNC_NAME_BUILDER(tag, postfix) LD_CONCAT(libdivide_, LD_CONCAT(tag, postfix))
 
 // These need to be implemented by maintiners
 #define CORE_FUNCTION_DECLARATIONS(tag, type) \
@@ -270,12 +263,20 @@ enum {
     WRAPPER_FUNCTION_DECLARATIONS_CORE(tag, type) \
     WRAPPER_FUNCTION_DECLARATIONS_CPP(tag, type)
 
+// pack divider structs to prevent compilers from padding.
+// This reduces memory usage by up to 43% when using a large
+// array of libdivide dividers and improves performance
+// by up to 10% because of reduced memory bandwidth.
+#pragma pack(push, 1)
+
 DECLARE_TYPE(s16, int16_t)
 DECLARE_TYPE(u16, uint16_t)
 DECLARE_TYPE(s32, int32_t)
 DECLARE_TYPE(u32, uint32_t)
 DECLARE_TYPE(s64, int64_t)
 DECLARE_TYPE(u64, uint64_t)
+
+#pragma pack(pop)
 
 //////// Internal Utility Functions
 
@@ -379,7 +380,7 @@ static LIBDIVIDE_INLINE uint8_t libdivide_count_leading_zeros16(uint16_t val) {
 #elif defined(LIBDIVIDE_VC)
     unsigned long result;
     if (_BitScanReverse(&result, (unsigned long)val)) {
-        return (int16_t)(15 - result);
+        return (uint8_t)(15 - result);
     }
     return 0;
 #else
@@ -399,7 +400,7 @@ static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE uint8_t libdivide_count_leading_zero
         result -= 1U;
         hi <<= 1;
     }
-    return (uint8_t)result;
+    return result;
 }
 
 static LIBDIVIDE_INLINE uint8_t libdivide_count_leading_zeros32(uint32_t val) {
@@ -931,7 +932,7 @@ static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE bool libdivide_internal_u32_ispow2(u
 }
 
 static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE uint8_t libdivide_internal_u32_floor_log_2_d(uint8_t leading_zeroes) {
-    return (uint8_t)31U - leading_zeroes;
+    return (uint8_t)(31U - leading_zeroes);
 }
 
 static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_u32_t libdivide_internal_u32_gen_gen(
@@ -1315,7 +1316,10 @@ WRAPPER_FUNCTION_IMPLEMENTATIONS(u64, uint64_t)
 
 static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE uint16_t libdivide_internal_s16_abs(int16_t d) {
     uint16_t ud = (uint16_t)d;
+#pragma warning( push )
+#pragma warning( disable : 4146 )
     return (d < 0) ? -ud : ud;    
+#pragma warning( pop )
 }
 
 static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_s16_t libdivide_internal_s16_gen_gen(
@@ -1514,7 +1518,10 @@ WRAPPER_FUNCTION_IMPLEMENTATIONS(s16, int16_t)
 
 static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE uint32_t libdivide_internal_s32_abs(int32_t d) {
     uint32_t ud = (uint32_t)d;
-    return (d < 0) ? -ud : ud;    
+#pragma warning( push )
+#pragma warning( disable : 4146 )
+    return (d < 0) ? -ud : ud;
+#pragma warning( pop )
 }
 
 static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_s32_t libdivide_internal_s32_gen_gen(
@@ -1711,7 +1718,10 @@ WRAPPER_FUNCTION_IMPLEMENTATIONS(s32, int32_t)
 
 static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE uint64_t libdivide_internal_s64_abs(int64_t d) {
     uint64_t ud = (uint64_t)d;
+#pragma warning( push )
+#pragma warning( disable : 4146 )
     return (d < 0) ? -ud : ud;    
+#pragma warning( pop )    
 }
 
 static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_s64_t libdivide_internal_s64_gen_gen(
