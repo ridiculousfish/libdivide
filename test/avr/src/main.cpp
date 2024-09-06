@@ -4,6 +4,7 @@
 #include "..\..\benchmark.h"
 #elif defined(TEST_LIBDIVIDE)
 #include "..\..\DivideTest.h"
+#include "..\..\constexpr_test.h"
 #elif defined(TEST_CONSTANTS)
 #include "invariant_div_test/Constant_Div_Tests.h"
 #endif
@@ -28,6 +29,7 @@ void setup() {
 #endif
 
 #elif defined(TEST_LIBDIVIDE)
+  test_constexpr();
   run_test<int16_t>();
   run_test<uint16_t>();
   run_test<int32_t>();

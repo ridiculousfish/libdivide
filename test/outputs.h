@@ -31,7 +31,7 @@ static inline char *to_str(char *buffer, int64_t n) {
 }
 
 template <typename _T>
-void print_serial(const _T &item) { Serial.print(item); }
+static inline void print_serial(const _T &item) { Serial.print(item); }
 
 template <>
 void print_serial(const uint64_t &item)
@@ -51,8 +51,11 @@ void print_serial(const int64_t &item)
 #define PRINT_INFO(item) print_serial(item)
 
 #else
+
+#if defined(_MSC_VER)
 #pragma warning( push )
 #pragma warning( disable : 4996 )
+#endif
 
 static inline char *to_str(char *buffer, uint64_t n) {
     sprintf(buffer, "%" PRIu64, n);
@@ -62,7 +65,10 @@ static inline char *to_str(char *buffer, int64_t n) {
     sprintf(buffer, "%" PRId64, n);
     return buffer;
 }
+
+#if defined(_MSC_VER)
 #pragma warning( pop )
+#endif
 
 #include <iostream>
 
@@ -77,8 +83,11 @@ static inline char *to_str(char *buffer, int64_t n) {
 #else
 #define PRINT_PROGRESS_MSG(item)
 #endif
+
+#if defined(_MSC_VER)
 #pragma warning( push )
 #pragma warning( disable : 4996 )
+#endif
 
 static inline char *to_str(char *buffer, uint32_t n) {
     sprintf(buffer, "%" PRIu32, n);
@@ -97,4 +106,6 @@ static inline char *to_str(char *buffer, int16_t n) {
     sprintf(buffer, "%" PRId16, n);
     return buffer;
 }
+#if defined(_MSC_VER)
 #pragma warning( pop )
+#endif

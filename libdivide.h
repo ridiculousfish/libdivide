@@ -183,6 +183,8 @@ enum {
     LIBDIVIDE_NEGATIVE_DIVISOR = 0x80
 };
 
+#undef _LD_CONCAT
+#undef LD_CONCAT
 #define _LD_CONCAT(x,y) x ## y
 #define LD_CONCAT(x,y) _LD_CONCAT(x,y)
 
@@ -357,7 +359,7 @@ static LIBDIVIDE_INLINE int64_t libdivide_mullhi_s64(int64_t x, int64_t y) {
 static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE uint8_t libdivide_count_leading_zeros16_software(uint16_t val) {
     if (val == 0) return 16;
     uint8_t result = 4;
-    uint16_t hi = 0xFU << 12;
+    uint16_t hi = (uint16_t)0xFU << 12U;
     while ((val & hi) == 0) {
         hi >>= 4;
         result += 4U;
@@ -391,7 +393,7 @@ static LIBDIVIDE_INLINE uint8_t libdivide_count_leading_zeros16(uint16_t val) {
 static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE uint8_t libdivide_count_leading_zeros32_software(uint32_t val) {
     if (val == 0) return 32U;
     uint8_t result = 8;
-    uint32_t hi = 0xFFU << 24U;
+    uint32_t hi = (uint32_t)0xFFU << 24U;
     while ((val & hi) == 0) {
         hi >>= 8;
         result += 8U;
@@ -423,7 +425,7 @@ static LIBDIVIDE_INLINE uint8_t libdivide_count_leading_zeros32(uint32_t val) {
 
 
 static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE uint8_t libdivide_count_leading_zeros64_software(uint64_t val) {
-    uint32_t hi = val >> 32;
+    uint32_t hi = val >> 32U;
     uint32_t lo = val & 0xFFFFFFFF;
     if (hi != 0) return libdivide_count_leading_zeros32_software(hi);
     return 32U + libdivide_count_leading_zeros32_software(lo);
@@ -470,7 +472,7 @@ struct libdivide_64_div_32_result_t {
 
 static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_64_div_32_result_t libdivide_64_div_32_to_32_software(
     uint32_t u1, uint32_t u0, uint32_t v) {
-    uint64_t n = ((uint64_t)u1 << 32) | u0;
+    uint64_t n = ((uint64_t)u1 << 32U) | u0;
     struct libdivide_64_div_32_result_t result = { 0U, 0U };
     result.quot = (uint32_t)(n / v);
     result.rem = (uint32_t)(n - result.quot * (uint64_t)v);\
@@ -1316,10 +1318,7 @@ WRAPPER_FUNCTION_IMPLEMENTATIONS(u64, uint64_t)
 
 static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE uint16_t libdivide_internal_s16_abs(int16_t d) {
     uint16_t ud = (uint16_t)d;
-#pragma warning( push )
-#pragma warning( disable : 4146 )
     return (d < 0) ? -ud : ud;    
-#pragma warning( pop )
 }
 
 static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_s16_t libdivide_internal_s16_gen_gen(
@@ -1518,10 +1517,7 @@ WRAPPER_FUNCTION_IMPLEMENTATIONS(s16, int16_t)
 
 static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE uint32_t libdivide_internal_s32_abs(int32_t d) {
     uint32_t ud = (uint32_t)d;
-#pragma warning( push )
-#pragma warning( disable : 4146 )
     return (d < 0) ? -ud : ud;
-#pragma warning( pop )
 }
 
 static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_s32_t libdivide_internal_s32_gen_gen(
@@ -1718,10 +1714,7 @@ WRAPPER_FUNCTION_IMPLEMENTATIONS(s32, int32_t)
 
 static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE uint64_t libdivide_internal_s64_abs(int64_t d) {
     uint64_t ud = (uint64_t)d;
-#pragma warning( push )
-#pragma warning( disable : 4146 )
     return (d < 0) ? -ud : ud;    
-#pragma warning( pop )    
 }
 
 static LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE struct libdivide_s64_t libdivide_internal_s64_gen_gen(
