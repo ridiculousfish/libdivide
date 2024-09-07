@@ -89,6 +89,14 @@
 #define LIBDIVIDE_INLINE inline
 #endif
 
+#if defined(__cplusplus) && __cplusplus >= 201703L
+#define LIBDIVIDE_CONSTEXPR constexpr
+#else
+#define LIBDIVIDE_CONSTEXPR
+#endif
+
+#define LIBDIVIDE_CONSTEXPR_INLINE LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE
+
 #if defined(__AVR__)
 #define LIBDIVIDE_ERROR(msg)
 #else
@@ -123,33 +131,33 @@ namespace libdivide {
 #pragma pack(push, 1)
 
 struct libdivide_u16_t {
-    uint16_t magic;
-    uint8_t more;
+    uint16_t magic = 0;
+    uint8_t more = 0;
 };
 
 struct libdivide_s16_t {
-    int16_t magic;
-    uint8_t more;
+    int16_t magic = 0;
+    uint8_t more = 0;
 };
 
 struct libdivide_u32_t {
-    uint32_t magic;
-    uint8_t more;
+    uint32_t magic = 0;
+    uint8_t more = 0;
 };
 
 struct libdivide_s32_t {
-    int32_t magic;
-    uint8_t more;
+    int32_t magic = 0;
+    uint8_t more = 0;
 };
 
 struct libdivide_u64_t {
-    uint64_t magic;
-    uint8_t more;
+    uint64_t magic = 0;
+    uint8_t more = 0;
 };
 
 struct libdivide_s64_t {
-    int64_t magic;
-    uint8_t more;
+    int64_t magic = 0;
+    uint8_t more = 0;
 };
 
 struct libdivide_u16_branchfree_t {
@@ -224,19 +232,25 @@ enum {
     LIBDIVIDE_NEGATIVE_DIVISOR = 0x80
 };
 
-static LIBDIVIDE_INLINE struct libdivide_s16_t libdivide_s16_gen(int16_t d);
-static LIBDIVIDE_INLINE struct libdivide_u16_t libdivide_u16_gen(uint16_t d);
-static LIBDIVIDE_INLINE struct libdivide_s32_t libdivide_s32_gen(int32_t d);
-static LIBDIVIDE_INLINE struct libdivide_u32_t libdivide_u32_gen(uint32_t d);
-static LIBDIVIDE_INLINE struct libdivide_s64_t libdivide_s64_gen(int64_t d);
-static LIBDIVIDE_INLINE struct libdivide_u64_t libdivide_u64_gen(uint64_t d);
+static LIBDIVIDE_CONSTEXPR_INLINE struct libdivide_s16_t libdivide_s16_gen(int16_t d);
+static LIBDIVIDE_CONSTEXPR_INLINE struct libdivide_u16_t libdivide_u16_gen(uint16_t d);
+static LIBDIVIDE_CONSTEXPR_INLINE struct libdivide_s32_t libdivide_s32_gen(int32_t d);
+static LIBDIVIDE_CONSTEXPR_INLINE struct libdivide_u32_t libdivide_u32_gen(uint32_t d);
+static LIBDIVIDE_CONSTEXPR_INLINE struct libdivide_s64_t libdivide_s64_gen(int64_t d);
+static LIBDIVIDE_CONSTEXPR_INLINE struct libdivide_u64_t libdivide_u64_gen(uint64_t d);
 
-static LIBDIVIDE_INLINE struct libdivide_s16_branchfree_t libdivide_s16_branchfree_gen(int16_t d);
-static LIBDIVIDE_INLINE struct libdivide_u16_branchfree_t libdivide_u16_branchfree_gen(uint16_t d);
-static LIBDIVIDE_INLINE struct libdivide_s32_branchfree_t libdivide_s32_branchfree_gen(int32_t d);
-static LIBDIVIDE_INLINE struct libdivide_u32_branchfree_t libdivide_u32_branchfree_gen(uint32_t d);
-static LIBDIVIDE_INLINE struct libdivide_s64_branchfree_t libdivide_s64_branchfree_gen(int64_t d);
-static LIBDIVIDE_INLINE struct libdivide_u64_branchfree_t libdivide_u64_branchfree_gen(uint64_t d);
+static LIBDIVIDE_CONSTEXPR_INLINE struct libdivide_s16_branchfree_t libdivide_s16_branchfree_gen(
+    int16_t d);
+static LIBDIVIDE_CONSTEXPR_INLINE struct libdivide_u16_branchfree_t libdivide_u16_branchfree_gen(
+    uint16_t d);
+static LIBDIVIDE_CONSTEXPR_INLINE struct libdivide_s32_branchfree_t libdivide_s32_branchfree_gen(
+    int32_t d);
+static LIBDIVIDE_CONSTEXPR_INLINE struct libdivide_u32_branchfree_t libdivide_u32_branchfree_gen(
+    uint32_t d);
+static LIBDIVIDE_CONSTEXPR_INLINE struct libdivide_s64_branchfree_t libdivide_s64_branchfree_gen(
+    int64_t d);
+static LIBDIVIDE_CONSTEXPR_INLINE struct libdivide_u64_branchfree_t libdivide_u64_branchfree_gen(
+    uint64_t d);
 
 static LIBDIVIDE_INLINE int16_t libdivide_s16_do_raw(int16_t numer, int16_t magic, uint8_t more);
 static LIBDIVIDE_INLINE int16_t libdivide_s16_do(
@@ -362,7 +376,7 @@ static LIBDIVIDE_INLINE int64_t libdivide_mullhi_s64(int64_t x, int64_t y) {
 #endif
 }
 
-static LIBDIVIDE_INLINE int16_t libdivide_count_leading_zeros16(uint16_t val) {
+static LIBDIVIDE_CONSTEXPR_INLINE int16_t libdivide_count_leading_zeros16(uint16_t val) {
 #if defined(__AVR__)
     // Fast way to count leading zeros
     // On the AVR 8-bit architecture __builtin_clz() works on a int16_t.
@@ -392,7 +406,7 @@ static LIBDIVIDE_INLINE int16_t libdivide_count_leading_zeros16(uint16_t val) {
 #endif
 }
 
-static LIBDIVIDE_INLINE int32_t libdivide_count_leading_zeros32(uint32_t val) {
+static LIBDIVIDE_CONSTEXPR_INLINE int32_t libdivide_count_leading_zeros32(uint32_t val) {
 #if defined(__AVR__)
     // Fast way to count leading zeros
     return __builtin_clzl(val);
@@ -421,7 +435,7 @@ static LIBDIVIDE_INLINE int32_t libdivide_count_leading_zeros32(uint32_t val) {
 #endif
 }
 
-static LIBDIVIDE_INLINE int32_t libdivide_count_leading_zeros64(uint64_t val) {
+static LIBDIVIDE_CONSTEXPR_INLINE int32_t libdivide_count_leading_zeros64(uint64_t val) {
 #if defined(__GNUC__) || __has_builtin(__builtin_clzll)
     // Fast way to count leading zeros
     return __builtin_clzll(val);
@@ -442,7 +456,7 @@ static LIBDIVIDE_INLINE int32_t libdivide_count_leading_zeros64(uint64_t val) {
 // libdivide_32_div_16_to_16: divides a 32-bit uint {u1, u0} by a 16-bit
 // uint {v}. The result must fit in 16 bits.
 // Returns the quotient directly and the remainder in *r
-static LIBDIVIDE_INLINE uint16_t libdivide_32_div_16_to_16(
+static LIBDIVIDE_CONSTEXPR_INLINE uint16_t libdivide_32_div_16_to_16(
     uint16_t u1, uint16_t u0, uint16_t v, uint16_t *r) {
     uint32_t n = ((uint32_t)u1 << 16) | u0;
     uint16_t result = (uint16_t)(n / v);
@@ -453,7 +467,7 @@ static LIBDIVIDE_INLINE uint16_t libdivide_32_div_16_to_16(
 // libdivide_64_div_32_to_32: divides a 64-bit uint {u1, u0} by a 32-bit
 // uint {v}. The result must fit in 32 bits.
 // Returns the quotient directly and the remainder in *r
-static LIBDIVIDE_INLINE uint32_t libdivide_64_div_32_to_32(
+static LIBDIVIDE_CONSTEXPR_INLINE uint32_t libdivide_64_div_32_to_32(
     uint32_t u1, uint32_t u0, uint32_t v, uint32_t *r) {
 #if (defined(LIBDIVIDE_i386) || defined(LIBDIVIDE_X86_64)) && defined(LIBDIVIDE_GCC_STYLE_ASM)
     uint32_t result;
@@ -469,7 +483,7 @@ static LIBDIVIDE_INLINE uint32_t libdivide_64_div_32_to_32(
 
 // libdivide_128_div_64_to_64: divides a 128-bit uint {numhi, numlo} by a 64-bit uint {den}. The
 // result must fit in 64 bits. Returns the quotient directly and the remainder in *r
-static LIBDIVIDE_INLINE uint64_t libdivide_128_div_64_to_64(
+static LIBDIVIDE_CONSTEXPR_INLINE uint64_t libdivide_128_div_64_to_64(
     uint64_t numhi, uint64_t numlo, uint64_t den, uint64_t *r) {
     // N.B. resist the temptation to use __uint128_t here.
     // In LLVM compiler-rt, it performs a 128/128 -> 128 division which is many times slower than
@@ -564,8 +578,7 @@ static LIBDIVIDE_INLINE uint64_t libdivide_128_div_64_to_64(
 #endif
 }
 
-#if !(defined(HAS_INT128_T) && \
-      defined(HAS_INT128_DIV))
+#if !(defined(HAS_INT128_T) && defined(HAS_INT128_DIV))
 
 // Bitshift a u128 in place, left (signed_shift > 0) or right (signed_shift < 0)
 static LIBDIVIDE_INLINE void libdivide_u128_shift(
@@ -685,7 +698,7 @@ static LIBDIVIDE_INLINE uint64_t libdivide_128_div_128_to_64(
 
 ////////// UINT16
 
-static LIBDIVIDE_INLINE struct libdivide_u16_t libdivide_internal_u16_gen(
+static LIBDIVIDE_CONSTEXPR_INLINE struct libdivide_u16_t libdivide_internal_u16_gen(
     uint16_t d, int branchfree) {
     if (d == 0) {
         LIBDIVIDE_ERROR("divider must be != 0");
@@ -703,9 +716,9 @@ static LIBDIVIDE_INLINE struct libdivide_u16_t libdivide_internal_u16_gen(
         result.magic = 0;
         result.more = (uint8_t)(floor_log_2_d - (branchfree != 0));
     } else {
-        uint8_t more;
-        uint16_t rem, proposed_m;
-        proposed_m = libdivide_32_div_16_to_16((uint16_t)1 << floor_log_2_d, 0, d, &rem);
+        uint8_t more = 0;
+        uint16_t rem = 0;
+        uint16_t proposed_m = libdivide_32_div_16_to_16((uint16_t)1 << floor_log_2_d, 0, d, &rem);
 
         LIBDIVIDE_ASSERT(rem > 0 && rem < d);
         const uint16_t e = d - rem;
@@ -736,11 +749,11 @@ static LIBDIVIDE_INLINE struct libdivide_u16_t libdivide_internal_u16_gen(
     return result;
 }
 
-struct libdivide_u16_t libdivide_u16_gen(uint16_t d) {
+LIBDIVIDE_CONSTEXPR struct libdivide_u16_t libdivide_u16_gen(uint16_t d) {
     return libdivide_internal_u16_gen(d, 0);
 }
 
-struct libdivide_u16_branchfree_t libdivide_u16_branchfree_gen(uint16_t d) {
+LIBDIVIDE_CONSTEXPR struct libdivide_u16_branchfree_t libdivide_u16_branchfree_gen(uint16_t d) {
     if (d == 1) {
         LIBDIVIDE_ERROR("branchfree divider must be != 1");
     }
@@ -849,7 +862,7 @@ uint16_t libdivide_u16_branchfree_recover(const struct libdivide_u16_branchfree_
 
 ////////// UINT32
 
-static LIBDIVIDE_INLINE struct libdivide_u32_t libdivide_internal_u32_gen(
+static LIBDIVIDE_CONSTEXPR_INLINE struct libdivide_u32_t libdivide_internal_u32_gen(
     uint32_t d, int branchfree) {
     if (d == 0) {
         LIBDIVIDE_ERROR("divider must be != 0");
@@ -867,9 +880,9 @@ static LIBDIVIDE_INLINE struct libdivide_u32_t libdivide_internal_u32_gen(
         result.magic = 0;
         result.more = (uint8_t)(floor_log_2_d - (branchfree != 0));
     } else {
-        uint8_t more;
-        uint32_t rem, proposed_m;
-        proposed_m = libdivide_64_div_32_to_32((uint32_t)1 << floor_log_2_d, 0, d, &rem);
+        uint8_t more = 0;
+        uint32_t rem = 0;
+        uint32_t proposed_m = libdivide_64_div_32_to_32((uint32_t)1 << floor_log_2_d, 0, d, &rem);
 
         LIBDIVIDE_ASSERT(rem > 0 && rem < d);
         const uint32_t e = d - rem;
@@ -900,11 +913,11 @@ static LIBDIVIDE_INLINE struct libdivide_u32_t libdivide_internal_u32_gen(
     return result;
 }
 
-struct libdivide_u32_t libdivide_u32_gen(uint32_t d) {
+LIBDIVIDE_CONSTEXPR struct libdivide_u32_t libdivide_u32_gen(uint32_t d) {
     return libdivide_internal_u32_gen(d, 0);
 }
 
-struct libdivide_u32_branchfree_t libdivide_u32_branchfree_gen(uint32_t d) {
+LIBDIVIDE_CONSTEXPR struct libdivide_u32_branchfree_t libdivide_u32_branchfree_gen(uint32_t d) {
     if (d == 1) {
         LIBDIVIDE_ERROR("branchfree divider must be != 1");
     }
@@ -1007,7 +1020,7 @@ uint32_t libdivide_u32_branchfree_recover(const struct libdivide_u32_branchfree_
 
 /////////// UINT64
 
-static LIBDIVIDE_INLINE struct libdivide_u64_t libdivide_internal_u64_gen(
+static LIBDIVIDE_CONSTEXPR_INLINE struct libdivide_u64_t libdivide_internal_u64_gen(
     uint64_t d, int branchfree) {
     if (d == 0) {
         LIBDIVIDE_ERROR("divider must be != 0");
@@ -1025,10 +1038,10 @@ static LIBDIVIDE_INLINE struct libdivide_u64_t libdivide_internal_u64_gen(
         result.magic = 0;
         result.more = (uint8_t)(floor_log_2_d - (branchfree != 0));
     } else {
-        uint64_t proposed_m, rem;
-        uint8_t more;
+        uint64_t rem = 0;
+        uint8_t more = 0;
         // (1 << (64 + floor_log_2_d)) / d
-        proposed_m = libdivide_128_div_64_to_64((uint64_t)1 << floor_log_2_d, 0, d, &rem);
+        uint64_t proposed_m = libdivide_128_div_64_to_64((uint64_t)1 << floor_log_2_d, 0, d, &rem);
 
         LIBDIVIDE_ASSERT(rem > 0 && rem < d);
         const uint64_t e = d - rem;
@@ -1060,11 +1073,11 @@ static LIBDIVIDE_INLINE struct libdivide_u64_t libdivide_internal_u64_gen(
     return result;
 }
 
-struct libdivide_u64_t libdivide_u64_gen(uint64_t d) {
+LIBDIVIDE_CONSTEXPR struct libdivide_u64_t libdivide_u64_gen(uint64_t d) {
     return libdivide_internal_u64_gen(d, 0);
 }
 
-struct libdivide_u64_branchfree_t libdivide_u64_branchfree_gen(uint64_t d) {
+LIBDIVIDE_CONSTEXPR struct libdivide_u64_branchfree_t libdivide_u64_branchfree_gen(uint64_t d) {
     if (d == 1) {
         LIBDIVIDE_ERROR("branchfree divider must be != 1");
     }
@@ -1179,7 +1192,7 @@ uint64_t libdivide_u64_branchfree_recover(const struct libdivide_u64_branchfree_
 
 /////////// SINT16
 
-static LIBDIVIDE_INLINE struct libdivide_s16_t libdivide_internal_s16_gen(
+static LIBDIVIDE_CONSTEXPR_INLINE struct libdivide_s16_t libdivide_internal_s16_gen(
     int16_t d, int branchfree) {
     if (d == 0) {
         LIBDIVIDE_ERROR("divider must be != 0");
@@ -1205,11 +1218,12 @@ static LIBDIVIDE_INLINE struct libdivide_s16_t libdivide_internal_s16_gen(
     } else {
         LIBDIVIDE_ASSERT(floor_log_2_d >= 1);
 
-        uint8_t more;
+        uint8_t more = 0;
         // the dividend here is 2**(floor_log_2_d + 31), so the low 16 bit word
         // is 0 and the high word is floor_log_2_d - 1
-        uint16_t rem, proposed_m;
-        proposed_m = libdivide_32_div_16_to_16((uint16_t)1 << (floor_log_2_d - 1), 0, absD, &rem);
+        uint16_t rem = 0;
+        uint16_t proposed_m =
+            libdivide_32_div_16_to_16((uint16_t)1 << (floor_log_2_d - 1), 0, absD, &rem);
         const uint16_t e = absD - rem;
 
         // We are going to start with a power of floor_log_2_d - 1.
@@ -1245,11 +1259,11 @@ static LIBDIVIDE_INLINE struct libdivide_s16_t libdivide_internal_s16_gen(
     return result;
 }
 
-struct libdivide_s16_t libdivide_s16_gen(int16_t d) {
+LIBDIVIDE_CONSTEXPR struct libdivide_s16_t libdivide_s16_gen(int16_t d) {
     return libdivide_internal_s16_gen(d, 0);
 }
 
-struct libdivide_s16_branchfree_t libdivide_s16_branchfree_gen(int16_t d) {
+LIBDIVIDE_CONSTEXPR struct libdivide_s16_branchfree_t libdivide_s16_branchfree_gen(int16_t d) {
     struct libdivide_s16_t tmp = libdivide_internal_s16_gen(d, 1);
     struct libdivide_s16_branchfree_t result = {tmp.magic, tmp.more};
     return result;
@@ -1354,7 +1368,7 @@ int16_t libdivide_s16_branchfree_recover(const struct libdivide_s16_branchfree_t
 
 /////////// SINT32
 
-static LIBDIVIDE_INLINE struct libdivide_s32_t libdivide_internal_s32_gen(
+static LIBDIVIDE_CONSTEXPR_INLINE struct libdivide_s32_t libdivide_internal_s32_gen(
     int32_t d, int branchfree) {
     if (d == 0) {
         LIBDIVIDE_ERROR("divider must be != 0");
@@ -1380,11 +1394,12 @@ static LIBDIVIDE_INLINE struct libdivide_s32_t libdivide_internal_s32_gen(
     } else {
         LIBDIVIDE_ASSERT(floor_log_2_d >= 1);
 
-        uint8_t more;
+        uint8_t more = 0;
         // the dividend here is 2**(floor_log_2_d + 31), so the low 32 bit word
         // is 0 and the high word is floor_log_2_d - 1
-        uint32_t rem, proposed_m;
-        proposed_m = libdivide_64_div_32_to_32((uint32_t)1 << (floor_log_2_d - 1), 0, absD, &rem);
+        uint32_t rem = 0;
+        uint32_t proposed_m =
+            libdivide_64_div_32_to_32((uint32_t)1 << (floor_log_2_d - 1), 0, absD, &rem);
         const uint32_t e = absD - rem;
 
         // We are going to start with a power of floor_log_2_d - 1.
@@ -1420,11 +1435,11 @@ static LIBDIVIDE_INLINE struct libdivide_s32_t libdivide_internal_s32_gen(
     return result;
 }
 
-struct libdivide_s32_t libdivide_s32_gen(int32_t d) {
+LIBDIVIDE_CONSTEXPR struct libdivide_s32_t libdivide_s32_gen(int32_t d) {
     return libdivide_internal_s32_gen(d, 0);
 }
 
-struct libdivide_s32_branchfree_t libdivide_s32_branchfree_gen(int32_t d) {
+LIBDIVIDE_CONSTEXPR struct libdivide_s32_branchfree_t libdivide_s32_branchfree_gen(int32_t d) {
     struct libdivide_s32_t tmp = libdivide_internal_s32_gen(d, 1);
     struct libdivide_s32_branchfree_t result = {tmp.magic, tmp.more};
     return result;
@@ -1523,7 +1538,7 @@ int32_t libdivide_s32_branchfree_recover(const struct libdivide_s32_branchfree_t
 
 ///////////// SINT64
 
-static LIBDIVIDE_INLINE struct libdivide_s64_t libdivide_internal_s64_gen(
+static LIBDIVIDE_CONSTEXPR_INLINE struct libdivide_s64_t libdivide_internal_s64_gen(
     int64_t d, int branchfree) {
     if (d == 0) {
         LIBDIVIDE_ERROR("divider must be != 0");
@@ -1549,8 +1564,8 @@ static LIBDIVIDE_INLINE struct libdivide_s64_t libdivide_internal_s64_gen(
     } else {
         // the dividend here is 2**(floor_log_2_d + 63), so the low 64 bit word
         // is 0 and the high word is floor_log_2_d - 1
-        uint8_t more;
-        uint64_t rem, proposed_m;
+        uint8_t more = 0;
+        uint64_t rem = 0, proposed_m = 0;
         proposed_m = libdivide_128_div_64_to_64((uint64_t)1 << (floor_log_2_d - 1), 0, absD, &rem);
         const uint64_t e = absD - rem;
 
@@ -1589,11 +1604,11 @@ static LIBDIVIDE_INLINE struct libdivide_s64_t libdivide_internal_s64_gen(
     return result;
 }
 
-struct libdivide_s64_t libdivide_s64_gen(int64_t d) {
+LIBDIVIDE_CONSTEXPR struct libdivide_s64_t libdivide_s64_gen(int64_t d) {
     return libdivide_internal_s64_gen(d, 0);
 }
 
-struct libdivide_s64_branchfree_t libdivide_s64_branchfree_gen(int64_t d) {
+LIBDIVIDE_CONSTEXPR struct libdivide_s64_branchfree_t libdivide_s64_branchfree_gen(int64_t d) {
     struct libdivide_s64_t tmp = libdivide_internal_s64_gen(d, 1);
     struct libdivide_s64_branchfree_t ret = {tmp.magic, tmp.more};
     return ret;
@@ -2966,18 +2981,21 @@ __m128i libdivide_s64_branchfree_do_vec128(
 
 #ifdef __cplusplus
 
-//for constexpr zero initialization,
-//c++11 might handle things ok,
-//but just limit to at least c++14 to ensure
-//we don't break anyone's code:
+// for constexpr zero initialization,
+// c++11 might handle things ok,
+// but just limit to at least c++14 to ensure
+// we don't break anyone's code:
 
 // for gcc and clang, use https://en.cppreference.com/w/cpp/feature_test#cpp_constexpr
 #if (defined(__GNUC__) || defined(__clang__)) && (__cpp_constexpr >= 201304L)
 #define LIBDIVIDE_CONSTEXPR constexpr
 
-// supposedly, MSVC might not implement feature test macros right (https://stackoverflow.com/questions/49316752/feature-test-macros-not-working-properly-in-visual-c)
-// so check that _MSVC_LANG corresponds to at least c++14, and _MSC_VER corresponds to at least VS 2017 15.0 (for extended constexpr support https://learn.microsoft.com/en-us/cpp/overview/visual-cpp-language-conformance?view=msvc-170)
-#elif defined(_MSC_VER) && _MSC_VER >= 1910 && defined(_MSVC_LANG) && _MSVC_LANG >=201402L
+// supposedly, MSVC might not implement feature test macros right
+// (https://stackoverflow.com/questions/49316752/feature-test-macros-not-working-properly-in-visual-c)
+// so check that _MSVC_LANG corresponds to at least c++14, and _MSC_VER corresponds to at least VS
+// 2017 15.0 (for extended constexpr support
+// https://learn.microsoft.com/en-us/cpp/overview/visual-cpp-language-conformance?view=msvc-170)
+#elif defined(_MSC_VER) && _MSC_VER >= 1910 && defined(_MSVC_LANG) && _MSVC_LANG >= 201402L
 #define LIBDIVIDE_CONSTEXPR constexpr
 
 // in case some other obscure compiler has the right __cpp_constexpr :
@@ -3081,7 +3099,7 @@ struct NeonVecFor {
 #define DISPATCHER_GEN(T, ALGO)                                                       \
     libdivide_##ALGO##_t denom;                                                       \
     LIBDIVIDE_INLINE dispatcher() {}                                                  \
-    explicit LIBDIVIDE_CONSTEXPR dispatcher(decltype(nullptr)) : denom{} {}              \
+    explicit LIBDIVIDE_CONSTEXPR dispatcher(decltype(nullptr)) : denom{} {}           \
     LIBDIVIDE_INLINE dispatcher(T d) : denom(libdivide_##ALGO##_gen(d)) {}            \
     LIBDIVIDE_INLINE T divide(T n) const { return libdivide_##ALGO##_do(n, &denom); } \
     LIBDIVIDE_INLINE T recover() const { return libdivide_##ALGO##_recover(&denom); } \
