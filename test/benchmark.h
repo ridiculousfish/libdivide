@@ -313,7 +313,7 @@ NOINLINE TestResult test_one(_IntT d, const random_numerators<_IntT> &data) {
 
 inline static void print_report_header(void) {
     char buffer[256];
-    sprintf(buffer,
+    snprintf(buffer, sizeof buffer,
         "%6s %" PRIcw "s %" PRIcw "s %" PRIcw "s %" PRIcw "s %" PRIcw "s %" PRIcw "s %6s\n", "#",
         "system", "scalar", "scl_bf", "vector", "vec_bf", "gener", "algo");
     PRINT_INFO(buffer);
@@ -328,7 +328,7 @@ static void print_report_result(_IntT d, struct TestResult result) {
     char *pDenom = to_str(denom_buff, d);
 
     char report_buff[256];
-    sprintf(report_buff,
+    snprintf(report_buff, sizeof report_buff,
         "%6s %" PRIrc " %" PRIrc " %" PRIrc " %" PRIrc " %" PRIrc " %" PRIrc " %4d\n", pDenom,
         result.hardware_time, result.base_time, result.branchfree_time, result.vector_time,
         result.vector_branchfree_time, result.gen_time, result.algo);
@@ -338,9 +338,10 @@ static void print_report_result(_IntT d, struct TestResult result) {
 template <typename _IntT>
 static void print_banner() {
     char type_buffer[64];
-    sprintf(type_buffer, "=== libdivide %s benchmark ===", type_tag<_IntT>::get_tag());
+    snprintf(type_buffer, sizeof type_buffer,
+        "=== libdivide %s benchmark ===", type_tag<_IntT>::get_tag());
     char buffer[128];
-    sprintf(buffer, "\n%50s\n\n", type_buffer);
+    snprintf(buffer, sizeof buffer, "\n%50s\n\n", type_buffer);
     PRINT_INFO(buffer);
 }
 
