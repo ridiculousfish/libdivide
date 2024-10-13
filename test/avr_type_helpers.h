@@ -3,6 +3,8 @@
 #if defined(__AVR__)
 
 #include <Arduino.h>
+#include <stdint.h>
+#include <limits.h>
 
 namespace std
 {
@@ -30,8 +32,6 @@ namespace std
     struct make_unsigned<int64_t> {
         typedef uint64_t type;  
     };
-
-    static const uint8_t CHAR_BIT = 8;
 
     template <typename _IntT>
     struct numeric_limits {

@@ -121,7 +121,7 @@ class DivideTest {
             PRINT_ERROR(F(", but got "));
             PRINT_ERROR(result);
             PRINT_ERROR(F("\n"));
-            exit(1);
+            TEST_FAIL();
         }
     }
 
@@ -162,7 +162,7 @@ class DivideTest {
                     PRINT_ERROR(F(", but got "));
                     PRINT_ERROR(result);
                     PRINT_ERROR(F("\n"));
-                    exit(1);
+                    TEST_FAIL();
                 } else {
 #if 0
                         std::cout << "vec" << (CHAR_BIT * sizeof(VecType)) << " success for: " << numer << " / " << denom << " = " << result << std::endl;
@@ -325,7 +325,7 @@ class DivideTest {
             PRINT_ERROR(F(", but got "));
             PRINT_ERROR(recovered);
             PRINT_ERROR(F("\n"));
-            exit(1);
+            TEST_FAIL();
         }
 
         test_edgecase_numerators(denom, the_divider);

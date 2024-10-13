@@ -1,9 +1,9 @@
 #include <Arduino.h>
 #include <avr/sleep.h>
 #if defined(BENCHMARK)
-#include "..\..\benchmark.h"
+#include "../../benchmark.h"
 #elif defined(TEST_LIBDIVIDE)
-#include "..\..\DivideTest.h"
+#include "../../DivideTest.h"
 #elif defined(TEST_CONSTANTS)
 #include "invariant_div_test/Constant_Div_Tests.h"
 #endif
