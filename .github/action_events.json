@@ -1,0 +1,8 @@
+{
+    "//": "Event payload for running Full Build and Test locally using act. E.g.",
+    "//": "act workflow_run -W ./.github/workflows/full_build.yml --eventpath ./.github/action_events.json -P windows-latest=-self-hosted [--dryrun]",
+    "workflow_run": {
+        "action": "completed",
+        "conclusion": "success"
+    }
+}

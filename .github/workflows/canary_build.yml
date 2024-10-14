@@ -1,0 +1,34 @@
+name: Canary Build and Test
+
+on:
+  push:
+  pull_request:
+
+env:
+  build_type: Release
+  c_compiler: gcc
+  cpp_compiler: g++
+  output_folder: ${{github.workspace}}/build/
+
+jobs:
+  Canary-Build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configure CMake
+      run: >
+        cmake -B ${{env.output_folder}}
+        -DCMAKE_CXX_COMPILER=${{ env.cpp_compiler }}
+        -DCMAKE_C_COMPILER=${{ env.c_compiler }}
+        -DCMAKE_BUILD_TYPE=${{ env.build_type }}
+        -S ${{ github.workspace }}
+
+    - name: Build
+      run: cmake --build ${{env.output_folder}} --config ${{env.build_type}}
+
+    - name: Test
+      working-directory: ${{env.output_folder}}
+      run: ctest --build-config ${{env.build_type}} --verbose
+
