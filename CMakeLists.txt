@@ -303,13 +303,22 @@ endif()
 if (LIBDIVIDE_BUILD_TESTS)
     include(CTest)
     enable_testing()
-    add_test(tester tester)
-    add_test(benchmark_branchfree benchmark_branchfree)
 
+    add_test(tester tester)
     # cmake won't actually build the tests before it tries to run them
     add_test(build_tester "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target tester)
-    add_test(build_benchmark_branchfree "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target benchmark_branchfree)
-    set_tests_properties(tester benchmark_branchfree PROPERTIES DEPENDS "build_tester;build_benchmark_branchfree")
+    set_tests_properties(tester PROPERTIES DEPENDS "build_tester")
+
+    add_test(test_c99 test_c99)
+    add_test(build_test_c99 "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target test_c99)
+    set_tests_properties(test_c99 PROPERTIES DEPENDS "build_test_c99")
+
+    # Only benchmark in release builds.
+    if("${BUILD_TYPE}" MATCHES RELEASE)
+        add_test(benchmark_branchfree benchmark_branchfree)
+        add_test(build_benchmark_branchfree "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target benchmark_branchfree)
+        set_tests_properties(benchmark_branchfree PROPERTIES DEPENDS "build_benchmark_branchfree")
+    endif()
 endif()
 
 # Build the fuzzers (requires clang) ###########################
