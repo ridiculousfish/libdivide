@@ -2,16 +2,11 @@ name: Full Build and Test
 
 on:
   # This job takes a long time to run, so only run it when the canary build passes
-  workflow_run:
-    workflows: 
-      - Canary Build and Test
-    types:
-      - completed
+  workflow_call:
 
 jobs:
   Full-Build:
     runs-on: ${{ matrix.os }}
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     strategy:
       # We want to test all matrix combinations regardless of failure
@@ -38,11 +33,15 @@ jobs:
             compiler:
                 c_compiler: gcc
                 cpp_compiler: g++
+          - os: windows-2019
+            compiler:
+              c_compiler: gcc
+              cpp_compiler: g++
           # No MSVC on Ubuntu
           - os: ubuntu-latest
             compiler:
-                c_compiler: cl
-                cpp_compiler: cl
+              c_compiler: cl
+              cpp_compiler: cl
           # Exclude the canary build - no point in re-running it
           - os: ubuntu-latest
             build_type: Release
