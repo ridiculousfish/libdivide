@@ -5,7 +5,7 @@ on:
   workflow_call:
 
 jobs:
-  Full-Build:
+  Full-Build-Ubuntu:
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -13,39 +13,14 @@ jobs:
       fail-fast: false
 
       matrix:
-        os:
+        os: 
           - ubuntu-latest
-          - windows-latest
-          - windows-2019
         build_type:
           - Release
           - Sanitize
         cpp_compiler:
           - g++
           - clang++
-          - cl
-        include:
-          # MSVC Clang toolchain requires toolset argument
-          - os: windows-latest
-            cpp_compiler: clang++
-            cmake_args: -T ClangCL
-          - os: windows-2019
-            cpp_compiler: clang++
-            cmake_args: -T ClangCL
-          # Use fuzzers on ubuntu+clang
-          # Currently broken
-          # - os: ubuntu-latest
-          #   cpp_compiler: clang++
-          #   cmake_args: -DLIBDIVIDE_BUILD_FUZZERS=ON
-        exclude:
-          # No GCC on Windows
-          - os: windows-latest
-            cpp_compiler: g++
-          - os: windows-2019
-            cpp_compiler: g++
-          # No MSVC on Ubuntu
-          - os: ubuntu-latest
-            cpp_compiler: cl
     
     steps:
     - uses: actions/checkout@v4
@@ -62,6 +37,67 @@ jobs:
         # Map from C++ compiler to equivalent C compiler
         g++: gcc
         clang++: clang
+      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      run: >
+        cmake -B ${{ steps.strings.outputs.build-output-dir }}
+        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+        -DCMAKE_C_COMPILER=${{ env[matrix.cpp_compiler] }}
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -DLIBDIVIDE_BUILD_TESTS=ON
+        -S ${{ github.workspace }}
+        ${{ matrix.cmake_args }}
+
+    - name: Build
+      # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+
+    - name: Test
+      working-directory: ${{ steps.strings.outputs.build-output-dir }}
+      # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
+      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
+      run: ctest --build-config ${{ matrix.build_type }} --verbose
+
+  Full-Build-Windows:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      # We want to test all matrix combinations regardless of failure
+      fail-fast: false
+
+      matrix:
+        os:
+          - windows-latest
+          - windows-2019
+        build_type:
+          - Release
+          - Sanitize
+        cpp_compiler:
+          - clang-cl
+          - cl
+        include:
+          # MSVC Clang toolchain requires toolset argument
+          - os: windows-latest
+            cpp_compiler: clang-cl
+            cmake_args: -T ClangCL
+          - os: windows-2019
+            cpp_compiler: clang-cl
+            cmake_args: -T ClangCL
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set reusable strings
+      # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
+      id: strings
+      shell: bash
+      run: |
+        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+
+    - name: Configure CMake
+      env:
+        # Map from C++ compiler to equivalent C compiler
+        clang-cl: clang-cl
         cl: cl
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
