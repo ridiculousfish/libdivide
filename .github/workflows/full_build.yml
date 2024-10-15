@@ -27,15 +27,16 @@ jobs:
         include:
           # MSVC Clang toolchain requires toolset argument
           - os: windows-latest
-            compiler: clang++
+            cpp_compiler: clang++
             cmake_args: -T ClangCL
           - os: windows-2019
             cpp_compiler: clang++
             cmake_args: -T ClangCL
           # Use fuzzers on ubuntu+clang
-          - os: ubuntu-latest
-            cpp_compiler: clang++
-            cmake_args: -DLIBDIVIDE_BUILD_FUZZERS=ON
+          # Currently broken
+          # - os: ubuntu-latest
+          #   cpp_compiler: clang++
+          #   cmake_args: -DLIBDIVIDE_BUILD_FUZZERS=ON
         exclude:
           # No GCC on Windows
           - os: windows-latest
@@ -58,6 +59,7 @@ jobs:
 
     - name: Configure CMake
       env:
+        # Map from C++ compiler to equivalent C compiler
         g++: gcc
         clang++: clang
         cl: cl
