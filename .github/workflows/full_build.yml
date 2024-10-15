@@ -14,25 +14,36 @@ jobs:
 
       matrix:
         os:
-            - ubuntu-latest
-            - windows-latest
-            - windows-2019
+          - ubuntu-latest
+          - windows-latest
+          - windows-2019
         build_type:
-            - Release
-            - Sanitize
+          - Release
+          - Sanitize
         compiler:
-            - c_compiler: gcc
-              cpp_compiler: g++
-            - c_compiler: clang
+          - c_compiler: gcc
+            cpp_compiler: g++
+          - c_compiler: clang
+            cpp_compiler: clang++
+          - c_compiler: cl
+            cpp_compiler: cl
+        include:
+          - os: windows-latest
+            compiler:
+              c_compiler: clang
               cpp_compiler: clang++
-            - c_compiler: cl
-              cpp_compiler: cl
+            toolset: ClangCL
+          - os: windows-2019
+            compiler:
+              c_compiler: clang
+              cpp_compiler: clang++
+            toolset: ClangCL              
         exclude:
           # No GCC on Windows
           - os: windows-latest
             compiler:
-                c_compiler: gcc
-                cpp_compiler: g++
+              c_compiler: gcc
+              cpp_compiler: g++
           - os: windows-2019
             compiler:
               c_compiler: gcc
@@ -46,8 +57,8 @@ jobs:
           - os: ubuntu-latest
             build_type: Release
             compiler:
-                c_compiler: clang
-                cpp_compiler: clang++
+              c_compiler: clang
+              cpp_compiler: clang++
     
     steps:
     - uses: actions/checkout@v4
@@ -59,7 +70,8 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
-    - name: Configure CMake
+    - name: Configure CMake (No toolset)
+      if: ${{ matrix.toolset=='' }} 
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: >
@@ -68,6 +80,18 @@ jobs:
         -DCMAKE_C_COMPILER=${{ matrix.compiler.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -S ${{ github.workspace }}
+
+    - name: Configure CMake (Toolset)
+      if: ${{ matrix.toolset!='' }} 
+      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      run: >
+        cmake -B ${{ steps.strings.outputs.build-output-dir }}
+        -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cpp_compiler }}
+        -DCMAKE_C_COMPILER=${{ matrix.compiler.c_compiler }}
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -S ${{ github.workspace }}
+        -T ${{ matrix.toolset }}
 
     - name: Build
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).

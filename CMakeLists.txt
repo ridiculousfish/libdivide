@@ -14,12 +14,19 @@ include(CMakeSanitize)
 # Compile options ################################################
 
 # Maximum warnings level & warnings as error
-add_compile_options(
-    "$<$<CXX_COMPILER_ID:MSVC>:/W4;/WX>"
-    "$<$<CXX_COMPILER_ID:GNU>:-Wall;-Wextra;-pedantic;-Werror>"
-    "$<$<CXX_COMPILER_ID:Clang>:-Wall;-Wextra;-pedantic;-Werror>"
-    "$<$<CXX_COMPILER_ID:AppleClang>:-Wall;-Wextra;-pedantic;-Werror>"
-)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    if (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC") # clang-cl
+        add_compile_options("-Wall;-Wextra;-Werror")
+    elseif (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "GNU") # clang native
+        add_compile_options("-Wall;-Wextra;-pedantic;-Werror")
+    endif()
+else()
+    add_compile_options(
+        "$<$<CXX_COMPILER_ID:MSVC>:/W4;/WX>"
+        "$<$<CXX_COMPILER_ID:GNU>:-Wall;-Wextra;-pedantic;-Werror>"
+        "$<$<CXX_COMPILER_ID:AppleClang>:-Wall;-Wextra;-pedantic;-Werror>"
+    )
+endif()
 
 # Build options ################################################
 
