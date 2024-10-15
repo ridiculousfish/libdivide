@@ -20,45 +20,31 @@ jobs:
         build_type:
           - Release
           - Sanitize
-        compiler:
-          - c_compiler: gcc
-            cpp_compiler: g++
-          - c_compiler: clang
-            cpp_compiler: clang++
-          - c_compiler: cl
-            cpp_compiler: cl
+        cpp_compiler:
+          - g++
+          - clang++
+          - cl
         include:
+          # MSVC Clang toolchain requires toolset argument
           - os: windows-latest
-            compiler:
-              c_compiler: clang
-              cpp_compiler: clang++
-            toolset: ClangCL
+            compiler: clang++
+            cmake_args: -T ClangCL
           - os: windows-2019
-            compiler:
-              c_compiler: clang
-              cpp_compiler: clang++
-            toolset: ClangCL              
+            cpp_compiler: clang++
+            cmake_args: -T ClangCL
+          # Use fuzzers on ubuntu+clang
+          - os: ubuntu-latest
+            cpp_compiler: clang++
+            cmake_args: -DLIBDIVIDE_BUILD_FUZZERS=ON
         exclude:
           # No GCC on Windows
           - os: windows-latest
-            compiler:
-              c_compiler: gcc
-              cpp_compiler: g++
+            cpp_compiler: g++
           - os: windows-2019
-            compiler:
-              c_compiler: gcc
-              cpp_compiler: g++
+            cpp_compiler: g++
           # No MSVC on Ubuntu
           - os: ubuntu-latest
-            compiler:
-              c_compiler: cl
-              cpp_compiler: cl
-          # Exclude the canary build - no point in re-running it
-          - os: ubuntu-latest
-            build_type: Release
-            compiler:
-              c_compiler: clang
-              cpp_compiler: clang++
+            cpp_compiler: cl
     
     steps:
     - uses: actions/checkout@v4
@@ -70,28 +56,21 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
-    - name: Configure CMake (No toolset)
-      if: ${{ matrix.toolset=='' }} 
+    - name: Configure CMake
+      env:
+        g++: gcc
+        clang++: clang
+        cl: cl
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: >
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
-        -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cpp_compiler }}
-        -DCMAKE_C_COMPILER=${{ matrix.compiler.c_compiler }}
+        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+        -DCMAKE_C_COMPILER=${{ env[matrix.cpp_compiler] }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -DLIBDIVIDE_BUILD_TESTS=ON
         -S ${{ github.workspace }}
-
-    - name: Configure CMake (Toolset)
-      if: ${{ matrix.toolset!='' }} 
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: >
-        cmake -B ${{ steps.strings.outputs.build-output-dir }}
-        -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cpp_compiler }}
-        -DCMAKE_C_COMPILER=${{ matrix.compiler.c_compiler }}
-        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        -S ${{ github.workspace }}
-        -T ${{ matrix.toolset }}
+        ${{ matrix.cmake_args }}
 
     - name: Build
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
