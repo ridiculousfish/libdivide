@@ -8,7 +8,6 @@ on:
   
 env:
   build_type: Release
-  c_compiler: gcc
   cpp_compiler: g++
   output_folder: ${{github.workspace}}/build/
 
@@ -20,11 +19,16 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Configure CMake
+      env:
+        g++: gcc
+        clang++: clang
+        cl: cl
       run: >
         cmake -B ${{env.output_folder}}
         -DCMAKE_CXX_COMPILER=${{ env.cpp_compiler }}
-        -DCMAKE_C_COMPILER=${{ env.c_compiler }}
+        -DCMAKE_C_COMPILER=${{ env[env.cpp_compiler] }}
         -DCMAKE_BUILD_TYPE=${{ env.build_type }}
+        -DLIBDIVIDE_BUILD_TESTS=ON
         -S ${{ github.workspace }}
 
     - name: Build
