@@ -12,22 +12,6 @@ if(CMAKE_CONFIGURATION_TYPES)
     FORCE)
 endif()
 
-if (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
-  set(COMPILER_FLAGS "/fsanitize=address /MTd")
-  set(LINKER_FLAGS "/INCREMENTAL:NO")
-elseif(CMAKE_C_COMPILER_ID MATCHES "Clang")
-  if (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC") # clang-cl
-    set(COMPILER_FLAGS "/fsanitize=address /MTd")
-    set(LINKER_FLAGS "/INCREMENTAL:NO")
-  elseif (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "GNU") # clang native
-    set(COMPILER_FLAGS "-fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer -U_DLL -U_MT -DDEBUG -O1 -g")
-  endif()
-  set(LINKER_FLAGS "-fsanitize=address")
-elseif(CMAKE_C_COMPILER_ID STREQUAL "GNU")
-  set(COMPILER_FLAGS "-fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer -DDEBUG -O1 -g")
-  set(LINKER_FLAGS "-fsanitize=address -fsanitize=undefined")
-endif()
-
 set("CMAKE_CXX_FLAGS_${BUILD_NAME_U}" "${CMAKE_CXX_FLAGS_${BASE_BUILD_NAME_U}} ${COMPILER_FLAGS}" CACHE STRING
  "Flags used by the C++ compiler during ${BUILD_NAME} builds."
   FORCE)
@@ -51,3 +35,19 @@ mark_as_advanced(
 set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING
   "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel ${BUILD_NAME}."
   FORCE)
+
+if (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+  target_compile_options(libdivide INTERFACE "$<$<CONFIG:${BUILD_NAME}>:/fsanitize=address;/MTd>") 
+  target_link_options(libdivide INTERFACE "$<$<CONFIG:${BUILD_NAME}>:/INCREMENTAL:NO>")
+elseif(CMAKE_C_COMPILER_ID MATCHES "Clang")
+  if (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC") # clang-cl
+  target_compile_options(libdivide INTERFACE "$<$<CONFIG:${BUILD_NAME}>:/fsanitize=address>")   
+  target_link_libraries(libdivide INTERFACE "$<$<CONFIG:${BUILD_NAME}>:clang_rt.asan_dynamic-x86_64.lib;clang_rt.asan_dynamic_runtime_thunk-x86_64.lib>")
+  else() # clang native
+    target_compile_options(libdivide INTERFACE "$<$<CONFIG:${BUILD_NAME}>:-fsanitize=address;-fsanitize=undefined;-fno-sanitize-recover=all;-fno-omit-frame-pointer;-U_DLL;-U_MT;-DDEBUG;-O1;-g>")
+    target_link_options(libdivide INTERFACE "$<$<CONFIG:${BUILD_NAME}>:-fsanitize=address>")
+  endif()
+elseif(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+  target_compile_options(libdivide INTERFACE "$<$<CONFIG:${BUILD_NAME}>:-fsanitize=address;-fsanitize=undefined;-fno-sanitize-recover=all;-fno-omit-frame-pointer;-DDEBUG;-O1;-g>")
+  target_link_options(libdivide INTERFACE "$<$<CONFIG:${BUILD_NAME}>:-fsanitize=address;-fsanitize=undefined>")
+endif()

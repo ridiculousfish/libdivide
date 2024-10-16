@@ -9,7 +9,6 @@ include(CheckCXXSourceRuns)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 include(CMakePushCheckState)
-include(CMakeSanitize)
 
 # Compile options ################################################
 
@@ -238,6 +237,8 @@ endif()
 
 add_library(libdivide INTERFACE)
 add_library(libdivide::libdivide ALIAS libdivide)
+
+include(CMakeSanitize)
 
 target_compile_features(libdivide INTERFACE cxx_alias_templates)
 
