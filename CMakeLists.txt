@@ -16,8 +16,8 @@ include(CMakeSanitize)
 # Maximum warnings level & warnings as error
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     if (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC") # clang-cl
-        add_compile_options("-Wall;-Wextra;-Werror")
-    elseif (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "GNU") # clang native
+        add_compile_options("/W4;/WX;")
+    else() # clang native
         add_compile_options("-Wall;-Wextra;-pedantic;-Werror")
     endif()
 else()

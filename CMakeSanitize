@@ -17,7 +17,8 @@ if (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
   set(LINKER_FLAGS "/INCREMENTAL:NO")
 elseif(CMAKE_C_COMPILER_ID MATCHES "Clang")
   if (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC") # clang-cl
-    set(COMPILER_FLAGS "-fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -U_DLL -U_MT -DDEBUG -O1 -g")
+    set(COMPILER_FLAGS "/fsanitize=address /MTd")
+    set(LINKER_FLAGS "/INCREMENTAL:NO")
   elseif (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "GNU") # clang native
     set(COMPILER_FLAGS "-fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer -U_DLL -U_MT -DDEBUG -O1 -g")
   endif()
