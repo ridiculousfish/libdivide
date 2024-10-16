@@ -43,7 +43,6 @@ jobs:
         build-dir: ${{ env.output_folder }}
         c-compiler: ${{ env[matrix.cpp_compiler] }}
         cxx-compiler: ${{ matrix.cpp_compiler }}
-        args: ${{ matrix.cmake_args }}
         options: |
           LIBDIVIDE_BUILD_TESTS=ON
           CMAKE_BUILD_TYPE=${{ matrix.build_type }}
@@ -61,24 +60,32 @@ jobs:
     strategy:
       # We want to test all matrix combinations regardless of failure
       fail-fast: false
-      
+      # This makes development easier
+      # max-parallel: 0
       matrix:
         os:
-          - windows-latest
+          - windows-2022
           - windows-2019
         build_type:
           - Release
           - Sanitize
         cpp_compiler:
-          - clang++
+          - clang-cl.exe
           - cl.exe
         include:
-          # MSVC Clang toolchain requires toolset argument
-          - cpp_compiler: clang++
-            cmake_args: -T ClangCL
+          # Set generator per os
+          # Note: These *expand* the existing matrix configurations, it doesn't create new matrix configurations
+          # See https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#jobsjob_idstrategymatrixinclude
+          - os: windows-2022
+            generator: Visual Studio 17 2022
+          - os: windows-2019
+            generator: Visual Studio 16 2019
+          # clang-cl requires the toolset flag be set correctly 
+          - cpp_compiler: clang-cl.exe
+            toolset: ClangCL            
         exclude:
           # MSVC Clang toolchain fails sanitization
-          - cpp_compiler: clang++
+          - cpp_compiler: clang-cl.exe
             build_type: Sanitize
 
     env:
@@ -92,13 +99,15 @@ jobs:
       env:
         # Map from C++ compiler to equivalent C compiler
         cl.exe: cl.exe
-        clang++: clang
+        clang-cl.exe: clang-cl.exe
+        toolset: ${{ matrix.toolset && format('-T {0}', matrix.toolset) || ''}}
       uses: threeal/cmake-action@v2.0.0
       with:
         build-dir: ${{ env.output_folder }}
         c-compiler: ${{ env[matrix.cpp_compiler] }}
         cxx-compiler: ${{ matrix.cpp_compiler }}
-        args: ${{ matrix.cmake_args }}
+        generator: ${{ matrix.generator }}
+        args: ${{ env.toolset }}
         options: |
           LIBDIVIDE_BUILD_TESTS=ON
           CMAKE_BUILD_TYPE=${{ matrix.build_type }}
