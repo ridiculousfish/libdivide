@@ -1,10 +1,11 @@
 name: AVR Build & Unit Tests
 
 on:
-  # Trigger the workflow on pull request
-  pull_request:
-  # Or push
-  push:
+  # This job takes a long time to run, so only run it when the canary build passes
+  # Ideally we'd use the workflow_run trigger and have GitHub launch this action, but the docs state:
+  #     This event will only trigger a workflow run if the workflow file is on the default branch.
+  # ...which leads to some interesting behaviors
+  workflow_call:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 

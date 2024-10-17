@@ -41,3 +41,8 @@ jobs:
   Full-Build:
     needs: Canary-Build
     uses: ./.github/workflows/full_build.yml
+
+  # Kick off the full build if everything above succeeded
+  AVR-Build:
+    needs: Canary-Build
+    uses: ./.github/workflows/avr_build_test.yml
