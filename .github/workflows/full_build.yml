@@ -19,7 +19,8 @@ jobs:
 
       matrix:
         os: 
-          - ubuntu-latest
+          - ubuntu-24.04
+          - ubuntu-20.04
         build_type:
           - Release
           - Sanitize
