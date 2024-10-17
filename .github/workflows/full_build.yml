@@ -1,0 +1,121 @@
+name: Full Build and Test
+
+on:
+  # This job takes a long time to run, so only run it when the canary build passes
+  # Ideally we'd use the workflow_run trigger and have GitHub launch this action, but the docs state:
+  #     This event will only trigger a workflow run if the workflow file is on the default branch.
+  # ...which leads to some interesting behaviors
+  workflow_call:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  Full-Build-Ubuntu:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      # We want to test all matrix combinations regardless of failure
+      fail-fast: false
+
+      matrix:
+        os: 
+          - ubuntu-24.04
+          - ubuntu-20.04
+        build_type:
+          - Release
+          - Sanitize
+        cpp_compiler:
+          - g++
+          - clang++
+
+    env:
+      output_folder: ${{github.workspace}}/build/
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configure CMake & Build
+      env:
+        # Map from C++ compiler to equivalent C compiler
+        g++: gcc
+        clang++: clang
+      uses: threeal/cmake-action@v2.0.0
+      with:
+        build-dir: ${{ env.output_folder }}
+        c-compiler: ${{ env[matrix.cpp_compiler] }}
+        cxx-compiler: ${{ matrix.cpp_compiler }}
+        options: |
+          LIBDIVIDE_BUILD_TESTS=ON
+          CMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        build-args: --config ${{ matrix.build_type }}
+
+    - name: Test
+      working-directory: ${{ env.output_folder }}
+      # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
+      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
+      run: ctest --build-config ${{ matrix.build_type }} --verbose
+
+  Full-Build-Windows:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      # We want to test all matrix combinations regardless of failure
+      fail-fast: false
+      # This makes development easier
+      # max-parallel: 0
+      matrix:
+        os:
+          - windows-2022
+          - windows-2019
+        build_type:
+          - Release
+          - Sanitize
+        cpp_compiler:
+          - clang-cl.exe
+          - cl.exe
+        include:
+          # Set generator per os
+          # Note: These *expand* the existing matrix configurations, it doesn't create new matrix configurations
+          # See https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#jobsjob_idstrategymatrixinclude
+          - os: windows-2022
+            generator: Visual Studio 17 2022
+          - os: windows-2019
+            generator: Visual Studio 16 2019
+          # clang-cl requires the toolset flag be set correctly 
+          - cpp_compiler: clang-cl.exe
+            toolset: ClangCL            
+        exclude:
+          # MSVC Clang toolchain fails sanitization
+          - cpp_compiler: clang-cl.exe
+            build_type: Sanitize
+
+    env:
+      output_folder: ${{github.workspace}}/build/
+
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Configure CMake & Build
+      env:
+        # Map from C++ compiler to equivalent C compiler
+        cl.exe: cl.exe
+        clang-cl.exe: clang-cl.exe
+        toolset: ${{ matrix.toolset && format('-T {0}', matrix.toolset) || ''}}
+      uses: threeal/cmake-action@v2.0.0
+      with:
+        build-dir: ${{ env.output_folder }}
+        c-compiler: ${{ env[matrix.cpp_compiler] }}
+        cxx-compiler: ${{ matrix.cpp_compiler }}
+        generator: ${{ matrix.generator }}
+        args: ${{ env.toolset }}
+        options: |
+          LIBDIVIDE_BUILD_TESTS=ON
+          CMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        build-args: --config ${{ matrix.build_type }}
+
+    - name: Test
+      working-directory: ${{ env.output_folder }}
+      # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
+      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
+      run: ctest --build-config ${{ matrix.build_type }} --verbose

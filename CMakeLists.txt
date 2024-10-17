@@ -9,17 +9,23 @@ include(CheckCXXSourceRuns)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 include(CMakePushCheckState)
-include(CMakeSanitize)
 
 # Compile options ################################################
 
 # Maximum warnings level & warnings as error
-add_compile_options(
-    "$<$<CXX_COMPILER_ID:MSVC>:/W4;/WX>"
-    "$<$<CXX_COMPILER_ID:GNU>:-Wall;-Wextra;-pedantic;-Werror>"
-    "$<$<CXX_COMPILER_ID:Clang>:-Wall;-Wextra;-pedantic;-Werror>"
-    "$<$<CXX_COMPILER_ID:AppleClang>:-Wall;-Wextra;-pedantic;-Werror>"
-)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    if (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC") # clang-cl
+        add_compile_options("/W4;/WX;")
+    else() # clang native
+        add_compile_options("-Wall;-Wextra;-pedantic;-Werror")
+    endif()
+else()
+    add_compile_options(
+        "$<$<CXX_COMPILER_ID:MSVC>:/W4;/WX>"
+        "$<$<CXX_COMPILER_ID:GNU>:-Wall;-Wextra;-pedantic;-Werror>"
+        "$<$<CXX_COMPILER_ID:AppleClang>:-Wall;-Wextra;-pedantic;-Werror>"
+    )
+endif()
 
 # Build options ################################################
 
@@ -232,6 +238,8 @@ endif()
 add_library(libdivide INTERFACE)
 add_library(libdivide::libdivide ALIAS libdivide)
 
+include(CMakeSanitize)
+
 target_compile_features(libdivide INTERFACE cxx_alias_templates)
 
 target_include_directories(libdivide INTERFACE
@@ -303,13 +311,22 @@ endif()
 if (LIBDIVIDE_BUILD_TESTS)
     include(CTest)
     enable_testing()
-    add_test(tester tester)
-    add_test(benchmark_branchfree benchmark_branchfree)
 
+    add_test(tester tester)
     # cmake won't actually build the tests before it tries to run them
     add_test(build_tester "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target tester)
-    add_test(build_benchmark_branchfree "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target benchmark_branchfree)
-    set_tests_properties(tester benchmark_branchfree PROPERTIES DEPENDS "build_tester;build_benchmark_branchfree")
+    set_tests_properties(tester PROPERTIES DEPENDS "build_tester")
+
+    add_test(test_c99 test_c99)
+    add_test(build_test_c99 "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target test_c99)
+    set_tests_properties(test_c99 PROPERTIES DEPENDS "build_test_c99")
+
+    # Only benchmark in release builds.
+    if("${BUILD_TYPE}" MATCHES RELEASE)
+        add_test(benchmark_branchfree benchmark_branchfree)
+        add_test(build_benchmark_branchfree "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target benchmark_branchfree)
+        set_tests_properties(benchmark_branchfree PROPERTIES DEPENDS "build_benchmark_branchfree")
+    endif()
 endif()
 
 # Build the fuzzers (requires clang) ###########################
