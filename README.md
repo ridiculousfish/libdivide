@@ -1,5 +1,5 @@
 # libdivide
-[![Build Status](https://ci.appveyor.com/api/projects/status/github/ridiculousfish/libdivide?branch=master&svg=true)](https://ci.appveyor.com/project/kimwalisch/libdivide)
+[![Build Status](https://github.com/ridiculousfish/libdivide/actions/workflows/canary_build.yml/badge.svg)](https://github.com/ridiculousfish/libdivide/actions/workflows/canary_build.yml)
 [![Github Releases](https://img.shields.io/github/release/ridiculousfish/libdivide.svg)](https://github.com/ridiculousfish/libdivide/releases)
 
 ```libdivide.h```  is a header-only C/C++ library for optimizing integer division.
