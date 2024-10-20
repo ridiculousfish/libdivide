@@ -100,6 +100,7 @@ extern "C" int main(int argc, char *argv[]) {
         }
     }
 
+    std::cout << "Testing libdivide v" << LIBDIVIDE_VERSION << std::endl;
     std::string vecTypes = "";
 #if defined(LIBDIVIDE_SSE2)
     vecTypes += "sse2 ";
