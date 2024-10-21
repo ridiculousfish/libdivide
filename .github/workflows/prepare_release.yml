@@ -1,0 +1,92 @@
+name: Update version and create Release's PR Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version Type'
+        required: true
+        default: 'minor'
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
+
+jobs:
+  Create-Release-Pr:
+      runs-on: ubuntu-latest
+      env:
+        release-branch: master
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v4.2.1
+          with:
+            ref: ${{ env.release-branch }}
+
+        - name: Update the version
+          id: bump_version
+          shell: pwsh
+          run: |
+            # Extract current version
+            $header = Get-Content ./libdivide.h
+            $major_ver = [int](($header -match "LIBDIVIDE_VERSION_MAJOR")[0] -Split " ")[-1]
+            $minor_ver = [int](($header -match "LIBDIVIDE_VERSION_MINOR")[0] -Split " ")[-1]
+            $patch_ver = [int](($header -match "LIBDIVIDE_VERSION_PATCH")[0] -Split " ")[-1]
+            $current_version=@($major_ver, $minor_ver, $patch_ver) -Join "."
+
+            # Increment version
+            if ("${{ github.event.inputs.version }}" -eq "patch") {
+                $patch_ver = $patch_ver + 1
+            } elseif ("${{ github.event.inputs.version }}" -eq "minor") {
+                $minor_ver = $minor_ver + 1
+                $patch_ver = 0
+            } else { # Must be major version
+                $major_ver = $major_ver + 1
+                $minor_ver = 0
+                $patch_ver = 0
+            }
+            $new_version=@($major_ver, $minor_ver, $patch_ver) -Join "."
+
+            # Update header file
+            $header = $header -replace "#define LIBDIVIDE_VERSION_MAJOR \d+", "#define LIBDIVIDE_VERSION_MAJOR $major_ver"
+            $header = $header -replace "#define LIBDIVIDE_VERSION_MINOR \d+", "#define LIBDIVIDE_VERSION_MINOR $minor_ver"
+            $header = $header -replace "#define LIBDIVIDE_VERSION_PATCH \d+", "#define LIBDIVIDE_VERSION_PATCH $patch_ver"
+            $header | Set-Content ./libdivide.h
+
+            # Update other files
+            $file="./library.properties"
+            $regex = 'version=(\d+\.\d+(\.\d+)?)'
+            (Get-Content $file) -replace $regex, "version=$new_version" | Set-Content $file
+
+            $file="./CMakeLists.txt"
+            $regex = "set\(LIBDIVIDE_VERSION ""\d+\.\d+(\.\d+)?""\)"
+            (Get-Content $file) -replace $regex, "set(LIBDIVIDE_VERSION ""$new_version"")" | Set-Content $file
+
+            Write-Output "previous_version=$current_version" >> $Env:GITHUB_OUTPUT
+            Write-Output "version=$new_version" >> $Env:GITHUB_OUTPUT
+            Write-Output "major=$major_ver" >> $Env:GITHUB_OUTPUT
+            Write-Output "minor=$minor_ver" >> $Env:GITHUB_OUTPUT
+            Write-Output "patch=$patch_ver" >> $Env:GITHUB_OUTPUT
+        
+        - name: Generate Release Notes
+          id: notes
+          uses: RedCrafter07/release-notes-action@v1.0.1
+          with:
+            tag-name: ${{ steps.bump_version.outputs.version }}
+            token: ${{ secrets.GITHUB_TOKEN }}
+            branch: ${{ env.release-branch }}
+        
+        - name: Create release_notes.md
+          run: echo ${{ steps.notes.outputs.release-notes }} > release_notes.md
+              
+        - name: Create pull request
+          id: create_pr
+          uses: peter-evans/create-pull-request@v7.0.5
+          with:
+            token: ${{ secrets.GITHUB_TOKEN }}
+            branch: release/${{ steps.bump_version.outputs.version }}
+            title: "Release: ${{ steps.bump_version.outputs.version }} Pull Request"
+            body: "This pull request contains the updated files with the new release version"
+            base: ${{ env.release-branch }}
+            labels: ignore-for-release
