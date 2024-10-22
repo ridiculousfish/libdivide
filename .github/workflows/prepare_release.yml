@@ -1,10 +1,10 @@
-name: Update version and create Release's PR Workflow
+name: Create draft release
 
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Version Type'
+      release_type:
+        description: 'Release Type'
         required: true
         default: 'minor'
         type: choice
@@ -14,15 +14,22 @@ on:
           - patch
 
 jobs:
-  Create-Release-Pr:
+  Create-Release:
       runs-on: ubuntu-latest
-      env:
-        release-branch: master
+
+      permissions:
+        # Give the default GITHUB_TOKEN write permission to commit and push the
+        # added or changed files to the repository.
+        contents: write
+
+      outputs:
+        release_url: ${{ steps.create-draft-release.outputs.url }}
+
       steps:
         - name: Checkout code
-          uses: actions/checkout@v4.2.1
+          uses: actions/checkout@v3
           with:
-            ref: ${{ env.release-branch }}
+            ref: ${{ github.head_ref }}
 
         - name: Update the version
           id: bump_version
@@ -36,9 +43,9 @@ jobs:
             $current_version=@($major_ver, $minor_ver, $patch_ver) -Join "."
 
             # Increment version
-            if ("${{ github.event.inputs.version }}" -eq "patch") {
+            if ("${{ github.event.inputs.release_type }}" -eq "patch") {
                 $patch_ver = $patch_ver + 1
-            } elseif ("${{ github.event.inputs.version }}" -eq "minor") {
+            } elseif ("${{ github.event.inputs.release_type }}" -eq "minor") {
                 $minor_ver = $minor_ver + 1
                 $patch_ver = 0
             } else { # Must be major version
@@ -68,25 +75,19 @@ jobs:
             Write-Output "major=$major_ver" >> $Env:GITHUB_OUTPUT
             Write-Output "minor=$minor_ver" >> $Env:GITHUB_OUTPUT
             Write-Output "patch=$patch_ver" >> $Env:GITHUB_OUTPUT
-        
-        - name: Generate Release Notes
-          id: notes
-          uses: RedCrafter07/release-notes-action@v1.0.1
+
+        # Commit all changed files back to the repository
+        - name: Checkout code
+          uses: stefanzweifel/git-auto-commit-action@v5
           with:
-            tag-name: ${{ steps.bump_version.outputs.version }}
-            token: ${{ secrets.GITHUB_TOKEN }}
-            branch: ${{ env.release-branch }}
-        
-        - name: Create release_notes.md
-          run: echo ${{ steps.notes.outputs.release-notes }} > release_notes.md
-              
-        - name: Create pull request
-          id: create_pr
-          uses: peter-evans/create-pull-request@v7.0.5
+            commit_message: Auto increment version to ${{ steps.bump_version.outputs.version }}
+
+        # Create draft release
+        - name: Create draft release
+          id: create-draft-release
+          uses: softprops/action-gh-release@v2
           with:
-            token: ${{ secrets.GITHUB_TOKEN }}
-            branch: release/${{ steps.bump_version.outputs.version }}
-            title: "Release: ${{ steps.bump_version.outputs.version }} Pull Request"
-            body: "This pull request contains the updated files with the new release version"
-            base: ${{ env.release-branch }}
-            labels: ignore-for-release
+            name: v${{ steps.bump_version.outputs.version }}
+            draft: true
+            generate_release_notes: true
+            tag_name: v${{ steps.bump_version.outputs.version }}
