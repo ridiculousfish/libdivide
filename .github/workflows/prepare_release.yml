@@ -27,7 +27,7 @@ jobs:
 
       steps:
         - name: Checkout code
-          uses: actions/checkout@v3
+          uses: actions/checkout@v4
           with:
             ref: ${{ github.head_ref }}
 
@@ -91,3 +91,7 @@ jobs:
             draft: true
             generate_release_notes: true
             tag_name: v${{ steps.bump_version.outputs.version }}
+
+        - name: Generate Summary
+          run: |
+            echo "Created [v${{ steps.bump_version.outputs.version }} draft release](${{ steps.create-draft-release.outputs.url }})" >> $GITHUB_STEP_SUMMARY
