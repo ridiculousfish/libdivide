@@ -14,14 +14,14 @@ libdivide uses the same [```CMake```](https://cmake.org/) [script](./CMakeLists.
 
 Sample build commands from [CI runs](https://github.com/ridiculousfish/libdivide/actions/workflows/canary_build.yml):
 * Clang
-  ```pwsh
-  cmake -B ./build -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DLIBDIVIDE_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release
-  cmake --build ./build --config Release
+  ```bash
+  $ cmake -B ./build -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DLIBDIVIDE_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+  $ cmake --build ./build --config Release
   ```
 * MSVC (v2022)
   ```pwsh
-  cmake.exe -B ./build -G "Visual Studio 17 2022" -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe -DLIBDIVIDE_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release
-  cmake --build ./build --config Sanitize
+  PS> cmake.exe -B ./build -G "Visual Studio 17 2022" -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe -DLIBDIVIDE_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+  PS> cmake.exe --build ./build --config Sanitize
   ```
 
 ### Detail
@@ -43,16 +43,16 @@ The CMake scripts support 4 build types (```-DCMAKE_BUILD_TYPE``` and ```--confi
 * RelWithDebInfo (Release + Debug Info, useful for debugging)
 * Sanitizers (Release + Debug Info + [Sanitizers](https://github.com/google/sanitizers))
 
-Build are configured tp compile with:
+Build are configured to compile with:
   * All warnings on; and
   * Warnings as errors
 
 Optionally ```libdivide.h``` can also be installed to ```/usr/local/include```:
 
 ```bash
-cmake .
-make -j
-sudo make install
+~$ cmake .
+~$ make -j
+~$ sudo make install
 ```
 
 ## Testing
@@ -62,8 +62,8 @@ sudo make install
 The CMake script supports CTest, so running tests is as simple as:
 
 ```pwsh
-cd ./build
-ctest --build-config Sanitizers --verbose
+PS> cd ./build
+PS> ctest --build-config Sanitizers --verbose
 ```
 
 ### Detail
@@ -124,8 +124,7 @@ CI is implemented using [GitHub actions](https://github.com/ridiculousfish/libdi
 Releases are semi-automated using GitHub actions:
 
 1. Manually run the [Create draft release](https://github.com/ridiculousfish/libdivide/actions/workflows/prepare_release.yml) workflow/action: this does some codebase housekeeping (generating a new commit) and creates a draft release. 
-2. Follow the output link in the action summary to the generated draft release. E.g.
-![image](https://github.com/user-attachments/assets/7e8393f7-f204-4b3a-af37-de5e187479dc)
+2. Follow the output link in the action summary to the generated draft release. E.g. ![image](https://github.com/user-attachments/assets/7e8393f7-f204-4b3a-af37-de5e187479dc)
 3. Edit the generated release notes as needed & publish
 
 Note that PRs with the ```ignore-for-release``` label are excluded from the generated release notes.
