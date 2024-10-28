@@ -14,14 +14,14 @@ libdivide uses the same [```CMake```](https://cmake.org/) [script](./CMakeLists.
 
 Sample build commands from [CI runs](https://github.com/ridiculousfish/libdivide/actions/workflows/canary_build.yml):
 * Clang
-  ```bash
-  $ cmake -B ./build -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DLIBDIVIDE_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release
-  $ cmake --build ./build --config Release
+  ```pwsh
+  cmake -B ./build -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DLIBDIVIDE_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+  cmake --build ./build --config Release
   ```
 * MSVC (v2022)
   ```pwsh
-  PS> cmake.exe -B ./build -G "Visual Studio 17 2022" -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe -DLIBDIVIDE_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release
-  PS> cmake.exe --build ./build --config Sanitize
+  cmake.exe -B ./build -G "Visual Studio 17 2022" -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe -DLIBDIVIDE_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+  cmake.exe --build ./build --config Sanitize
   ```
 
 ### Detail
@@ -49,10 +49,10 @@ Build are configured to compile with:
 
 Optionally ```libdivide.h``` can also be installed to ```/usr/local/include```:
 
-```bash
-~$ cmake .
-~$ make -j
-~$ sudo make install
+```pwsh
+cmake .
+make -j
+sudo make install
 ```
 
 ## Testing
@@ -62,8 +62,8 @@ Optionally ```libdivide.h``` can also be installed to ```/usr/local/include```:
 The CMake script supports CTest, so running tests is as simple as:
 
 ```pwsh
-PS> cd ./build
-PS> ctest --build-config Sanitizers --verbose
+cd ./build
+ctest --build-config Sanitizers --verbose
 ```
 
 ### Detail
