@@ -144,4 +144,4 @@ Note that you need to define one of macros below to enable vector division:
 
 ## Contributing
 
-See the [Development Guide](doc/Development%20Guide.md)
+See the [Development Guide](doc/Development_Guide.md)
