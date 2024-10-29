@@ -142,6 +142,62 @@ Note that you need to define one of macros below to enable vector division:
   currently no vector multiplication instructions on x86 to efficiently calculate
   64-bit * 64-bit to 128-bit. 
 
+## Build instructions
+
+libdivide has one test program and two benchmark programs which can be built using cmake and a recent C++ compiler that supports C++11 or later. Optionally ```libdivide.h``` can also be installed to ```/usr/local/include```.
+
+```bash
+cmake .
+make -j
+sudo make install
+```
+
+## Tester program
+
+You can pass the **tester** program one or more of the following arguments: ```u32```, ```s32```, ```u64```, ```s64``` to test the four cases (signed, unsigned, 32-bit, or 64-bit), or run it with no arguments to test all four. The tester will verify the correctness of libdivide via a set of randomly chosen numerators and denominators, by comparing the result of libdivide's division to hardware division. It will stop with an error message as soon as it finds a discrepancy.
+
+## Benchmark program
+
+You can pass the **benchmark** program one or more of the following arguments: ```u16```, ```s16```, ```u32```, ```s32```, ```u64```, ```s64``` to compare libdivide's speed against hardware division. **benchmark** tests a simple function that inputs an array of random numerators and a single divisor, and returns the sum of their quotients. It tests this using both hardware division, and the various division approaches supported by libdivide, including vector division.
+
+It will output data like this:
+
+```bash
+ #   system  scalar  scl_bf  vector  vec_bf   gener   algo
+ 1   9.684   0.792   0.783   0.426   0.426    1.346   0
+ 2   9.078   0.781   1.609   0.426   1.529    1.346   0
+ 3   9.078   1.355   1.609   1.334   1.531   29.045   1
+ 4   9.076   0.787   1.609   0.426   1.529    1.346   0
+ 5   9.074   1.349   1.609   1.334   1.531   29.045   1
+ 6   9.078   1.349   1.609   1.334   1.531   29.045   1
+...
+```
+
+It will keep going as long as you let it, so it's best to stop it when you are happy with the denominators tested. These columns have the following significance. All times are in nanoseconds, lower is better.
+
+```
+     #:  The divisor that is tested
+system:  Hardware divide time
+scalar:  libdivide time, using scalar division
+scl_bf:  libdivide time, using scalar branchfree division
+vector:  libdivide time, using vector division
+vec_bf:  libdivide time, using vector branchfree division
+ gener:  Time taken to generate the divider struct
+  algo:  The algorithm used.
+```
+
+The **benchmark** program will also verify that each function returns the same value, so benchmark is valuable for its verification as well.
+
 ## Contributing
 
-See the [Development Guide](doc/Development_Guide.md)
+Although there are no individual unit tests, the supplied ```cmake``` builds do include several safety nets:
+
+* They compile with:
+  * All warnings on and;
+  * Warnings as errors
+* The CI build will build and run with sanitizers on ; these are available as part of the cmake build: ```-DCMAKE_BUILD_TYPE=Sanitize```
+* The ```cmake``` and CI builds will compile and run both ```C``` and ```C++``` test programs.
+
+Before sending in patches, build and run at least the ```tester``` and ```benchmark``` using the supplied ```cmake``` scripts on at least ```MSVC``` and ```GCC``` (or ```Clang```).
+
+### Happy hacking!
