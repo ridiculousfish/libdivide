@@ -6,12 +6,12 @@ on:
       release_type:
         description: 'Release Type'
         required: true
-        default: 'minor'
         type: choice
+        default: 'Minor (E.g. 5.2.1 to 5.3.0)'
         options:
-          - major
-          - minor
-          - patch
+          - Major (E.g. 5.2.1 to 6.0.0)
+          - Minor (E.g. 5.2.1 to 5.3.0)
+          - Patch (E.g. 5.2.1 to 5.2.2)
 
 jobs:
   Create-Release:
@@ -43,9 +43,9 @@ jobs:
             $current_version=@($major_ver, $minor_ver, $patch_ver) -Join "."
 
             # Increment version
-            if ("${{ github.event.inputs.release_type }}" -eq "patch") {
+            if ("${{ github.event.inputs.release_type }}" -like "Patch*") {
                 $patch_ver = $patch_ver + 1
-            } elseif ("${{ github.event.inputs.release_type }}" -eq "minor") {
+            } elseif ("${{ github.event.inputs.release_type }}" -like "minor*") {
                 $minor_ver = $minor_ver + 1
                 $patch_ver = 0
             } else { # Must be major version
