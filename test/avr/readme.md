@@ -10,12 +10,12 @@
  
 ## Running the Test program
 
-The test program is in the 'megaatmega2560_Test' environment.
+The test program is the 'megaatmega2560_sim_unittest' environment.
 
-To run the test program in a simulator:
- 1. On the activity bar, select PlatformIO 
- 2. Run Project Tasks -> megaatmega2560_Test -> Custom -> Simulate
-    a. This will build the test program & launch it in the simulator (this might download )supporting packages)
-    b. **NOTE** Once running it can take a **long** time for ouput to appear in the terminal. **Be patient**
-     * Or copy the simavr command line from the terminal to a command prompt (or another vscode terminal)
+To run the test program in a simulator (no hardware required!):
+
+1. On the activity bar, select PlatformIO 
+2. Run Project Tasks -> megaatmega2560_sim_unittest -> Advanced -> Test
+    1. This will build the test program & launch it in the simulator (this might download supporting packages)
+    2. **NOTE** Once running it can take a **long** time for ouput to appear in the terminal. **Be patient**
 

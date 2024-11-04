@@ -1,0 +1,98 @@
+name: Create draft release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release Type'
+        required: true
+        type: choice
+        default: 'Minor (E.g. 5.2.1 to 5.3.0)'
+        options:
+          - Major (E.g. 5.2.1 to 6.0.0)
+          - Minor (E.g. 5.2.1 to 5.3.0)
+          - Patch (E.g. 5.2.1 to 5.2.2)
+
+jobs:
+  Create-Release:
+      runs-on: ubuntu-latest
+
+      permissions:
+        # Give the default GITHUB_TOKEN write permission to commit and push the
+        # added or changed files to the repository.
+        contents: write
+
+      outputs:
+        release_url: ${{ steps.create-draft-release.outputs.url }}
+
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v4
+          with:
+            ref: ${{ github.head_ref }}
+
+        - name: Update the version
+          id: bump_version
+          shell: pwsh
+          run: |
+            # Extract current version
+            $header = Get-Content ./libdivide.h
+            $major_ver = [int](($header -match "LIBDIVIDE_VERSION_MAJOR")[0] -Split " ")[-1]
+            $minor_ver = [int](($header -match "LIBDIVIDE_VERSION_MINOR")[0] -Split " ")[-1]
+            $patch_ver = [int](($header -match "LIBDIVIDE_VERSION_PATCH")[0] -Split " ")[-1]
+            $current_version=@($major_ver, $minor_ver, $patch_ver) -Join "."
+
+            # Increment version
+            if ("${{ github.event.inputs.release_type }}" -like "Patch*") {
+                $patch_ver = $patch_ver + 1
+            } elseif ("${{ github.event.inputs.release_type }}" -like "minor*") {
+                $minor_ver = $minor_ver + 1
+                $patch_ver = 0
+            } else { # Must be major version
+                $major_ver = $major_ver + 1
+                $minor_ver = 0
+                $patch_ver = 0
+            }
+            $new_version=@($major_ver, $minor_ver, $patch_ver) -Join "."
+
+            # Update header file
+            $header = $header -replace "#define LIBDIVIDE_VERSION ""\d+\.\d+\.\d+""", "#define LIBDIVIDE_VERSION_MAJOR ""$new_version"""
+            $header = $header -replace "#define LIBDIVIDE_VERSION_MAJOR \d+", "#define LIBDIVIDE_VERSION_MAJOR $major_ver"
+            $header = $header -replace "#define LIBDIVIDE_VERSION_MINOR \d+", "#define LIBDIVIDE_VERSION_MINOR $minor_ver"
+            $header = $header -replace "#define LIBDIVIDE_VERSION_PATCH \d+", "#define LIBDIVIDE_VERSION_PATCH $patch_ver"
+            $header | Set-Content ./libdivide.h
+
+            # Update other files
+            $file="./library.properties"
+            $regex = 'version=(\d+\.\d+(\.\d+)?)'
+            (Get-Content $file) -replace $regex, "version=$new_version" | Set-Content $file
+
+            $file="./CMakeLists.txt"
+            $regex = "set\(LIBDIVIDE_VERSION ""\d+\.\d+(\.\d+)?""\)"
+            (Get-Content $file) -replace $regex, "set(LIBDIVIDE_VERSION ""$new_version"")" | Set-Content $file
+
+            Write-Output "previous_version=$current_version" >> $Env:GITHUB_OUTPUT
+            Write-Output "version=$new_version" >> $Env:GITHUB_OUTPUT
+            Write-Output "major=$major_ver" >> $Env:GITHUB_OUTPUT
+            Write-Output "minor=$minor_ver" >> $Env:GITHUB_OUTPUT
+            Write-Output "patch=$patch_ver" >> $Env:GITHUB_OUTPUT
+
+        # Commit all changed files back to the repository
+        - name: Commit updated versions
+          uses: stefanzweifel/git-auto-commit-action@v5
+          with:
+            commit_message: Auto increment version to ${{ steps.bump_version.outputs.version }}
+
+        # Create draft release
+        - name: Create draft release
+          id: create-draft-release
+          uses: softprops/action-gh-release@v2
+          with:
+            name: v${{ steps.bump_version.outputs.version }}
+            draft: true
+            generate_release_notes: true
+            tag_name: v${{ steps.bump_version.outputs.version }}
+
+        - name: Generate Summary
+          run: |
+            echo "Created [v${{ steps.bump_version.outputs.version }} draft release](${{ steps.create-draft-release.outputs.url }})" >> $GITHUB_STEP_SUMMARY
