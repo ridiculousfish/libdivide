@@ -56,7 +56,7 @@ jobs:
             $new_version=@($major_ver, $minor_ver, $patch_ver) -Join "."
 
             # Update header file
-            $header = $header -replace "#define LIBDIVIDE_VERSION ""\d+\.\d+\.\d+""", "#define LIBDIVIDE_VERSION_MAJOR ""$new_version"""
+            $header = $header -replace "#define LIBDIVIDE_VERSION ""\d+\.\d+\.\d+""", "#define LIBDIVIDE_VERSION ""$new_version"""
             $header = $header -replace "#define LIBDIVIDE_VERSION_MAJOR \d+", "#define LIBDIVIDE_VERSION_MAJOR $major_ver"
             $header = $header -replace "#define LIBDIVIDE_VERSION_MINOR \d+", "#define LIBDIVIDE_VERSION_MINOR $minor_ver"
             $header = $header -replace "#define LIBDIVIDE_VERSION_PATCH \d+", "#define LIBDIVIDE_VERSION_PATCH $patch_ver"
