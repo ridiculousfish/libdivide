@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-set(LIBDIVIDE_VERSION "5.1.1")
+set(LIBDIVIDE_VERSION "5.2.0")
 project(libdivide C CXX)
 
 include(CheckCXXCompilerFlag)
