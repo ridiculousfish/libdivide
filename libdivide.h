@@ -12,7 +12,7 @@
 #define LIBDIVIDE_H
 
 // *** Version numbers are auto generated - do not edit ***
-#define LIBDIVIDE_VERSION_MAJOR "5.1.1"
+#define LIBDIVIDE_VERSION "5.1.1"
 #define LIBDIVIDE_VERSION_MAJOR 5
 #define LIBDIVIDE_VERSION_MINOR 1
 #define LIBDIVIDE_VERSION_PATCH 1
