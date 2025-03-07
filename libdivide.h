@@ -546,7 +546,7 @@ static LIBDIVIDE_INLINE uint64_t libdivide_128_div_64_to_64(
     shift = libdivide_count_leading_zeros64(den);
     den <<= shift;
     numhi <<= shift;
-    numhi |= (numlo >> (-shift & 63)) & (-(int64_t)shift >> 63);
+    numhi |= (numlo >> (-shift & 63)) & (uint64_t)(-(int64_t)shift >> 63);
     numlo <<= shift;
 
     // Extract the low digits of the numerator and both digits of the denominator.
