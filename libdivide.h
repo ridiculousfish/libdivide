@@ -37,12 +37,13 @@
 #endif
 
 // Clang-cl prior to Visual Studio 2022 doesn't include __umulh/__mulh intrinsics
-#if defined(_MSC_VER) && defined(LIBDIVIDE_X86_64) && (!defined(__clang__) || _MSC_VER>1930)
-#define LIBDIVIDE_X64_INTRINSICS
+#if defined(_MSC_VER) && (!defined(__clang__) || _MSC_VER > 1930) && \
+    (defined(_M_X64) || defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || defined(_M_ARM64EC))
+#define LIBDIVIDE_MULH_INTRINSICS
 #endif
 
 #if defined(_MSC_VER)
-#if defined(LIBDIVIDE_X64_INTRINSICS)
+#if defined(LIBDIVIDE_MULH_INTRINSICS)
 #include <intrin.h>
 #endif
 #pragma warning(push)
@@ -334,7 +335,7 @@ static LIBDIVIDE_INLINE int32_t libdivide_mullhi_s32(int32_t x, int32_t y) {
 }
 
 static LIBDIVIDE_INLINE uint64_t libdivide_mullhi_u64(uint64_t x, uint64_t y) {
-#if defined(LIBDIVIDE_X64_INTRINSICS)
+#if defined(LIBDIVIDE_MULH_INTRINSICS)
     return __umulh(x, y);
 #elif defined(HAS_INT128_T)
     __uint128_t xl = x, yl = y;
@@ -360,7 +361,7 @@ static LIBDIVIDE_INLINE uint64_t libdivide_mullhi_u64(uint64_t x, uint64_t y) {
 }
 
 static LIBDIVIDE_INLINE int64_t libdivide_mullhi_s64(int64_t x, int64_t y) {
-#if defined(LIBDIVIDE_X64_INTRINSICS)
+#if defined(LIBDIVIDE_MULH_INTRINSICS)
     return __mulh(x, y);
 #elif defined(HAS_INT128_T)
     __int128_t xl = x, yl = y;
