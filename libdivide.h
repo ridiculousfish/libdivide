@@ -95,7 +95,11 @@
 #endif
 #endif
 #ifndef LIBDIVIDE_INLINE
+#ifdef _MSC_VER
+#define LIBDIVIDE_INLINE __forceinline
+#else
 #define LIBDIVIDE_INLINE inline
+#endif
 #endif
 
 #if defined(__AVR__)
