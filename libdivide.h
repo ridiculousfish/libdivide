@@ -46,15 +46,14 @@
 #if defined(LIBDIVIDE_MULH_INTRINSICS)
 #include <intrin.h>
 #endif
+#ifndef __clang__
 #pragma warning(push)
-// disable warning C4146: unary minus operator applied
-// to unsigned type, result still unsigned
+// 4146: unary minus operator applied to unsigned type, result still unsigned
 #pragma warning(disable : 4146)
-// disable warning C4204: nonstandard extension used : non-constant aggregate
-// initializer
-//
-// It's valid C99
+
+// 4204: nonstandard extension used : non-constant aggregate initializer
 #pragma warning(disable : 4204)
+#endif
 #define LIBDIVIDE_VC
 #endif
 
@@ -3327,7 +3326,7 @@ using branchfree_divider = divider<T, BRANCHFREE>;
 
 #endif  // __cplusplus
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) && !defined(__clang__)
 #pragma warning(pop)
 #endif
 
