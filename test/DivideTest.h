@@ -443,9 +443,9 @@ constexpr IntT DivideTest<IntT>::edgeCases[];
 
 template <typename T>
 void run_test() {
-    PRINT_INFO(F("Testing "));
-    PRINT_INFO(type_name<T>::get_name());
-    PRINT_INFO(F("\n"));
+    char msg[64];
+    snprintf(msg, sizeof(msg), "Testing %s\n", type_name<T>::get_name());
+    PRINT_INFO(msg);
     DivideTest<T> dt;
     dt.run();
 }
