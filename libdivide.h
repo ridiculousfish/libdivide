@@ -514,7 +514,7 @@ static LIBDIVIDE_INLINE uint64_t libdivide_128_div_64_to_64(
     // it's not LIBDIVIDE_INLINEd.
 #if defined(LIBDIVIDE_X86_64) && defined(LIBDIVIDE_GCC_STYLE_ASM)
     uint64_t result;
-    __asm__("divq %[v]" : "=a"(result), "=d"(*r) : [v] "r"(den), "a"(numlo), "d"(numhi));
+    __asm__("div %[v]" : "=a"(result), "=d"(*r) : [v] "r"(den), "a"(numlo), "d"(numhi));
     return result;
 #else
     // We work in base 2**32.
