@@ -27,6 +27,7 @@
 #if (defined(__cplusplus) && (__cplusplus >= 202002L)) || \
     (defined(_MSVC_LANG) && (_MSVC_LANG >= 202002L))
 #include <type_traits>
+#include <limits.h>
 #define LIBDIVIDE_CXX20 1
 #define LIBDIVIDE_CONSTEVAL (std::is_constant_evaluated())
 #else
@@ -164,10 +165,10 @@ namespace libdivide {
 static LIBDIVIDE_CONSTEXPR int __builtin_clz(unsigned x) {
 #if LIBDIVIDE_CXX20
     if (LIBDIVIDE_CONSTEVAL) {
-        for (int i = 0; i < sizeof(x) * 8; ++i) {
-            if (x >> (sizeof(x) * 8 - 1 - i)) return i;
+        for (int i = 0; i < sizeof(x) * CHAR_BIT; ++i) {
+            if (x >> (sizeof(x) * CHAR_BIT - 1 - i)) return i;
         }
-        return sizeof(x) * 8;
+        return sizeof(x) * CHAR_BIT;
     }
 #endif
 #if defined(_M_ARM) || defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || defined(_M_ARM64EC)
@@ -184,10 +185,10 @@ static LIBDIVIDE_CONSTEXPR int __builtin_clz(unsigned x) {
 static LIBDIVIDE_CONSTEXPR int __builtin_clzll(unsigned long long x) {
 #if LIBDIVIDE_CXX20
     if (LIBDIVIDE_CONSTEVAL) {
-        for (int i = 0; i < sizeof(x) * 8; ++i) {
-            if (x >> (sizeof(x) * 8 - 1 - i)) return i;
+        for (int i = 0; i < sizeof(x) * CHAR_BIT; ++i) {
+            if (x >> (sizeof(x) * CHAR_BIT - 1 - i)) return i;
         }
-        return sizeof(x) * 8;
+        return sizeof(x) * CHAR_BIT;
     }
 #endif
 #if defined(_M_ARM) || defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || defined(_M_ARM64EC)
