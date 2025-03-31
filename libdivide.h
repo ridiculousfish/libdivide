@@ -162,14 +162,16 @@ namespace libdivide {
 #endif
 
 #if defined(_MSC_VER) && !defined(__clang__)
-static LIBDIVIDE_CONSTEXPR int __builtin_clz(unsigned x) {
 #if LIBDIVIDE_CXX20
+static LIBDIVIDE_CONSTEXPR int __builtin_clz(unsigned x) {
     if (LIBDIVIDE_CONSTEVAL) {
         for (int i = 0; i < sizeof(x) * CHAR_BIT; ++i) {
             if (x >> (sizeof(x) * CHAR_BIT - 1 - i)) return i;
         }
         return sizeof(x) * CHAR_BIT;
     }
+#else
+static LIBDIVIDE_INLINE int __builtin_clz(unsigned x) {
 #endif
 #if defined(_M_ARM) || defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || defined(_M_ARM64EC)
     return (int)_CountLeadingZeros(x);
@@ -182,14 +184,16 @@ static LIBDIVIDE_CONSTEXPR int __builtin_clz(unsigned x) {
 #endif
 }
 
-static LIBDIVIDE_CONSTEXPR int __builtin_clzll(unsigned long long x) {
 #if LIBDIVIDE_CXX20
+static LIBDIVIDE_CONSTEXPR int __builtin_clzll(unsigned long long x) {
     if (LIBDIVIDE_CONSTEVAL) {
         for (int i = 0; i < sizeof(x) * CHAR_BIT; ++i) {
             if (x >> (sizeof(x) * CHAR_BIT - 1 - i)) return i;
         }
         return sizeof(x) * CHAR_BIT;
     }
+#else
+static LIBDIVIDE_INLINE int __builtin_clzll(unsigned long long x) {
 #endif
 #if defined(_M_ARM) || defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || defined(_M_ARM64EC)
     return (int)_CountLeadingZeros64(x);
