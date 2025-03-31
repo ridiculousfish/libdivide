@@ -161,7 +161,15 @@ namespace libdivide {
 #endif
 
 #if defined(_MSC_VER) && !defined(__clang__)
-static LIBDIVIDE_INLINE int __builtin_clz(unsigned x) {
+static LIBDIVIDE_CONSTEXPR int __builtin_clz(unsigned x) {
+#if LIBDIVIDE_CXX20
+    if (LIBDIVIDE_CONSTEVAL) {
+        for (int i = 0; i < sizeof(x) * 8; ++i) {
+            if (x >> (sizeof(x) * 8 - 1 - i)) return i;
+        }
+        return sizeof(x) * 8;
+    }
+#endif
 #if defined(_M_ARM) || defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || defined(_M_ARM64EC)
     return (int)_CountLeadingZeros(x);
 #elif defined(__AVX2__) || defined(__LZCNT__)
@@ -173,7 +181,15 @@ static LIBDIVIDE_INLINE int __builtin_clz(unsigned x) {
 #endif
 }
 
-static LIBDIVIDE_INLINE int __builtin_clzll(unsigned long long x) {
+static LIBDIVIDE_CONSTEXPR int __builtin_clzll(unsigned long long x) {
+#if LIBDIVIDE_CXX20
+    if (LIBDIVIDE_CONSTEVAL) {
+        for (int i = 0; i < sizeof(x) * 8; ++i) {
+            if (x >> (sizeof(x) * 8 - 1 - i)) return i;
+        }
+        return sizeof(x) * 8;
+    }
+#endif
 #if defined(_M_ARM) || defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || defined(_M_ARM64EC)
     return (int)_CountLeadingZeros64(x);
 #elif defined(_WIN64)
