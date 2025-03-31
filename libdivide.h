@@ -24,6 +24,16 @@
 #include <stdlib.h>
 #endif
 
+#if (defined(__cplusplus) && (__cplusplus >= 202002L)) || \
+    (defined(_MSVC_LANG) && (_MSVC_LANG >= 202002L))
+#include <type_traits>
+#define LIBDIVIDE_CXX20 1
+#define LIBDIVIDE_CONSTEVAL (std::is_constant_evaluated())
+#else
+#define LIBDIVIDE_CXX20 0
+#define LIBDIVIDE_CONSTEVAL 0
+#endif
+
 #if defined(LIBDIVIDE_SSE2)
 #include <emmintrin.h>
 #endif
