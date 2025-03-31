@@ -1392,7 +1392,8 @@ int16_t libdivide_s16_recover(const struct libdivide_s16_t *denom) {
 }
 
 int16_t libdivide_s16_branchfree_recover(const struct libdivide_s16_branchfree_t *denom) {
-    return libdivide_s16_recover((const struct libdivide_s16_t *)denom);
+    const struct libdivide_s16_t den = {denom->magic, denom->more};
+    return libdivide_s16_recover(&den);
 }
 
 /////////// SINT32
@@ -1564,7 +1565,8 @@ int32_t libdivide_s32_recover(const struct libdivide_s32_t *denom) {
 }
 
 int32_t libdivide_s32_branchfree_recover(const struct libdivide_s32_branchfree_t *denom) {
-    return libdivide_s32_recover((const struct libdivide_s32_t *)denom);
+    const struct libdivide_s32_t den = {denom->magic, denom->more};
+    return libdivide_s32_recover(&den);
 }
 
 ///////////// SINT64
@@ -1728,7 +1730,8 @@ int64_t libdivide_s64_recover(const struct libdivide_s64_t *denom) {
 }
 
 int64_t libdivide_s64_branchfree_recover(const struct libdivide_s64_branchfree_t *denom) {
-    return libdivide_s64_recover((const struct libdivide_s64_t *)denom);
+    const struct libdivide_s64_t den = {denom->magic, denom->more};
+    return libdivide_s64_recover(&den);
 }
 
 // Simplest possible vector type division: treat the vector type as an array
