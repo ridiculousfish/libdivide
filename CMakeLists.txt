@@ -98,10 +98,10 @@ if (LIBDIVIDE_BUILD_TESTS AND NOT CMAKE_CROSSCOMPILING)
         #include <arm_neon.h>
         int main()
         {
-            #if !defined(__ARM_NEON)
-                #error not ARM NEON CPU architecture
-            #endif
-            return 0;
+            int32x4_t a = vdupq_n_s32(0);
+            /* only available on AArch64 */
+            vuzp2q_s32(a, a);
+            return *(int *)&a;
         }"
         CPU_ARM_NEON)
     if (CPU_X86 OR CPU_ARM_NEON)
@@ -165,6 +165,8 @@ else()
     int main()
     {
         int32x4_t a = vdupq_n_s32(0);
+        /* only available on AArch64 */
+        vuzp2q_s32(a, a);
         return *(int *)&a;
     }")
     if (CMAKE_CROSSCOMPILING)
