@@ -24,6 +24,13 @@
 #include <stdlib.h>
 #endif
 
+#if defined(_MSC_VER) && (defined(__cplusplus) && (__cplusplus >= 202002L)) || \
+    (defined(_MSVC_LANG) && (_MSVC_LANG >= 202002L))
+#include <limits.h>
+#include <type_traits>
+#define LIBDIVIDE_VC_CXX20
+#endif
+
 #if defined(LIBDIVIDE_SSE2)
 #include <emmintrin.h>
 #endif
@@ -126,11 +133,42 @@
 #endif
 
 #ifdef __cplusplus
+
+// For constexpr zero initialization, c++11 might handle things ok,
+// but just limit to at least c++14 to ensure we don't break anyone's code:
+
+// for gcc and clang, use https://en.cppreference.com/w/cpp/feature_test#cpp_constexpr
+#if (defined(__GNUC__) || defined(__clang__)) && (__cpp_constexpr >= 201304L)
+#define LIBDIVIDE_CONSTEXPR constexpr LIBDIVIDE_INLINE
+
+// Supposedly, MSVC might not implement feature test macros right (https://stackoverflow.com/questions/49316752/feature-test-macros-not-working-properly-in-visual-c)
+// so check that _MSVC_LANG corresponds to at least c++14, and _MSC_VER corresponds to at least VS 2017 15.0 (for extended constexpr support https://learn.microsoft.com/en-us/cpp/overview/visual-cpp-language-conformance?view=msvc-170)
+#elif defined(_MSC_VER) && _MSC_VER >= 1910 && defined(_MSVC_LANG) && _MSVC_LANG >=201402L
+#define LIBDIVIDE_CONSTEXPR constexpr LIBDIVIDE_INLINE
+
+// in case some other obscure compiler has the right __cpp_constexpr :
+#elif defined(__cpp_constexpr) && __cpp_constexpr >= 201304L
+#define LIBDIVIDE_CONSTEXPR constexpr LIBDIVIDE_INLINE
+
+#else
+#define LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE
+#endif
+
 namespace libdivide {
 #endif
 
 #if defined(_MSC_VER) && !defined(__clang__)
+#if defined(LIBDIVIDE_VC_CXX20)
+static LIBDIVIDE_CONSTEXPR int __builtin_clz(unsigned x) {
+    if (std::is_constant_evaluated()) {
+        for (int i = 0; i < sizeof(x) * CHAR_BIT; ++i) {
+            if (x >> (sizeof(x) * CHAR_BIT - 1 - i)) return i;
+        }
+        return sizeof(x) * CHAR_BIT;
+    }
+#else
 static LIBDIVIDE_INLINE int __builtin_clz(unsigned x) {
+#endif
 #if defined(_M_ARM) || defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || defined(_M_ARM64EC)
     return (int)_CountLeadingZeros(x);
 #elif defined(__AVX2__) || defined(__LZCNT__)
@@ -142,7 +180,17 @@ static LIBDIVIDE_INLINE int __builtin_clz(unsigned x) {
 #endif
 }
 
+#if defined(LIBDIVIDE_VC_CXX20)
+static LIBDIVIDE_CONSTEXPR int __builtin_clzll(unsigned long long x) {
+    if (std::is_constant_evaluated()) {
+        for (int i = 0; i < sizeof(x) * CHAR_BIT; ++i) {
+            if (x >> (sizeof(x) * CHAR_BIT - 1 - i)) return i;
+        }
+        return sizeof(x) * CHAR_BIT;
+    }
+#else
 static LIBDIVIDE_INLINE int __builtin_clzll(unsigned long long x) {
+#endif
 #if defined(_M_ARM) || defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || defined(_M_ARM64EC)
     return (int)_CountLeadingZeros64(x);
 #elif defined(_WIN64)
@@ -3017,28 +3065,6 @@ __m128i libdivide_s64_branchfree_do_vec128(
 /////////// C++ stuff
 
 #ifdef __cplusplus
-
-//for constexpr zero initialization,
-//c++11 might handle things ok,
-//but just limit to at least c++14 to ensure
-//we don't break anyone's code:
-
-// for gcc and clang, use https://en.cppreference.com/w/cpp/feature_test#cpp_constexpr
-#if (defined(__GNUC__) || defined(__clang__)) && (__cpp_constexpr >= 201304L)
-#define LIBDIVIDE_CONSTEXPR constexpr
-
-// supposedly, MSVC might not implement feature test macros right (https://stackoverflow.com/questions/49316752/feature-test-macros-not-working-properly-in-visual-c)
-// so check that _MSVC_LANG corresponds to at least c++14, and _MSC_VER corresponds to at least VS 2017 15.0 (for extended constexpr support https://learn.microsoft.com/en-us/cpp/overview/visual-cpp-language-conformance?view=msvc-170)
-#elif defined(_MSC_VER) && _MSC_VER >= 1910 && defined(_MSVC_LANG) && _MSVC_LANG >=201402L
-#define LIBDIVIDE_CONSTEXPR constexpr
-
-// in case some other obscure compiler has the right __cpp_constexpr :
-#elif defined(__cpp_constexpr) && __cpp_constexpr >= 201304L
-#define LIBDIVIDE_CONSTEXPR constexpr
-
-#else
-#define LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE
-#endif
 
 enum Branching {
     BRANCHFULL,  // use branching algorithms
