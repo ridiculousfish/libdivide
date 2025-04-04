@@ -1093,7 +1093,7 @@ uint32_t libdivide_u32_branchfree_recover(const struct libdivide_u32_branchfree_
     }
 }
 
-/////////// UINT64
+////////// UINT64
 
 static LIBDIVIDE_INLINE struct libdivide_u64_t libdivide_internal_u64_gen(
     uint64_t d, int branchfree) {
@@ -1268,7 +1268,7 @@ uint64_t libdivide_u64_branchfree_recover(const struct libdivide_u64_branchfree_
     }
 }
 
-/////////// SINT16
+////////// SINT16
 
 static LIBDIVIDE_INLINE struct libdivide_s16_t libdivide_internal_s16_gen(
     int16_t d, int branchfree) {
@@ -1444,7 +1444,7 @@ int16_t libdivide_s16_branchfree_recover(const struct libdivide_s16_branchfree_t
     return libdivide_s16_recover(&den);
 }
 
-/////////// SINT32
+////////// SINT32
 
 static LIBDIVIDE_INLINE struct libdivide_s32_t libdivide_internal_s32_gen(
     int32_t d, int branchfree) {
@@ -1617,7 +1617,7 @@ int32_t libdivide_s32_branchfree_recover(const struct libdivide_s32_branchfree_t
     return libdivide_s32_recover(&den);
 }
 
-///////////// SINT64
+////////// SINT64
 
 static LIBDIVIDE_INLINE struct libdivide_s64_t libdivide_internal_s64_gen(
     int64_t d, int branchfree) {
@@ -3062,7 +3062,7 @@ __m128i libdivide_s64_branchfree_do_vec128(
 
 #endif
 
-/////////// C++ stuff
+////////// C++ stuff
 
 #ifdef __cplusplus
 
