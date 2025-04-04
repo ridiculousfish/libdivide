@@ -137,17 +137,16 @@
 // For constexpr zero initialization, c++11 might handle things ok,
 // but just limit to at least c++14 to ensure we don't break anyone's code:
 
-// for gcc and clang, use https://en.cppreference.com/w/cpp/feature_test#cpp_constexpr
-#if (defined(__GNUC__) || defined(__clang__)) && (__cpp_constexpr >= 201304L)
+// Use https://en.cppreference.com/w/cpp/feature_test#cpp_constexpr
+#if defined(__cpp_constexpr) && (__cpp_constexpr >= 201304L)
 #define LIBDIVIDE_CONSTEXPR constexpr LIBDIVIDE_INLINE
 
-// Supposedly, MSVC might not implement feature test macros right (https://stackoverflow.com/questions/49316752/feature-test-macros-not-working-properly-in-visual-c)
-// so check that _MSVC_LANG corresponds to at least c++14, and _MSC_VER corresponds to at least VS 2017 15.0 (for extended constexpr support https://learn.microsoft.com/en-us/cpp/overview/visual-cpp-language-conformance?view=msvc-170)
-#elif defined(_MSC_VER) && _MSC_VER >= 1910 && defined(_MSVC_LANG) && _MSVC_LANG >=201402L
-#define LIBDIVIDE_CONSTEXPR constexpr LIBDIVIDE_INLINE
-
-// in case some other obscure compiler has the right __cpp_constexpr :
-#elif defined(__cpp_constexpr) && __cpp_constexpr >= 201304L
+// Supposedly, MSVC might not implement feature test macros right:
+// https://stackoverflow.com/questions/49316752/feature-test-macros-not-working-properly-in-visual-c
+// so check that _MSVC_LANG corresponds to at least c++14, and _MSC_VER corresponds to at least VS
+// 2017 15.0 (for extended constexpr support:
+// https://learn.microsoft.com/en-us/cpp/overview/visual-cpp-language-conformance?view=msvc-170)
+#elif (defined(_MSC_VER) && _MSC_VER >= 1910) && (defined(_MSVC_LANG) && _MSVC_LANG >= 201402L)
 #define LIBDIVIDE_CONSTEXPR constexpr LIBDIVIDE_INLINE
 
 #else
