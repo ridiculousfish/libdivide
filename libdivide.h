@@ -19,7 +19,7 @@
 
 #include <stdint.h>
 
-#if !defined(__AVR__)
+#if !defined(__AVR__) && __STDC_HOSTED__ != 0
 #include <stdio.h>
 #include <stdlib.h>
 #endif
@@ -109,7 +109,7 @@
 #endif
 #endif
 
-#if defined(__AVR__)
+#if defined(__AVR__) || __STDC_HOSTED__ == 0
 #define LIBDIVIDE_ERROR(msg)
 #else
 #define LIBDIVIDE_ERROR(msg)                                                                     \
@@ -119,7 +119,7 @@
     } while (0)
 #endif
 
-#if defined(LIBDIVIDE_ASSERTIONS_ON) && !defined(__AVR__)
+#if defined(LIBDIVIDE_ASSERTIONS_ON) && !defined(__AVR__) && __STDC_HOSTED__ != 0
 #define LIBDIVIDE_ASSERT(x)                                                           \
     do {                                                                              \
         if (!(x)) {                                                                   \
