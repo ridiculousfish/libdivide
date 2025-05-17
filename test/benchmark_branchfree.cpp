@@ -171,7 +171,7 @@ void usage() {
               << std::endl;
 }
 
-extern "C" int main(int argc, const char* argv[]) {
+int main(int argc, const char* argv[]) {
     tasks_t tasks = 0;
 
     for (int i = 1; i < argc; i++) {
