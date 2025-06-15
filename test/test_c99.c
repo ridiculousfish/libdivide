@@ -2,7 +2,7 @@
  * A pure C test program. The point of this is to make sure libdivide
  * will compile as C only. 
  *
- * Since the other programs have CPP extensions, they wil be compiled as C++. This
+ * Since the other programs have CPP extensions, they will be compiled as C++. This
  * could allow C++ syntax or programming paradigms to inadvertently creep into the 
  * code base.  
  */

@@ -17,5 +17,5 @@ To run the test program in a simulator (no hardware required!):
 1. On the activity bar, select PlatformIO 
 2. Run Project Tasks -> megaatmega2560_sim_unittest -> Advanced -> Test
     1. This will build the test program & launch it in the simulator (this might download supporting packages)
-    2. **NOTE** Once running it can take a **long** time for ouput to appear in the terminal. **Be patient**
+    2. **NOTE** Once running it can take a **long** time for output to appear in the terminal. **Be patient**
 

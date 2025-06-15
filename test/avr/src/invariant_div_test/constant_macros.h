@@ -67,7 +67,7 @@ int32_t TEST_FUNC_NAME(Op, Denom)() \
 #define DEFINE_LIBDIV_FUNC(Denom) TEST_FUNC(LIBDIV_OP, LIBDIV_NAME, Denom)
 #define LIBDIV_FUNC_NAME(Denom) TEST_FUNC_NAME(LIBDIV_NAME, Denom)
 
-// Below are all helper macros for the genrated code.
+// Below are all helper macros for the generated code.
 
 #if defined(TEST_DIV)
 #if TEST_UNSIGNED

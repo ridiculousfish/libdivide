@@ -76,7 +76,7 @@ inline uint64_t unsigned_sum_vals(const IntT *vals, size_t count) {
 
 template <typename IntT, typename Divisor>
 NOINLINE uint64_t sum_quotients(const random_numerators<IntT> &vals, const Divisor &div) {
-    // Need to use unsigned to avoid signed integer overlow.
+    // Need to use unsigned to avoid signed integer overflow.
     typedef typename std::make_unsigned<IntT>::type UIntT;
     UIntT sum = 0;
     for (auto iter = vals.begin(); iter != vals.end(); ++iter) {
