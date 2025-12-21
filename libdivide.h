@@ -2819,7 +2819,7 @@ static LIBDIVIDE_INLINE __m128i libdivide_mullhi_s64_vec128(__m128i x, __m128i y
     return p;
 }
 
-////////// UINT26
+////////// UINT16
 
 __m128i libdivide_u16_do_vec128(__m128i numers, const struct libdivide_u16_t *denom) {
     uint8_t more = denom->more;
