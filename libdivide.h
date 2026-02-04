@@ -2,7 +2,7 @@
 // https://libdivide.com
 //
 // Copyright (C) 2010 - 2022 ridiculous_fish, <libdivide@ridiculousfish.com>
-// Copyright (C) 2016 - 2022 Kim Walisch, <kim.walisch@gmail.com>
+// Copyright (C) 2016 - 2026 Kim Walisch, <kim.walisch@gmail.com>
 //
 // libdivide is dual-licensed under the Boost or zlib licenses.
 // You may use libdivide under the terms of either of these.
@@ -134,39 +134,39 @@
 
 #ifdef __cplusplus
 
+// Use https://en.cppreference.com/w/cpp/feature_test#cpp_constexpr
 // For constexpr zero initialization, c++11 might handle things ok,
 // but just limit to at least c++14 to ensure we don't break anyone's code:
-
-// Use https://en.cppreference.com/w/cpp/feature_test#cpp_constexpr
 #if defined(__cpp_constexpr) && (__cpp_constexpr >= 201304L)
-#define LIBDIVIDE_CONSTEXPR constexpr LIBDIVIDE_INLINE
-
+    #define LIBDIVIDE_CONSTEXPR_INLINE constexpr LIBDIVIDE_INLINE
 // Supposedly, MSVC might not implement feature test macros right:
 // https://stackoverflow.com/questions/49316752/feature-test-macros-not-working-properly-in-visual-c
-// so check that _MSVC_LANG corresponds to at least c++14, and _MSC_VER corresponds to at least VS
-// 2017 15.0 (for extended constexpr support:
+// so check that _MSVC_LANG corresponds to at least c++14, and _MSC_VER
+// corresponds to at least VS 2017 15.0 (for extended constexpr support:
 // https://learn.microsoft.com/en-us/cpp/overview/visual-cpp-language-conformance?view=msvc-170)
-#elif (defined(_MSC_VER) && _MSC_VER >= 1910) && (defined(_MSVC_LANG) && _MSVC_LANG >= 201402L)
-#define LIBDIVIDE_CONSTEXPR constexpr LIBDIVIDE_INLINE
-
+#elif (defined(_MSC_VER) && _MSC_VER >= 1910) && \
+      (defined(_MSVC_LANG) && _MSVC_LANG >= 201402L)
+    #define LIBDIVIDE_CONSTEXPR_INLINE constexpr LIBDIVIDE_INLINE
 #else
-#define LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE
+    #define LIBDIVIDE_CONSTEXPR_INLINE LIBDIVIDE_INLINE
 #endif
 
 namespace libdivide {
 #endif
 
 #if defined(_MSC_VER) && !defined(__clang__)
+#ifndef LIBDIVIDE_CONSTEXPR_INLINE
+    #define LIBDIVIDE_CONSTEXPR_INLINE LIBDIVIDE_INLINE
+#endif
+
+static LIBDIVIDE_CONSTEXPR_INLINE int __builtin_clz(unsigned x) {
 #if defined(LIBDIVIDE_VC_CXX20)
-static LIBDIVIDE_CONSTEXPR int __builtin_clz(unsigned x) {
     if (std::is_constant_evaluated()) {
         for (int i = 0; i < sizeof(x) * CHAR_BIT; ++i) {
             if (x >> (sizeof(x) * CHAR_BIT - 1 - i)) return i;
         }
         return sizeof(x) * CHAR_BIT;
     }
-#else
-static LIBDIVIDE_INLINE int __builtin_clz(unsigned x) {
 #endif
 #if defined(_M_ARM) || defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || defined(_M_ARM64EC)
     return (int)_CountLeadingZeros(x);
@@ -179,16 +179,14 @@ static LIBDIVIDE_INLINE int __builtin_clz(unsigned x) {
 #endif
 }
 
+static LIBDIVIDE_CONSTEXPR_INLINE int __builtin_clzll(unsigned long long x) {
 #if defined(LIBDIVIDE_VC_CXX20)
-static LIBDIVIDE_CONSTEXPR int __builtin_clzll(unsigned long long x) {
     if (std::is_constant_evaluated()) {
         for (int i = 0; i < sizeof(x) * CHAR_BIT; ++i) {
             if (x >> (sizeof(x) * CHAR_BIT - 1 - i)) return i;
         }
         return sizeof(x) * CHAR_BIT;
     }
-#else
-static LIBDIVIDE_INLINE int __builtin_clzll(unsigned long long x) {
 #endif
 #if defined(_M_ARM) || defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || defined(_M_ARM64EC)
     return (int)_CountLeadingZeros64(x);
@@ -3158,7 +3156,7 @@ struct NeonVecFor {
 #define DISPATCHER_GEN(T, ALGO)                                                       \
     libdivide_##ALGO##_t denom;                                                       \
     LIBDIVIDE_INLINE dispatcher() {}                                                  \
-    explicit LIBDIVIDE_CONSTEXPR dispatcher(decltype(nullptr)) : denom{} {}              \
+    explicit LIBDIVIDE_CONSTEXPR_INLINE dispatcher(decltype(nullptr)) : denom{} {}    \
     LIBDIVIDE_INLINE dispatcher(T d) : denom(libdivide_##ALGO##_gen(d)) {}            \
     LIBDIVIDE_INLINE T divide(T n) const { return libdivide_##ALGO##_do(n, &denom); } \
     LIBDIVIDE_INLINE T recover() const { return libdivide_##ALGO##_recover(&denom); } \
@@ -3251,7 +3249,7 @@ class divider {
     divider() {}
 
     // constexpr zero-initialization to allow for use w/ static constinit
-    explicit LIBDIVIDE_CONSTEXPR divider(decltype(nullptr)) : div(nullptr) {}
+    explicit LIBDIVIDE_CONSTEXPR_INLINE divider(decltype(nullptr)) : div(nullptr) {}
 
     // Constructor that takes the divisor as a parameter
     LIBDIVIDE_INLINE divider(T d) : div(d) {}
