@@ -134,18 +134,15 @@
 
 #ifdef __cplusplus
 
+// Our __builtin_ctz() implementation for the MSVC compiler
+// requires C++20 or later for constexpr support.
+#if defined(LIBDIVIDE_VC_CXX20)
+    #define LIBDIVIDE_CONSTEXPR_INLINE constexpr LIBDIVIDE_INLINE
 // Use https://en.cppreference.com/w/cpp/feature_test#cpp_constexpr
 // For constexpr zero initialization, c++11 might handle things ok,
 // but just limit to at least c++14 to ensure we don't break anyone's code:
-#if defined(__cpp_constexpr) && (__cpp_constexpr >= 201304L)
-    #define LIBDIVIDE_CONSTEXPR_INLINE constexpr LIBDIVIDE_INLINE
-// Supposedly, MSVC might not implement feature test macros right:
-// https://stackoverflow.com/questions/49316752/feature-test-macros-not-working-properly-in-visual-c
-// so check that _MSVC_LANG corresponds to at least c++14, and _MSC_VER
-// corresponds to at least VS 2017 15.0 (for extended constexpr support:
-// https://learn.microsoft.com/en-us/cpp/overview/visual-cpp-language-conformance?view=msvc-170)
-#elif (defined(_MSC_VER) && _MSC_VER >= 1910) && \
-      (defined(_MSVC_LANG) && _MSVC_LANG >= 201402L)
+#elif (!defined(_MSC_VER) || defined(__clang__)) && \
+      defined(__cpp_constexpr) && __cpp_constexpr >= 201304L
     #define LIBDIVIDE_CONSTEXPR_INLINE constexpr LIBDIVIDE_INLINE
 #else
     #define LIBDIVIDE_CONSTEXPR_INLINE LIBDIVIDE_INLINE
@@ -155,9 +152,6 @@ namespace libdivide {
 #endif
 
 #if defined(_MSC_VER) && !defined(__clang__)
-#ifndef LIBDIVIDE_CONSTEXPR_INLINE
-    #define LIBDIVIDE_CONSTEXPR_INLINE LIBDIVIDE_INLINE
-#endif
 
 static LIBDIVIDE_CONSTEXPR_INLINE int __builtin_clz(unsigned x) {
 #if defined(LIBDIVIDE_VC_CXX20)
@@ -204,7 +198,8 @@ static LIBDIVIDE_CONSTEXPR_INLINE int __builtin_clzll(unsigned long long x) {
     return !!((unsigned)(x >> 32)) ? h : l;
 #endif
 }
-#endif // defined(_MSC_VER) && !defined(__clang__)
+
+#endif // MSVC __builtin_ctz()
 
 // pack divider structs to prevent compilers from padding.
 // This reduces memory usage by up to 43% when using a large
