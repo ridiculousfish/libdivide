@@ -134,7 +134,7 @@
 
 #ifdef __cplusplus
 
-// Our __builtin_ctz() implementation for the MSVC compiler
+// Our __builtin_clz() implementation for the MSVC compiler
 // requires C++20 or later for constexpr support.
 #if defined(LIBDIVIDE_VC_CXX20)
     #define LIBDIVIDE_CONSTEXPR_INLINE constexpr LIBDIVIDE_INLINE
@@ -204,7 +204,7 @@ static LIBDIVIDE_CONSTEXPR_INLINE int __builtin_clzll(unsigned long long x) {
 #endif
 }
 
-#endif // MSVC __builtin_ctz()
+#endif // MSVC __builtin_clz()
 
 // pack divider structs to prevent compilers from padding.
 // This reduces memory usage by up to 43% when using a large
