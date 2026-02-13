@@ -153,6 +153,11 @@ namespace libdivide {
 
 #if defined(_MSC_VER) && !defined(__clang__)
 
+// Required for C programming language
+#ifndef LIBDIVIDE_CONSTEXPR_INLINE
+    #define LIBDIVIDE_CONSTEXPR_INLINE LIBDIVIDE_INLINE
+#endif
+
 static LIBDIVIDE_CONSTEXPR_INLINE int __builtin_clz(unsigned x) {
 #if defined(LIBDIVIDE_VC_CXX20)
     if (std::is_constant_evaluated()) {
