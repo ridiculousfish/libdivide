@@ -26,9 +26,10 @@
 
 #if defined(_MSC_VER) && (defined(__cplusplus) && (__cplusplus >= 202002L)) || \
     (defined(_MSVC_LANG) && (_MSVC_LANG >= 202002L))
-#include <limits.h>
-#include <type_traits>
+#if __has_include(<bit>)
+#include <bit>
 #define LIBDIVIDE_VC_CXX20
+#endif
 #endif
 
 #if defined(LIBDIVIDE_SSE2)
@@ -160,14 +161,8 @@ namespace libdivide {
 
 static LIBDIVIDE_CONSTEXPR_INLINE int __builtin_clz(unsigned x) {
 #if defined(LIBDIVIDE_VC_CXX20)
-    if (std::is_constant_evaluated()) {
-        for (int i = 0; i < sizeof(x) * CHAR_BIT; ++i) {
-            if (x >> (sizeof(x) * CHAR_BIT - 1 - i)) return i;
-        }
-        return sizeof(x) * CHAR_BIT;
-    }
-#endif
-#if defined(_M_ARM) || defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || defined(_M_ARM64EC)
+    return std::countl_zero(x);
+#elif defined(_M_ARM) || defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || defined(_M_ARM64EC)
     return (int)_CountLeadingZeros(x);
 #elif defined(__AVX2__) || defined(__LZCNT__)
     return (int)_lzcnt_u32(x);
@@ -180,14 +175,8 @@ static LIBDIVIDE_CONSTEXPR_INLINE int __builtin_clz(unsigned x) {
 
 static LIBDIVIDE_CONSTEXPR_INLINE int __builtin_clzll(unsigned long long x) {
 #if defined(LIBDIVIDE_VC_CXX20)
-    if (std::is_constant_evaluated()) {
-        for (int i = 0; i < sizeof(x) * CHAR_BIT; ++i) {
-            if (x >> (sizeof(x) * CHAR_BIT - 1 - i)) return i;
-        }
-        return sizeof(x) * CHAR_BIT;
-    }
-#endif
-#if defined(_M_ARM) || defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || defined(_M_ARM64EC)
+    return std::countl_zero(x);
+#elif defined(_M_ARM) || defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || defined(_M_ARM64EC)
     return (int)_CountLeadingZeros64(x);
 #elif defined(_WIN64)
 #if defined(__AVX2__) || defined(__LZCNT__)
