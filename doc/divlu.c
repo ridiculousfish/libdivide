@@ -24,8 +24,15 @@ uint64_t divllu(uint64_t numhi, uint64_t numlo, uint64_t den, uint64_t *r)
     uint32_t q1;
     uint32_t q0;
 
+    // The whole quotient (i.e. q1 * b + q0).
+    uint64_t q;
+    
     // The normalization shift factor.
     int shift;
+
+    // Original values used for the remainder computation (before normalizing).
+    uint64_t den10 = den;
+    uint64_t num10 = numlo;
 
     // The high and low digits of our denominator (after normalizing).
     // Also the low 2 digits of our numerator (after normalizing).
@@ -95,10 +102,12 @@ uint64_t divllu(uint64_t numhi, uint64_t numlo, uint64_t den, uint64_t *r)
         qhat -= (c1 - c2 > den) ? 2 : 1;
     q0 = (uint32_t)qhat;
 
+    q = ((uint64_t)q1 << 32) | q0;
+
     // Return remainder if requested.
     if (r != NULL)
-        *r = (rem * b + num0 - q0 * den) >> shift;
-    return ((uint64_t)q1 << 32) | q0;
+        *r = num10 - q * den10;
+    return q;
 }
 
 uint32_t divlu(uint32_t numhi, uint32_t numlo, uint32_t den, uint32_t *r)
@@ -113,8 +122,15 @@ uint32_t divlu(uint32_t numhi, uint32_t numlo, uint32_t den, uint32_t *r)
     uint16_t q1;
     uint16_t q0;
 
+    // The whole quotient (i.e. q1 * b + q0).
+    uint32_t q;
+    
     // The normalization shift factor.
     int shift;
+
+    // Original values used for the remainder computation (before normalizing).
+    uint32_t num10 = numlo;
+    uint32_t den10 = den;
 
     // The high and low digits of our denominator (after normalizing).
     // Also the low 2 digits of our numerator (after normalizing).
@@ -183,10 +199,12 @@ uint32_t divlu(uint32_t numhi, uint32_t numlo, uint32_t den, uint32_t *r)
     if (c1 > c2)
         qhat -= (c1 - c2 > den) ? 2 : 1;
     q0 = (uint16_t)qhat;
-
+    
+    q = ((uint32_t)q1 << 16) | q0;
+    
     // Return remainder if requested.
     if (r != NULL)
-        *r = (rem * b + num0 - q0 * den) >> shift;
-    return ((uint32_t)q1 << 16) | q0;
+        *r = num10 - q * den10;
+    return q;
 }
 
