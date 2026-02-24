@@ -561,8 +561,15 @@ static LIBDIVIDE_INLINE uint64_t libdivide_128_div_64_to_64(
     uint32_t q1;
     uint32_t q0;
 
+    // The whole quotient (i.e. q1 * b + q0).
+    uint64_t q;
+
     // The normalization shift factor.
     int shift;
+
+    // Original values used for the remainder computation (before normalizing).
+    uint64_t den10 = den;
+    uint64_t num10 = numlo;
 
     // The high and low digits of our denominator (after normalizing).
     // Also the low 2 digits of our numerator (after normalizing).
@@ -629,9 +636,11 @@ static LIBDIVIDE_INLINE uint64_t libdivide_128_div_64_to_64(
     if (c1 > c2) qhat -= (c1 - c2 > den) ? 2 : 1;
     q0 = (uint32_t)qhat;
 
+    q = ((uint64_t)q1 << 32) | q0;
+
     // Return remainder if requested.
-    if (r) *r = (rem * b + num0 - q0 * den) >> shift;
-    return ((uint64_t)q1 << 32) | q0;
+    if (r) *r = num10 - q * den10;
+    return q;
 #endif
 }
 
