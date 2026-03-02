@@ -7,8 +7,8 @@
  * The dividend's low and high words are given by \p numhi and \p numlo, respectively.
  * The divisor is given by \p den.
  * \return the quotient, and the remainder by reference in \p r, if not null.
- * If the quotient would require more than 64 bits, or if denom is 0, then return the max value
- * for both quotient and remainder.
+ * If the quotient would require more than 64 bits (32 bit for divlu), or if denom is 0, then return
+ * the max value for both quotient and remainder.
  *
  * These functions are released into the public domain, where applicable, or the CC0 license.
  */
@@ -112,11 +112,11 @@ uint64_t divllu(uint64_t numhi, uint64_t numlo, uint64_t den, uint64_t *r)
 
 uint32_t divlu(uint32_t numhi, uint32_t numlo, uint32_t den, uint32_t *r)
 {
-    // We work in base 2**32.
+    // We work in base 2**16.
     // A uint16 holds a single digit. A uint32 holds two digits.
     // Our numerator is conceptually [num3, num2, num1, num0].
     // Our denominator is [den1, den0].
-    const uint32_t b = (1ull << 16);
+    const uint32_t b = (1ul << 16);
 
     // The high and low digits of our computed quotient.
     uint16_t q1;
