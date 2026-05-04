@@ -114,6 +114,9 @@ int main(int argc, char *argv[]) {
 #if defined(LIBDIVIDE_NEON)
     vecTypes += "neon ";
 #endif
+#if defined(LIBDIVIDE_SVE)
+    vecTypes += "sve ";
+#endif
     if (vecTypes.empty()) {
         vecTypes = "none ";
     }

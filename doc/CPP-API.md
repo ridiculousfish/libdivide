@@ -77,8 +77,53 @@ template <Branching ALGO>
 int64x2_t operator/=(int64x2_t &n, const divider<int64_t, ALGO> &div)
 ```
 
-You need to define ```LIBDIVIDE_NEON``` to enable SSE2 vector division.
+You need to define ```LIBDIVIDE_NEON``` to enable NEON vector division.
 
+## SVE vector division
+
+```C++
+// Overload of operator /
+template <Branching ALGO>
+svuint16_t operator/(svuint16_t n, const divider<uint16_t, ALGO> &div)
+
+template <Branching ALGO>
+svint16_t operator/(svint16_t n, const divider<int16_t, ALGO> &div)
+
+template <Branching ALGO>
+svuint32_t operator/(svuint32_t n, const divider<uint32_t, ALGO> &div)
+
+template <Branching ALGO>
+svint32_t operator/(svint32_t n, const divider<int32_t, ALGO> &div)
+
+template <Branching ALGO>
+svuint64_t operator/(svuint64_t n, const divider<uint64_t, ALGO> &div)
+
+template <Branching ALGO>
+svint64_t operator/(svint64_t n, const divider<int64_t, ALGO> &div)
+
+
+// Overload of operator /=
+template <Branching ALGO>
+svuint16_t operator/=(svuint16_t &n, const divider<uint16_t, ALGO> &div)
+
+template <Branching ALGO>
+svint16_t operator/=(svint16_t &n, const divider<int16_t, ALGO> &div)
+
+template <Branching ALGO>
+svuint32_t operator/=(svuint32_t &n, const divider<uint32_t, ALGO> &div)
+
+template <Branching ALGO>
+svint32_t operator/=(svint32_t &n, const divider<int32_t, ALGO> &div)
+
+template <Branching ALGO>
+svuint64_t operator/=(svuint64_t &n, const divider<uint64_t, ALGO> &div)
+
+template <Branching ALGO>
+svint64_t operator/=(svint64_t &n, const divider<int64_t, ALGO> &div)
+```
+
+You need to define ```LIBDIVIDE_SVE``` and compile for a target with Arm SVE
+support to enable SVE vector division.
 
 ## SSE2 vector division
 
