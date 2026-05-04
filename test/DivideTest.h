@@ -18,6 +18,7 @@ using set_t = std::numeric_limits<IntT>;
 #include <limits>
 #include <random>
 #include <string>
+#include <vector>
 typedef std::string string_class;
 #include <set>
 template <typename IntT>
@@ -39,8 +40,55 @@ using namespace libdivide;
 #define UNUSED(x) (void)(x)
 
 #if defined(LIBDIVIDE_SSE2) || defined(LIBDIVIDE_AVX2) || defined(LIBDIVIDE_AVX512) || \
-    defined(LIBDIVIDE_NEON)
+    defined(LIBDIVIDE_NEON) || defined(LIBDIVIDE_SVE)
 #define VECTOR_TESTS
+#endif
+
+#if defined(LIBDIVIDE_SVE)
+template <typename T>
+struct SveVecFuncs {};
+
+template <>
+struct SveVecFuncs<uint16_t> {
+    static size_t count() { return svcnth(); }
+    static svuint16_t load(const uint16_t *p) { return svld1_u16(svptrue_b16(), p); }
+    static void store(uint16_t *p, svuint16_t v) { svst1_u16(svptrue_b16(), p, v); }
+};
+
+template <>
+struct SveVecFuncs<int16_t> {
+    static size_t count() { return svcnth(); }
+    static svint16_t load(const int16_t *p) { return svld1_s16(svptrue_b16(), p); }
+    static void store(int16_t *p, svint16_t v) { svst1_s16(svptrue_b16(), p, v); }
+};
+
+template <>
+struct SveVecFuncs<uint32_t> {
+    static size_t count() { return svcntw(); }
+    static svuint32_t load(const uint32_t *p) { return svld1_u32(svptrue_b32(), p); }
+    static void store(uint32_t *p, svuint32_t v) { svst1_u32(svptrue_b32(), p, v); }
+};
+
+template <>
+struct SveVecFuncs<int32_t> {
+    static size_t count() { return svcntw(); }
+    static svint32_t load(const int32_t *p) { return svld1_s32(svptrue_b32(), p); }
+    static void store(int32_t *p, svint32_t v) { svst1_s32(svptrue_b32(), p, v); }
+};
+
+template <>
+struct SveVecFuncs<uint64_t> {
+    static size_t count() { return svcntd(); }
+    static svuint64_t load(const uint64_t *p) { return svld1_u64(svptrue_b64(), p); }
+    static void store(uint64_t *p, svuint64_t v) { svst1_u64(svptrue_b64(), p, v); }
+};
+
+template <>
+struct SveVecFuncs<int64_t> {
+    static size_t count() { return svcntd(); }
+    static svint64_t load(const int64_t *p) { return svld1_s64(svptrue_b64(), p); }
+    static void store(int64_t *p, svint64_t v) { svst1_s64(svptrue_b64(), p, v); }
+};
 #endif
 
 #ifdef _MSC_VER
@@ -172,6 +220,36 @@ class DivideTest {
         }
     }
 
+#if defined(LIBDIVIDE_SVE)
+    template <Branching ALGO>
+    void test_vec_sve(const T *numers, T denom, const divider<T, ALGO> &div) {
+        const size_t count = SveVecFuncs<T>::count();
+        typename SveVecFor<T>::type vec_in = SveVecFuncs<T>::load(numers);
+        typename SveVecFor<T>::type vec_result = vec_in / div;
+        std::vector<T> result(count);
+        SveVecFuncs<T>::store(result.data(), vec_result);
+
+        for (size_t i = 0; i < count; i++) {
+            T numer = numers[i];
+            T expect = numer / denom;
+            if (result[i] != expect) {
+                PRINT_ERROR(F("SVE vector failure for: "));
+                PRINT_ERROR(testcase_name(ALGO));
+                PRINT_ERROR(F(": "));
+                PRINT_ERROR(numer);
+                PRINT_ERROR(F(" / "));
+                PRINT_ERROR(denom);
+                PRINT_ERROR(F(" = "));
+                PRINT_ERROR(expect);
+                PRINT_ERROR(F(", but got "));
+                PRINT_ERROR(result[i]);
+                PRINT_ERROR(F("\n"));
+                TEST_FAIL();
+            }
+        }
+    }
+#endif
+
     // random_count * sizeof(T) must be >= size of largest
     // vector type. So figure that out at compile time.
     union vector_size_u {
@@ -295,6 +373,16 @@ class DivideTest {
             test_vec<typename NeonVecFor<T>::type>(numers, min_vector_count, denom, the_divider);
 #endif
         }
+#ifdef LIBDIVIDE_SVE
+        const size_t sve_count = SveVecFuncs<T>::count();
+        std::vector<T> sve_numers(sve_count);
+        for (size_t i = 0; i < 10000; ++i) {
+            for (size_t j = 0; j < sve_count; j++) {
+                sve_numers[j] = get_random();
+            }
+            test_vec_sve(sve_numers.data(), denom, the_divider);
+        }
+#endif
 #else
         UNUSED(denom);
         UNUSED(the_divider);

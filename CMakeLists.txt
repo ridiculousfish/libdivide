@@ -45,6 +45,7 @@ set(LIBDIVIDE_SSE2  AUTO CACHE STRING  "Enable SSE2 vector instructions")
 set(LIBDIVIDE_AVX2  AUTO CACHE STRING  "Enable AVX2 vector instructions")
 set(LIBDIVIDE_AVX512 AUTO CACHE STRING "Enable AVX512 vector instructions")
 set(LIBDIVIDE_NEON AUTO CACHE STRING "Enable ARM NEON vector instructions")
+set(LIBDIVIDE_SVE  AUTO CACHE STRING  "Enable ARM SVE vector instructions")
 
 # By default enable release mode ###############################
 
@@ -75,7 +76,7 @@ if (WARN_VEC_CONVERSIONS)
 endif()
 
 
-# Check if x86/x64 CPU  ########################################
+# Check native CPU family ######################################
 
 # Note that check_cxx_source_runs() must not be used when
 # cross-compiling otherwise the following error will occur:
@@ -176,6 +177,23 @@ else()
     endif()
 endif()
 
+# SVE
+if (NOT LIBDIVIDE_SVE STREQUAL "AUTO")
+    set(LIBDIVIDE_SVE_ENABLED "${LIBDIVIDE_SVE}")
+else()
+    set(SVE_TEST "
+    #include <arm_sve.h>
+    int main()
+    {
+        return svcntd() == 0;
+    }")
+    if (CMAKE_CROSSCOMPILING)
+        check_cxx_source_compiles("${SVE_TEST}" LIBDIVIDE_SVE_ENABLED)
+    else()
+        check_cxx_source_runs("${SVE_TEST}" LIBDIVIDE_SVE_ENABLED)
+    endif()
+endif()
+
 # AVX512
 if (NOT LIBDIVIDE_AVX512 STREQUAL "AUTO")
     set(LIBDIVIDE_AVX512_ENABLED "${LIBDIVIDE_AVX512}")
@@ -225,6 +243,9 @@ cmake_pop_check_state()
 set(LIBDIVIDE_VECTOR_EXT "")
 if(LIBDIVIDE_NEON_ENABLED)
     list(APPEND LIBDIVIDE_VECTOR_EXT "LIBDIVIDE_NEON")
+endif()
+if(LIBDIVIDE_SVE_ENABLED)
+    list(APPEND LIBDIVIDE_VECTOR_EXT "LIBDIVIDE_SVE")
 endif()
 if(LIBDIVIDE_AVX512_ENABLED)
     list(APPEND LIBDIVIDE_VECTOR_EXT "LIBDIVIDE_AVX512")

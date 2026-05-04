@@ -62,6 +62,29 @@ int64x2_t libdivide_s64_branchfree_do_vec128(int64x2_t numers, const struct libd
 
 You need to define ```LIBDIVIDE_NEON``` to enable NEON vector division.
 
+## libdivide SVE vector division
+
+```C
+/* libdivide SVE division */
+svuint16_t libdivide_u16_do_sve(svuint16_t numers, const struct libdivide_u16_t *denom);
+svint16_t libdivide_s16_do_sve(svint16_t numers, const struct libdivide_s16_t *denom);
+svuint32_t libdivide_u32_do_sve(svuint32_t numers, const struct libdivide_u32_t *denom);
+svint32_t libdivide_s32_do_sve(svint32_t numers, const struct libdivide_s32_t *denom);
+svuint64_t libdivide_u64_do_sve(svuint64_t numers, const struct libdivide_u64_t *denom);
+svint64_t libdivide_s64_do_sve(svint64_t numers, const struct libdivide_s64_t *denom);
+
+/* libdivide SVE branchfree division */
+svuint16_t libdivide_u16_branchfree_do_sve(svuint16_t numers, const struct libdivide_u16_branchfree_t *denom);
+svint16_t libdivide_s16_branchfree_do_sve(svint16_t numers, const struct libdivide_s16_branchfree_t *denom);
+svuint32_t libdivide_u32_branchfree_do_sve(svuint32_t numers, const struct libdivide_u32_branchfree_t *denom);
+svint32_t libdivide_s32_branchfree_do_sve(svint32_t numers, const struct libdivide_s32_branchfree_t *denom);
+svuint64_t libdivide_u64_branchfree_do_sve(svuint64_t numers, const struct libdivide_u64_branchfree_t *denom);
+svint64_t libdivide_s64_branchfree_do_sve(svint64_t numers, const struct libdivide_s64_branchfree_t *denom);
+```
+
+You need to define ```LIBDIVIDE_SVE``` and compile for a target with Arm SVE
+support to enable SVE vector division.
+
 ## libdivide SSE2 vector division
 
 ```C
