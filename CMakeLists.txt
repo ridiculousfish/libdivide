@@ -46,6 +46,7 @@ set(LIBDIVIDE_AVX2  AUTO CACHE STRING  "Enable AVX2 vector instructions")
 set(LIBDIVIDE_AVX512 AUTO CACHE STRING "Enable AVX512 vector instructions")
 set(LIBDIVIDE_NEON AUTO CACHE STRING "Enable ARM NEON vector instructions")
 set(LIBDIVIDE_SVE  AUTO CACHE STRING  "Enable ARM SVE vector instructions")
+set(LIBDIVIDE_SVE2 AUTO CACHE STRING  "Enable ARM SVE2 vector instructions")
 
 # By default enable release mode ###############################
 
@@ -204,6 +205,30 @@ else()
     endif()
 endif()
 
+# SVE2
+if (NOT LIBDIVIDE_SVE2 STREQUAL "AUTO")
+    set(LIBDIVIDE_SVE2_ENABLED "${LIBDIVIDE_SVE2}")
+else()
+    set(SVE2_TEST "
+    #include <arm_sve.h>
+    int main()
+    {
+        svbool_t pg = svptrue_b32();
+        svuint32_t a = svdup_n_u32(0);
+        svuint32_t b = svhadd_u32_x(pg, a, a);
+        return (int)svlastb_u32(pg, b);
+    }")
+    if (CMAKE_CROSSCOMPILING)
+        check_cxx_source_compiles("${SVE2_TEST}" LIBDIVIDE_SVE2_ENABLED)
+    else()
+        check_cxx_source_runs("${SVE2_TEST}" LIBDIVIDE_SVE2_ENABLED)
+    endif()
+endif()
+
+if(LIBDIVIDE_SVE2_ENABLED)
+    set(LIBDIVIDE_SVE_ENABLED TRUE)
+endif()
+
 # AVX512
 if (NOT LIBDIVIDE_AVX512 STREQUAL "AUTO")
     set(LIBDIVIDE_AVX512_ENABLED "${LIBDIVIDE_AVX512}")
@@ -256,6 +281,9 @@ if(LIBDIVIDE_NEON_ENABLED)
 endif()
 if(LIBDIVIDE_SVE_ENABLED)
     list(APPEND LIBDIVIDE_VECTOR_EXT "LIBDIVIDE_SVE")
+endif()
+if(LIBDIVIDE_SVE2_ENABLED)
+    list(APPEND LIBDIVIDE_VECTOR_EXT "LIBDIVIDE_SVE2")
 endif()
 if(LIBDIVIDE_AVX512_ENABLED)
     list(APPEND LIBDIVIDE_VECTOR_EXT "LIBDIVIDE_AVX512")

@@ -83,7 +83,8 @@ svint64_t libdivide_s64_branchfree_do_sve(svint64_t numers, const struct libdivi
 ```
 
 You need to define ```LIBDIVIDE_SVE``` and compile for a target with Arm SVE
-support to enable SVE vector division.
+support to enable SVE vector division. ```LIBDIVIDE_SVE2``` enables SVE2-specific
+instructions where libdivide can use them, and implies ```LIBDIVIDE_SVE```.
 
 ## libdivide SSE2 vector division
 
