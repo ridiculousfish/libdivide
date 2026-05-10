@@ -66,7 +66,7 @@ jobs:
       matrix:
         os:
           - windows-2022
-          - windows-2019
+          - windows-2025
         build_type:
           - Release
           - Sanitize
@@ -79,8 +79,8 @@ jobs:
           # See https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#jobsjob_idstrategymatrixinclude
           - os: windows-2022
             generator: Visual Studio 17 2022
-          - os: windows-2019
-            generator: Visual Studio 16 2019
+          - os: windows-2025
+            generator: Visual Studio 17 2022
           # clang-cl requires the toolset flag be set correctly 
           - cpp_compiler: clang-cl.exe
             toolset: ClangCL            
