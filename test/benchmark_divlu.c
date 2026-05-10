@@ -7,6 +7,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#if defined(_WIN32)
+#include <windows.h>
+#endif
 
 uint32_t divlu(uint32_t numhi, uint32_t numlo, uint32_t den, uint32_t *r);
 uint64_t divllu(uint64_t numhi, uint64_t numlo, uint64_t den, uint64_t *r);
@@ -17,9 +20,19 @@ uint64_t divllu(uint64_t numhi, uint64_t numlo, uint64_t den, uint64_t *r);
 typedef unsigned long long ullong;
 
 static uint64_t now_ns(void) {
+#if defined(_WIN32)
+    // clock_gettime is not available under MSVC; use the Windows monotonic timer.
+    static LARGE_INTEGER frequency;
+    LARGE_INTEGER counter;
+    if (frequency.QuadPart == 0)
+        QueryPerformanceFrequency(&frequency);
+    QueryPerformanceCounter(&counter);
+    return (uint64_t)((double)counter.QuadPart * 1000000000.0 / (double)frequency.QuadPart);
+#else
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return (uint64_t)ts.tv_sec * UINT64_C(1000000000) + (uint64_t)ts.tv_nsec;
+#endif
 }
 
 // xorshift64 RNG.
@@ -144,6 +157,8 @@ int main(void) {
             abort();
         }
 #else
+        // r_hw128 is only used when the compiler supports the __int128 reference path.
+        (void)r_hw128;
         t_hw128 = 0;
 #endif
 

@@ -75,6 +75,16 @@ if (WARN_VEC_CONVERSIONS)
     list(APPEND LIBDIVIDE_FLAGS "-fno-lax-vector-conversions")
 endif()
 
+set(LIBDIVIDE_BENCHMARK_DIVLU_FLAGS "${LIBDIVIDE_FLAGS}")
+# benchmark_divlu uses a deliberate non-standard extension in its timing harness.
+# Suppress that warning only for compilers that accept GCC-style warning flags.
+if (NOT CMAKE_C_COMPILER_ID STREQUAL "MSVC" AND NOT CMAKE_C_SIMULATE_ID STREQUAL "MSVC")
+    check_c_compiler_flag("-Wno-pedantic" WNO_PEDANTIC)
+    if (WNO_PEDANTIC)
+        list(APPEND LIBDIVIDE_BENCHMARK_DIVLU_FLAGS "-Wno-pedantic")
+    endif()
+endif()
+
 
 # Check native CPU family ######################################
 
@@ -322,7 +332,7 @@ if (LIBDIVIDE_BUILD_TESTS)
     target_compile_options(tester PRIVATE "${LIBDIVIDE_FLAGS}" "${NO_VECTORIZE}")
     target_compile_options(test_c99 PRIVATE "${LIBDIVIDE_FLAGS}" "${NO_VECTORIZE}")
     target_compile_options(test_divlu PRIVATE "${LIBDIVIDE_FLAGS}")
-    target_compile_options(benchmark_divlu PRIVATE "${LIBDIVIDE_FLAGS}" "-Wno-pedantic")
+    target_compile_options(benchmark_divlu PRIVATE "${LIBDIVIDE_BENCHMARK_DIVLU_FLAGS}")
     target_compile_options(fast_div_generator PRIVATE "${LIBDIVIDE_FLAGS}" "${NO_VECTORIZE}")
     target_compile_options(benchmark PRIVATE "${LIBDIVIDE_FLAGS}" "${NO_VECTORIZE_C}")
     target_compile_options(benchmark_branchfree PRIVATE "${LIBDIVIDE_FLAGS}" "${NO_VECTORIZE}")
