@@ -130,6 +130,7 @@ Note that you need to define one of macros below to enable vector division:
 * ```LIBDIVIDE_AVX512```
 * ```LIBDIVIDE_NEON```
 * ```LIBDIVIDE_SVE```
+* ```LIBDIVIDE_SVE2```
 
 ## Performance Tips
 

@@ -44,6 +44,10 @@
 #include <arm_neon.h>
 #endif
 
+#if defined(LIBDIVIDE_SVE2) && !defined(LIBDIVIDE_SVE)
+#define LIBDIVIDE_SVE
+#endif
+
 #if defined(LIBDIVIDE_SVE)
 #include <arm_sve.h>
 #endif
@@ -2152,21 +2156,30 @@ static LIBDIVIDE_INLINE svint64_t libdivide_s64_sve_sra(svint64_t v, uint8_t amt
     return svasr_n_s64_x(svptrue_b64(), v, amt);
 }
 
-// unsigned halving subtract: (x - y) >> 1
-// SVE2 has svhsub_u*_x() for this operation, could be useful later
-static LIBDIVIDE_INLINE svuint16_t libdivide_u16_sve_hsub(svuint16_t x, svuint16_t y) {
+// unsigned halving add: (x + y) >> 1
+static LIBDIVIDE_INLINE svuint16_t libdivide_u16_sve_hadd(svuint16_t x, svuint16_t y) {
     svbool_t pg = svptrue_b16();
-    return svlsr_n_u16_x(pg, svsub_u16_x(pg, x, y), 1);
+#if defined(LIBDIVIDE_SVE2)
+    return svhadd_u16_x(pg, x, y);
+#else
+    return svadd_u16_x(pg, svlsr_n_u16_x(pg, svsub_u16_x(pg, x, y), 1), y);
+#endif
 }
 
-static LIBDIVIDE_INLINE svuint32_t libdivide_u32_sve_hsub(svuint32_t x, svuint32_t y) {
+static LIBDIVIDE_INLINE svuint32_t libdivide_u32_sve_hadd(svuint32_t x, svuint32_t y) {
     svbool_t pg = svptrue_b32();
-    return svlsr_n_u32_x(pg, svsub_u32_x(pg, x, y), 1);
+#if defined(LIBDIVIDE_SVE2)
+    return svhadd_u32_x(pg, x, y);
+#else
+    return svadd_u32_x(pg, svlsr_n_u32_x(pg, svsub_u32_x(pg, x, y), 1), y);
+#endif
 }
 
-static LIBDIVIDE_INLINE svuint64_t libdivide_u64_sve_hsub(svuint64_t x, svuint64_t y) {
+static LIBDIVIDE_INLINE svuint64_t libdivide_u64_sve_hadd(svuint64_t x, svuint64_t y) {
     svbool_t pg = svptrue_b64();
-    return svlsr_n_u64_x(pg, svsub_u64_x(pg, x, y), 1);
+    // SVE2 has svhadd_u64_x, but it was neutral to slower on Graviton4.
+    // Keep the base SVE sequence for the 64-bit add-marker path.
+    return svadd_u64_x(pg, svlsr_n_u64_x(pg, svsub_u64_x(pg, x, y), 1), y);
 }
 
 // sign mask: 0 for non-negative lanes, -1 for negative lanes
@@ -2195,9 +2208,9 @@ svuint16_t libdivide_u16_do_sve(svuint16_t numers, const struct libdivide_u16_t 
 
     svuint16_t q = svmulh_n_u16_x(pg, numers, denom->magic);
     if (more & LIBDIVIDE_ADD_MARKER) {
-        // t = ((numers - q) >> 1) + q
+        // t = (numers + q) >> 1
         uint8_t shift = more & LIBDIVIDE_16_SHIFT_MASK;
-        svuint16_t t = svadd_u16_x(pg, libdivide_u16_sve_hsub(numers, q), q);
+        svuint16_t t = libdivide_u16_sve_hadd(numers, q);
         return libdivide_u16_sve_srl(t, shift);
     }
 
@@ -2209,7 +2222,7 @@ svuint16_t libdivide_u16_branchfree_do_sve(
     svbool_t pg = svptrue_b16();
     // branchfree always uses the add-marker correction
     svuint16_t q = svmulh_n_u16_x(pg, numers, denom->magic);
-    svuint16_t t = svadd_u16_x(pg, libdivide_u16_sve_hsub(numers, q), q);
+    svuint16_t t = libdivide_u16_sve_hadd(numers, q);
     return libdivide_u16_sve_srl(t, denom->more);
 }
 
@@ -2226,9 +2239,9 @@ svuint32_t libdivide_u32_do_sve(svuint32_t numers, const struct libdivide_u32_t 
 
     svuint32_t q = svmulh_n_u32_x(pg, numers, denom->magic);
     if (more & LIBDIVIDE_ADD_MARKER) {
-        // t = ((numers - q) >> 1) + q
+        // t = (numers + q) >> 1
         uint8_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
-        svuint32_t t = svadd_u32_x(pg, libdivide_u32_sve_hsub(numers, q), q);
+        svuint32_t t = libdivide_u32_sve_hadd(numers, q);
         return libdivide_u32_sve_srl(t, shift);
     }
 
@@ -2240,7 +2253,7 @@ svuint32_t libdivide_u32_branchfree_do_sve(
     svbool_t pg = svptrue_b32();
     // branchfree always uses the add-marker correction
     svuint32_t q = svmulh_n_u32_x(pg, numers, denom->magic);
-    svuint32_t t = svadd_u32_x(pg, libdivide_u32_sve_hsub(numers, q), q);
+    svuint32_t t = libdivide_u32_sve_hadd(numers, q);
     return libdivide_u32_sve_srl(t, denom->more);
 }
 
@@ -2257,9 +2270,9 @@ svuint64_t libdivide_u64_do_sve(svuint64_t numers, const struct libdivide_u64_t 
 
     svuint64_t q = svmulh_n_u64_x(pg, numers, denom->magic);
     if (more & LIBDIVIDE_ADD_MARKER) {
-        // t = ((numers - q) >> 1) + q
+        // t = (numers + q) >> 1
         uint8_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
-        svuint64_t t = svadd_u64_x(pg, libdivide_u64_sve_hsub(numers, q), q);
+        svuint64_t t = libdivide_u64_sve_hadd(numers, q);
         return libdivide_u64_sve_srl(t, shift);
     }
 
@@ -2271,7 +2284,7 @@ svuint64_t libdivide_u64_branchfree_do_sve(
     svbool_t pg = svptrue_b64();
     // branchfree always uses the add-marker correction
     svuint64_t q = svmulh_n_u64_x(pg, numers, denom->magic);
-    svuint64_t t = svadd_u64_x(pg, libdivide_u64_sve_hsub(numers, q), q);
+    svuint64_t t = libdivide_u64_sve_hadd(numers, q);
     return libdivide_u64_sve_srl(t, denom->more);
 }
 
@@ -2287,8 +2300,8 @@ svint16_t libdivide_s16_do_sve(svint16_t numers, const struct libdivide_s16_t *d
         uint16_t mask = ((uint16_t)1 << shift) - 1;
 
         // q = (numers + ((numers < 0) ? mask : 0)) >> shift
-        svint16_t q = svadd_s16_x(pg, numers,
-            svand_s16_x(pg, libdivide_s16_sve_signbits(numers), svdup_n_s16((int16_t)mask)));
+        svint16_t q =
+            svadd_s16_m(svcmplt_n_s16(pg, numers, 0), numers, svdup_n_s16((int16_t)mask));
         q = libdivide_s16_sve_sra(q, shift);
 
         // flip sign if divisor was negative
@@ -2322,7 +2335,7 @@ svint16_t libdivide_s16_branchfree_do_sve(
     uint32_t mask = ((uint32_t)1 << shift) - is_power_of_2;
     svint16_t mask_vec = svdup_n_s16((int16_t)mask);
     // negative q needs a bias before arithmetic shift
-    q = svadd_s16_x(pg, q, svand_s16_x(pg, libdivide_s16_sve_signbits(q), mask_vec));
+    q = svadd_s16_m(svcmplt_n_s16(pg, q, 0), q, mask_vec);
     q = libdivide_s16_sve_sra(q, shift);
     return svsub_s16_x(pg, sveor_s16_x(pg, q, sign), sign);
 }
@@ -2339,8 +2352,8 @@ svint32_t libdivide_s32_do_sve(svint32_t numers, const struct libdivide_s32_t *d
         uint32_t mask = ((uint32_t)1 << shift) - 1;
 
         // q = (numers + ((numers < 0) ? mask : 0)) >> shift
-        svint32_t q = svadd_s32_x(pg, numers,
-            svand_s32_x(pg, libdivide_s32_sve_signbits(numers), svdup_n_s32((int32_t)mask)));
+        svint32_t q =
+            svadd_s32_m(svcmplt_n_s32(pg, numers, 0), numers, svdup_n_s32((int32_t)mask));
         q = libdivide_s32_sve_sra(q, shift);
 
         // flip sign if divisor was negative
@@ -2374,7 +2387,7 @@ svint32_t libdivide_s32_branchfree_do_sve(
     uint32_t mask = ((uint32_t)1 << shift) - is_power_of_2;
     svint32_t mask_vec = svdup_n_s32((int32_t)mask);
     // negative q needs a bias before arithmetic shift
-    q = svadd_s32_x(pg, q, svand_s32_x(pg, libdivide_s32_sve_signbits(q), mask_vec));
+    q = svadd_s32_m(svcmplt_n_s32(pg, q, 0), q, mask_vec);
     q = libdivide_s32_sve_sra(q, shift);
     return svsub_s32_x(pg, sveor_s32_x(pg, q, sign), sign);
 }
@@ -2392,8 +2405,8 @@ svint64_t libdivide_s64_do_sve(svint64_t numers, const struct libdivide_s64_t *d
         uint64_t mask = ((uint64_t)1 << shift) - 1;
 
         // q = (numers + ((numers < 0) ? mask : 0)) >> shift
-        svint64_t q = svadd_s64_x(pg, numers,
-            svand_s64_x(pg, libdivide_s64_sve_signbits(numers), svdup_n_s64((int64_t)mask)));
+        svint64_t q =
+            svadd_s64_m(svcmplt_n_s64(pg, numers, 0), numers, svdup_n_s64((int64_t)mask));
         q = libdivide_s64_sve_sra(q, shift);
 
         // flip sign if divisor was negative
@@ -2426,7 +2439,7 @@ svint64_t libdivide_s64_branchfree_do_sve(
     uint64_t is_power_of_2 = (magic == 0);
     svint64_t mask = svdup_n_s64((int64_t)(((uint64_t)1 << shift) - is_power_of_2));
     // negative q needs a bias before arithmetic shift
-    q = svadd_s64_x(pg, q, svand_s64_x(pg, libdivide_s64_sve_signbits(q), mask));
+    q = svadd_s64_m(svcmplt_n_s64(pg, q, 0), q, mask);
     q = libdivide_s64_sve_sra(q, shift);
     return svsub_s64_x(pg, sveor_s64_x(pg, q, sign), sign);
 }

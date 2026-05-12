@@ -123,7 +123,8 @@ svint64_t operator/=(svint64_t &n, const divider<int64_t, ALGO> &div)
 ```
 
 You need to define ```LIBDIVIDE_SVE``` and compile for a target with Arm SVE
-support to enable SVE vector division.
+support to enable SVE vector division. ```LIBDIVIDE_SVE2``` enables SVE2-specific
+instructions where libdivide can use them, and implies ```LIBDIVIDE_SVE```.
 
 ## SSE2 vector division
 
