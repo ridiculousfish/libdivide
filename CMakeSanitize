@@ -37,12 +37,13 @@ set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING
   FORCE)
 
 if (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
-  target_compile_options(libdivide INTERFACE "$<$<CONFIG:${BUILD_NAME}>:/fsanitize=address;/MTd>") 
-  target_link_options(libdivide INTERFACE "$<$<CONFIG:${BUILD_NAME}>:/INCREMENTAL:NO>")
+  target_compile_options(libdivide INTERFACE "$<$<CONFIG:${BUILD_NAME}>:/fsanitize=address;/MTd;/Zi>")
+  target_link_options(libdivide INTERFACE "$<$<CONFIG:${BUILD_NAME}>:/INCREMENTAL:NO;/DEBUG>")
 elseif(CMAKE_C_COMPILER_ID MATCHES "Clang")
   if (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC") # clang-cl
-  target_compile_options(libdivide INTERFACE "$<$<CONFIG:${BUILD_NAME}>:/fsanitize=address>")   
-  target_link_libraries(libdivide INTERFACE "$<$<CONFIG:${BUILD_NAME}>:clang_rt.asan_dynamic-x86_64.lib;clang_rt.asan_dynamic_runtime_thunk-x86_64.lib>")
+    target_compile_options(libdivide INTERFACE "$<$<CONFIG:${BUILD_NAME}>:/fsanitize=address;/Zi>")
+    target_link_options(libdivide INTERFACE "$<$<CONFIG:${BUILD_NAME}>:/DEBUG>")
+    target_link_libraries(libdivide INTERFACE "$<$<CONFIG:${BUILD_NAME}>:clang_rt.asan_dynamic-x86_64.lib;clang_rt.asan_dynamic_runtime_thunk-x86_64.lib>")
   else() # clang native
     target_compile_options(libdivide INTERFACE "$<$<CONFIG:${BUILD_NAME}>:-fsanitize=address;-fsanitize=undefined;-fno-sanitize-recover=all;-fno-omit-frame-pointer;-U_DLL;-U_MT;-DDEBUG;-O1;-g>")
     target_link_options(libdivide INTERFACE "$<$<CONFIG:${BUILD_NAME}>:-fsanitize=address>")
