@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.5...4.2)
 set(LIBDIVIDE_VERSION "5.3.0")
 project(libdivide C CXX)
 
