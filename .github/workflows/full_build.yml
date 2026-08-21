@@ -80,7 +80,7 @@ jobs:
           - os: windows-2022
             generator: Visual Studio 17 2022
           - os: windows-2025
-            generator: Visual Studio 17 2022
+            generator: Visual Studio 18 2026
           # clang-cl requires the toolset flag be set correctly 
           - cpp_compiler: clang-cl.exe
             toolset: ClangCL            
