@@ -233,14 +233,18 @@ endif()
 if (NOT LIBDIVIDE_AVX512 STREQUAL "AUTO")
     set(LIBDIVIDE_AVX512_ENABLED "${LIBDIVIDE_AVX512}")
 else()
-    check_cxx_source_runs("
+    set(AVX512_TEST "
                 #include <immintrin.h>
                 int main()
                 {
                     __m512i a = _mm512_setzero_si512();
                     return *(int *)&a;
-                }"
-                LIBDIVIDE_AVX512_ENABLED)
+                }")
+    if (CMAKE_CROSSCOMPILING)
+        check_cxx_source_compiles("${AVX512_TEST}" LIBDIVIDE_AVX512_ENABLED)
+    else()
+        check_cxx_source_runs("${AVX512_TEST}" LIBDIVIDE_AVX512_ENABLED)
+    endif()
 endif()
 
 # AVX2
@@ -248,28 +252,36 @@ if (NOT LIBDIVIDE_AVX2 STREQUAL "AUTO")
     set(LIBDIVIDE_AVX2_ENABLED "${LIBDIVIDE_AVX2}")
 else()
     # Need to use an AVX2 insn like srai, not just AVX.
-    check_cxx_source_runs("
+    set(AVX2_TEST "
                 #include <immintrin.h>
                 int main()
                 {
                     __m256i a = _mm256_srai_epi32(_mm256_setzero_si256(), 3);
                     return *(int *)&a;
-                }"
-                LIBDIVIDE_AVX2_ENABLED)
+                }")
+    if (CMAKE_CROSSCOMPILING)
+        check_cxx_source_compiles("${AVX2_TEST}" LIBDIVIDE_AVX2_ENABLED)
+    else()
+        check_cxx_source_runs("${AVX2_TEST}" LIBDIVIDE_AVX2_ENABLED)
+    endif()
 endif()
 
 # SSE2
 if (NOT LIBDIVIDE_SSE2 STREQUAL "AUTO")
     set(LIBDIVIDE_SSE2_ENABLED "${LIBDIVIDE_SSE2}")
 else()
-    check_cxx_source_runs("
+    set(SSE2_TEST "
                 #include <emmintrin.h>
                 int main()
                 {
                     __m128i a = _mm_setzero_si128();
                     return *(int *)&a;
-                }"
-                LIBDIVIDE_SSE2_ENABLED)
+                }")
+    if (CMAKE_CROSSCOMPILING)
+        check_cxx_source_compiles("${SSE2_TEST}" LIBDIVIDE_SSE2_ENABLED)
+    else()
+        check_cxx_source_runs("${SSE2_TEST}" LIBDIVIDE_SSE2_ENABLED)
+    endif()
 endif()
 cmake_pop_check_state()
 
