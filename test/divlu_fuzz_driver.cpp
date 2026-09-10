@@ -1,8 +1,16 @@
 // Tests divlu and divllu, intended for use with AFL.
 // This aborts on error.
 // To build:
-//   clang divlu_fuzz_driver.cpp divlu.c
-
+//   afl-clang -O1 -g -fsanitize=address,undefined -o divlu_fuzz test/divlu_fuzz_driver.cpp doc/divlu.c
+//
+// To run:
+//   afl-fuzz -i test/divlu_fuzz_inputs -o test/divlu_fuzz_outputs ./divlu_fuzz
+//
+// Input format (binary, little-endian): one 8-byte denominator, then one or more
+// pairs of 8-byte numlo followed by 8-byte numhi. Seed inputs are in
+// test/divlu_fuzz_inputs/. Example of adding more seeds:
+//   python3 -c "import struct; open('test/divlu_fuzz_inputs/seed1', 'wb').write(struct.pack('<QQQ', 2, 0xFFFFFFFFFFFFFFFF, 1))"
+//
 #include <limits.h>
 #include <stdint.h>
 #include <stdlib.h>

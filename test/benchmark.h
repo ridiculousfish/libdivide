@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <limits>
 #include <type_traits>
+#include <vector>
 #endif
 
 #undef UNUSED
@@ -116,6 +117,92 @@ NOINLINE uint64_t sum_quotients_vec(const random_numerators<IntT> &vals, const D
         sumX4 = add_vector<sizeof(IntT)>(sumX4, numers);
     }
     return unsigned_sum_vals((const IntT *)&sumX4, count);
+}
+
+#elif defined(LIBDIVIDE_SVE)
+
+template <typename T>
+struct SveVecFuncs {};
+
+template <>
+struct SveVecFuncs<uint16_t> {
+    static inline size_t count() { return svcnth(); }
+    static inline svuint16_t dup(uint16_t value) { return svdup_n_u16(value); }
+    static inline svuint16_t load(const uint16_t *p) { return svld1_u16(svptrue_b16(), p); }
+    static inline svuint16_t add(svuint16_t a, svuint16_t b) {
+        return svadd_u16_x(svptrue_b16(), a, b);
+    }
+    static inline void store(uint16_t *p, svuint16_t v) { svst1_u16(svptrue_b16(), p, v); }
+};
+
+template <>
+struct SveVecFuncs<int16_t> {
+    static inline size_t count() { return svcnth(); }
+    static inline svint16_t dup(int16_t value) { return svdup_n_s16(value); }
+    static inline svint16_t load(const int16_t *p) { return svld1_s16(svptrue_b16(), p); }
+    static inline svint16_t add(svint16_t a, svint16_t b) {
+        return svadd_s16_x(svptrue_b16(), a, b);
+    }
+    static inline void store(int16_t *p, svint16_t v) { svst1_s16(svptrue_b16(), p, v); }
+};
+
+template <>
+struct SveVecFuncs<uint32_t> {
+    static inline size_t count() { return svcntw(); }
+    static inline svuint32_t dup(uint32_t value) { return svdup_n_u32(value); }
+    static inline svuint32_t load(const uint32_t *p) { return svld1_u32(svptrue_b32(), p); }
+    static inline svuint32_t add(svuint32_t a, svuint32_t b) {
+        return svadd_u32_x(svptrue_b32(), a, b);
+    }
+    static inline void store(uint32_t *p, svuint32_t v) { svst1_u32(svptrue_b32(), p, v); }
+};
+
+template <>
+struct SveVecFuncs<int32_t> {
+    static inline size_t count() { return svcntw(); }
+    static inline svint32_t dup(int32_t value) { return svdup_n_s32(value); }
+    static inline svint32_t load(const int32_t *p) { return svld1_s32(svptrue_b32(), p); }
+    static inline svint32_t add(svint32_t a, svint32_t b) {
+        return svadd_s32_x(svptrue_b32(), a, b);
+    }
+    static inline void store(int32_t *p, svint32_t v) { svst1_s32(svptrue_b32(), p, v); }
+};
+
+template <>
+struct SveVecFuncs<uint64_t> {
+    static inline size_t count() { return svcntd(); }
+    static inline svuint64_t dup(uint64_t value) { return svdup_n_u64(value); }
+    static inline svuint64_t load(const uint64_t *p) { return svld1_u64(svptrue_b64(), p); }
+    static inline svuint64_t add(svuint64_t a, svuint64_t b) {
+        return svadd_u64_x(svptrue_b64(), a, b);
+    }
+    static inline void store(uint64_t *p, svuint64_t v) { svst1_u64(svptrue_b64(), p, v); }
+};
+
+template <>
+struct SveVecFuncs<int64_t> {
+    static inline size_t count() { return svcntd(); }
+    static inline svint64_t dup(int64_t value) { return svdup_n_s64(value); }
+    static inline svint64_t load(const int64_t *p) { return svld1_s64(svptrue_b64(), p); }
+    static inline svint64_t add(svint64_t a, svint64_t b) {
+        return svadd_s64_x(svptrue_b64(), a, b);
+    }
+    static inline void store(int64_t *p, svint64_t v) { svst1_s64(svptrue_b64(), p, v); }
+};
+
+template <typename IntT, typename Divisor>
+NOINLINE uint64_t sum_quotients_vec(const random_numerators<IntT> &vals, const Divisor &div) {
+    typedef typename SveVecFor<IntT>::type SveVectorType;
+    size_t count = SveVecFuncs<IntT>::count();
+    SveVectorType sumX4 = SveVecFuncs<IntT>::dup(0);
+    for (auto iter = vals.begin(); iter != vals.end(); iter += count) {
+        SveVectorType numers = SveVecFuncs<IntT>::load(iter);
+        numers = numers / div;
+        sumX4 = SveVecFuncs<IntT>::add(sumX4, numers);
+    }
+    std::vector<IntT> sum(count);
+    SveVecFuncs<IntT>::store(sum.data(), sumX4);
+    return unsigned_sum_vals(sum.data(), count);
 }
 
 #elif defined(LIBDIVIDE_NEON)
@@ -254,7 +341,7 @@ NOINLINE TestResult test_one(const random_numerators<IntT> &vals, IntT denom) {
             check_result(tresult.result, expected, __LINE__);
         }
 
-#if defined(x86_VECTOR_TYPE) || defined(LIBDIVIDE_NEON)
+#if defined(x86_VECTOR_TYPE) || defined(LIBDIVIDE_SVE) || defined(LIBDIVIDE_NEON)
         tresult = time_function(vals, div_bfull, sum_quotients_vec);
         min_my_time_vector = (std::min)(min_my_time_vector, tresult.time);
         check_result(tresult.result, expected, __LINE__);

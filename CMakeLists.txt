@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.5)
-set(LIBDIVIDE_VERSION "5.3.0")
+cmake_minimum_required(VERSION 3.5...4.2)
+set(LIBDIVIDE_VERSION "5.4.0")
 project(libdivide C CXX)
 
 include(CheckCXXCompilerFlag)
@@ -45,6 +45,8 @@ set(LIBDIVIDE_SSE2  AUTO CACHE STRING  "Enable SSE2 vector instructions")
 set(LIBDIVIDE_AVX2  AUTO CACHE STRING  "Enable AVX2 vector instructions")
 set(LIBDIVIDE_AVX512 AUTO CACHE STRING "Enable AVX512 vector instructions")
 set(LIBDIVIDE_NEON AUTO CACHE STRING "Enable ARM NEON vector instructions")
+set(LIBDIVIDE_SVE  AUTO CACHE STRING  "Enable ARM SVE vector instructions")
+set(LIBDIVIDE_SVE2 AUTO CACHE STRING  "Enable ARM SVE2 vector instructions")
 
 # By default enable release mode ###############################
 
@@ -74,8 +76,18 @@ if (WARN_VEC_CONVERSIONS)
     list(APPEND LIBDIVIDE_FLAGS "-fno-lax-vector-conversions")
 endif()
 
+set(LIBDIVIDE_BENCHMARK_DIVLU_FLAGS "${LIBDIVIDE_FLAGS}")
+# benchmark_divlu uses a deliberate non-standard extension in its timing harness.
+# Suppress that warning only for compilers that accept GCC-style warning flags.
+if (NOT CMAKE_C_COMPILER_ID STREQUAL "MSVC" AND NOT CMAKE_C_SIMULATE_ID STREQUAL "MSVC")
+    check_c_compiler_flag("-Wno-pedantic" WNO_PEDANTIC)
+    if (WNO_PEDANTIC)
+        list(APPEND LIBDIVIDE_BENCHMARK_DIVLU_FLAGS "-Wno-pedantic")
+    endif()
+endif()
 
-# Check if x86/x64 CPU  ########################################
+
+# Check native CPU family ######################################
 
 # Note that check_cxx_source_runs() must not be used when
 # cross-compiling otherwise the following error will occur:
@@ -176,18 +188,63 @@ else()
     endif()
 endif()
 
+# SVE
+if (NOT LIBDIVIDE_SVE STREQUAL "AUTO")
+    set(LIBDIVIDE_SVE_ENABLED "${LIBDIVIDE_SVE}")
+else()
+    set(SVE_TEST "
+    #include <arm_sve.h>
+    int main()
+    {
+        return svcntd() == 0;
+    }")
+    if (CMAKE_CROSSCOMPILING)
+        check_cxx_source_compiles("${SVE_TEST}" LIBDIVIDE_SVE_ENABLED)
+    else()
+        check_cxx_source_runs("${SVE_TEST}" LIBDIVIDE_SVE_ENABLED)
+    endif()
+endif()
+
+# SVE2
+if (NOT LIBDIVIDE_SVE2 STREQUAL "AUTO")
+    set(LIBDIVIDE_SVE2_ENABLED "${LIBDIVIDE_SVE2}")
+else()
+    set(SVE2_TEST "
+    #include <arm_sve.h>
+    int main()
+    {
+        svbool_t pg = svptrue_b32();
+        svuint32_t a = svdup_n_u32(0);
+        svuint32_t b = svhadd_u32_x(pg, a, a);
+        return (int)svlastb_u32(pg, b);
+    }")
+    if (CMAKE_CROSSCOMPILING)
+        check_cxx_source_compiles("${SVE2_TEST}" LIBDIVIDE_SVE2_ENABLED)
+    else()
+        check_cxx_source_runs("${SVE2_TEST}" LIBDIVIDE_SVE2_ENABLED)
+    endif()
+endif()
+
+if(LIBDIVIDE_SVE2_ENABLED)
+    set(LIBDIVIDE_SVE_ENABLED TRUE)
+endif()
+
 # AVX512
 if (NOT LIBDIVIDE_AVX512 STREQUAL "AUTO")
     set(LIBDIVIDE_AVX512_ENABLED "${LIBDIVIDE_AVX512}")
 else()
-    check_cxx_source_runs("
+    set(AVX512_TEST "
                 #include <immintrin.h>
                 int main()
                 {
                     __m512i a = _mm512_setzero_si512();
                     return *(int *)&a;
-                }"
-                LIBDIVIDE_AVX512_ENABLED)
+                }")
+    if (CMAKE_CROSSCOMPILING)
+        check_cxx_source_compiles("${AVX512_TEST}" LIBDIVIDE_AVX512_ENABLED)
+    else()
+        check_cxx_source_runs("${AVX512_TEST}" LIBDIVIDE_AVX512_ENABLED)
+    endif()
 endif()
 
 # AVX2
@@ -195,28 +252,36 @@ if (NOT LIBDIVIDE_AVX2 STREQUAL "AUTO")
     set(LIBDIVIDE_AVX2_ENABLED "${LIBDIVIDE_AVX2}")
 else()
     # Need to use an AVX2 insn like srai, not just AVX.
-    check_cxx_source_runs("
+    set(AVX2_TEST "
                 #include <immintrin.h>
                 int main()
                 {
                     __m256i a = _mm256_srai_epi32(_mm256_setzero_si256(), 3);
                     return *(int *)&a;
-                }"
-                LIBDIVIDE_AVX2_ENABLED)
+                }")
+    if (CMAKE_CROSSCOMPILING)
+        check_cxx_source_compiles("${AVX2_TEST}" LIBDIVIDE_AVX2_ENABLED)
+    else()
+        check_cxx_source_runs("${AVX2_TEST}" LIBDIVIDE_AVX2_ENABLED)
+    endif()
 endif()
 
 # SSE2
 if (NOT LIBDIVIDE_SSE2 STREQUAL "AUTO")
     set(LIBDIVIDE_SSE2_ENABLED "${LIBDIVIDE_SSE2}")
 else()
-    check_cxx_source_runs("
+    set(SSE2_TEST "
                 #include <emmintrin.h>
                 int main()
                 {
                     __m128i a = _mm_setzero_si128();
                     return *(int *)&a;
-                }"
-                LIBDIVIDE_SSE2_ENABLED)
+                }")
+    if (CMAKE_CROSSCOMPILING)
+        check_cxx_source_compiles("${SSE2_TEST}" LIBDIVIDE_SSE2_ENABLED)
+    else()
+        check_cxx_source_runs("${SSE2_TEST}" LIBDIVIDE_SSE2_ENABLED)
+    endif()
 endif()
 cmake_pop_check_state()
 
@@ -225,6 +290,12 @@ cmake_pop_check_state()
 set(LIBDIVIDE_VECTOR_EXT "")
 if(LIBDIVIDE_NEON_ENABLED)
     list(APPEND LIBDIVIDE_VECTOR_EXT "LIBDIVIDE_NEON")
+endif()
+if(LIBDIVIDE_SVE_ENABLED)
+    list(APPEND LIBDIVIDE_VECTOR_EXT "LIBDIVIDE_SVE")
+endif()
+if(LIBDIVIDE_SVE2_ENABLED)
+    list(APPEND LIBDIVIDE_VECTOR_EXT "LIBDIVIDE_SVE2")
 endif()
 if(LIBDIVIDE_AVX512_ENABLED)
     list(APPEND LIBDIVIDE_VECTOR_EXT "LIBDIVIDE_AVX512")
@@ -286,6 +357,8 @@ if (LIBDIVIDE_BUILD_TESTS)
 
     add_executable(tester test/tester.cpp)
     add_executable(test_c99 test/test_c99.c)
+    add_executable(test_divlu test/test_divlu.c doc/divlu.c)
+    add_executable(benchmark_divlu test/benchmark_divlu.c doc/divlu.c)
     add_executable(fast_div_generator test/fast_div_generator.cpp)
     add_executable(benchmark test/benchmark.cpp)
     add_executable(benchmark_branchfree test/benchmark_branchfree.cpp)
@@ -298,11 +371,15 @@ if (LIBDIVIDE_BUILD_TESTS)
 
     target_compile_options(tester PRIVATE "${LIBDIVIDE_FLAGS}" "${NO_VECTORIZE}")
     target_compile_options(test_c99 PRIVATE "${LIBDIVIDE_FLAGS}" "${NO_VECTORIZE}")
+    target_compile_options(test_divlu PRIVATE "${LIBDIVIDE_FLAGS}")
+    target_compile_options(benchmark_divlu PRIVATE "${LIBDIVIDE_BENCHMARK_DIVLU_FLAGS}")
     target_compile_options(fast_div_generator PRIVATE "${LIBDIVIDE_FLAGS}" "${NO_VECTORIZE}")
     target_compile_options(benchmark PRIVATE "${LIBDIVIDE_FLAGS}" "${NO_VECTORIZE_C}")
     target_compile_options(benchmark_branchfree PRIVATE "${LIBDIVIDE_FLAGS}" "${NO_VECTORIZE}")
     set_property(TARGET benchmark_branchfree PROPERTY CXX_STANDARD 11)
     set_property(TARGET test_c99 PROPERTY C_STANDARD 99)
+    set_property(TARGET test_divlu PROPERTY C_STANDARD 99)
+    set_property(TARGET benchmark_divlu PROPERTY C_STANDARD 99)
 
     target_compile_definitions(tester PRIVATE "${LIBDIVIDE_ASSERTIONS}" "${LIBDIVIDE_VECTOR_EXT}")
     target_compile_definitions(test_c99 PRIVATE "${LIBDIVIDE_ASSERTIONS}" "${LIBDIVIDE_VECTOR_EXT}")
@@ -325,6 +402,10 @@ if (LIBDIVIDE_BUILD_TESTS)
     add_test(test_c99 test_c99)
     add_test(build_test_c99 "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target test_c99)
     set_tests_properties(test_c99 PROPERTIES DEPENDS "build_test_c99")
+
+    add_test(test_divlu test_divlu)
+    add_test(build_test_divlu "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target test_divlu)
+    set_tests_properties(test_divlu PROPERTIES DEPENDS "build_test_divlu")
 
     # Only benchmark in release builds.
     if("${BUILD_TYPE}" MATCHES RELEASE)
