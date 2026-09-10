@@ -534,7 +534,7 @@ static LIBDIVIDE_INLINE uint32_t libdivide_64_div_32_to_32(
     uint32_t u1, uint32_t u0, uint32_t v, uint32_t *r) {
 #if (defined(LIBDIVIDE_i386) || defined(LIBDIVIDE_X86_64)) && defined(LIBDIVIDE_GCC_STYLE_ASM)
     uint32_t result;
-    __asm__("divl %[v]" : "=a"(result), "=d"(*r) : [v] "r"(v), "a"(u0), "d"(u1));
+    __asm__("divl %[v]" : "=a"(result), "=d"(*r) : [v] "r"(v), "a"(u0), "d"(u1) : "cc");
     return result;
 #else
     uint64_t n = ((uint64_t)u1 << 32) | u0;
@@ -554,7 +554,7 @@ static LIBDIVIDE_INLINE uint64_t libdivide_128_div_64_to_64(
     // it's not LIBDIVIDE_INLINEd.
 #if defined(LIBDIVIDE_X86_64) && defined(LIBDIVIDE_GCC_STYLE_ASM)
     uint64_t result;
-    __asm__("div %[v]" : "=a"(result), "=d"(*r) : [v] "r"(den), "a"(numlo), "d"(numhi));
+    __asm__("div %[v]" : "=a"(result), "=d"(*r) : [v] "r"(den), "a"(numlo), "d"(numhi) : "cc");
     return result;
 #else
     // We work in base 2**32.
