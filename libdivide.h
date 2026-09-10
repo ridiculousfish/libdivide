@@ -199,7 +199,11 @@ static LIBDIVIDE_CONSTEXPR_INLINE int __builtin_clzll(unsigned long long x) {
 // This reduces memory usage by up to 43% when using a large
 // array of libdivide dividers and improves performance
 // by up to 10% because of reduced memory bandwidth.
+#if !defined(__FILC__)
+/* FilC checks aggregate accesses against pointer-word alignment; a packed 9-byte struct holding a
+   uint64_t at a 4-byte-aligned offset trips an "alignment contradiction", so keep natural layout. */
 #pragma pack(push, 1)
+#endif
 
 struct libdivide_u16_t {
     uint16_t magic;
@@ -261,7 +265,9 @@ struct libdivide_s64_branchfree_t {
     uint8_t more;
 };
 
+#if !defined(__FILC__)
 #pragma pack(pop)
+#endif
 
 // Explanation of the "more" field:
 //
