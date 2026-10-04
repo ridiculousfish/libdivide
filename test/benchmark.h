@@ -3,7 +3,6 @@
 
 #include <inttypes.h>
 #include <stdio.h>
-#include <stdlib.h>
 #if defined(__AVR__)
 #include "avr_type_helpers.h"
 #else
@@ -314,7 +313,7 @@ inline void check_result(uint64_t expected, uint64_t actual, uint32_t line_no) {
         PRINT_ERROR("Failure on line ");
         PRINT_ERROR(line_no);
         PRINT_ERROR("\n");
-        std::exit(EXIT_FAILURE);
+        TEST_FAIL();
     }
 }
 
