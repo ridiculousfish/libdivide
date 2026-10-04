@@ -42,7 +42,13 @@ void test_both(test_t Denom, pCheckSumFunc native, pCheckSumFunc libdivide) {
   auto libdivResult = testCheckSum(libdivide);
   print_result(libdivResult);
   Serial.println("");
-  if (nativeResult.first!=libdivResult.first) { Serial.println("ERROR - Checksum mismatch"); }
+  if (nativeResult.first!=libdivResult.first) {
+    Serial.println("ERROR - Checksum mismatch");
+    Serial.flush();
+    // There is no process exit status on the AVR target. Stop before the
+    // normal simulator sleep so a failed comparison cannot look complete.
+    for (;;) { }
+  }
 }
 
 void run_constant_test() {

@@ -8,6 +8,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <inttypes.h>
 #include "libdivide.h"
 #include "constant_fast_div.h"
@@ -29,6 +30,7 @@
 #define ASSERT_EQUAL(type, numer, denom, libdiv_result, native_result, format_spec) \
    if (libdiv_result!=native_result) { \
       fprintf(stderr, "Division fail: " #type ", %" format_spec "/%" format_spec ". Native: %" format_spec  ", Libdivide %" format_spec "\n", numer,  (type)denom, native_result, libdiv_result); \
+      exit(EXIT_FAILURE); \
    }
 #define TEST_ONE(type, numer, denom, divider, format_spec, OPERATION) \
    type libdiv_result = OPERATION(numer, divider); \
