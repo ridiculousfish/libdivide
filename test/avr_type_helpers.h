@@ -42,7 +42,7 @@ namespace std
         static constexpr int16_t (min)() { return INT16_MIN; }
         static constexpr int16_t (max)() { return INT16_MAX; }
         static const bool is_signed = true;
-        static const int digits   = CHAR_BIT * sizeof(int16_t);
+        static const int digits   = CHAR_BIT * sizeof(int16_t) - 1;
     };
     template <>
     struct numeric_limits<uint16_t> {
@@ -56,7 +56,7 @@ namespace std
         static constexpr int32_t (min)() { return INT32_MIN; }
         static constexpr int32_t (max)() { return INT32_MAX; }
         static const bool is_signed = true;
-        static const int digits   = CHAR_BIT * sizeof(int32_t);
+        static const int digits   = CHAR_BIT * sizeof(int32_t) - 1;
     };
     template <>
     struct numeric_limits<uint32_t> {
@@ -70,7 +70,7 @@ namespace std
         static constexpr int64_t (min)() { return INT64_MIN; }
         static constexpr int64_t (max)() { return INT64_MAX; }
         static const bool is_signed = true;
-        static const int digits   = CHAR_BIT * sizeof(int64_t);
+        static const int digits   = CHAR_BIT * sizeof(int64_t) - 1;
     };
     template <>
     struct numeric_limits<uint64_t> {

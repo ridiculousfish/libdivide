@@ -26,7 +26,8 @@ static inline char *to_str(char *buffer, uint64_t n) {
 }
 static inline char *to_str(char *buffer, int64_t n) {
     if (n < 0) {
-        buffer = to_str(buffer + 1, (uint64_t)(n * -1)) - 1;
+        const uint64_t magnitude = (uint64_t)(-(n + 1)) + 1;
+        buffer = to_str(buffer + 1, magnitude) - 1;
         *buffer = '-';
         return buffer;
     }
