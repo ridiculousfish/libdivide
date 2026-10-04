@@ -18,6 +18,7 @@
 #define LIBDIVIDE_VERSION_PATCH 0
 
 #include <stdint.h>
+#include <string.h>
 
 #if !defined(__AVR__) && __STDC_HOSTED__ != 0
 #include <stdio.h>
@@ -1389,8 +1390,10 @@ static LIBDIVIDE_INLINE int16_t libdivide_s16_branchfree_do(int16_t numer, const
     // must be arithmetic shift and then sign extend
     int16_t sign = (int8_t)more >> 7;
     int16_t magic = denom->magic;
-    int16_t q = libdivide_mullhi_s16(numer, magic);
-    q += numer;
+    // Use unsigned arithmetic for defined wraparound, then preserve the bits.
+    uint16_t q_bits = (uint16_t)libdivide_mullhi_s16(numer, magic) + (uint16_t)numer;
+    int16_t q;
+    memcpy(&q, &q_bits, sizeof(q));
 
     // If q is non-negative, we have nothing to do
     // If q is negative, we want to add either (2**shift)-1 if d is a power of
@@ -1562,8 +1565,9 @@ static LIBDIVIDE_INLINE int32_t libdivide_s32_branchfree_do(int32_t numer, const
     // must be arithmetic shift and then sign extend
     int32_t sign = (int8_t)more >> 7;
     int32_t magic = denom->magic;
-    int32_t q = libdivide_mullhi_s32(numer, magic);
-    q += numer;
+    uint32_t q_bits = (uint32_t)libdivide_mullhi_s32(numer, magic) + (uint32_t)numer;
+    int32_t q;
+    memcpy(&q, &q_bits, sizeof(q));
 
     // If q is non-negative, we have nothing to do
     // If q is negative, we want to add either (2**shift)-1 if d is a power of
@@ -1736,8 +1740,9 @@ static LIBDIVIDE_INLINE int64_t libdivide_s64_branchfree_do(int64_t numer, const
     // must be arithmetic shift and then sign extend
     int64_t sign = (int8_t)more >> 7;
     int64_t magic = denom->magic;
-    int64_t q = libdivide_mullhi_s64(numer, magic);
-    q += numer;
+    uint64_t q_bits = (uint64_t)libdivide_mullhi_s64(numer, magic) + (uint64_t)numer;
+    int64_t q;
+    memcpy(&q, &q_bits, sizeof(q));
 
     // If q is non-negative, we have nothing to do.
     // If q is negative, we want to add either (2**shift)-1 if d is a power of
