@@ -313,6 +313,7 @@ inline void check_result(uint64_t expected, uint64_t actual, uint32_t line_no) {
         PRINT_ERROR("Failure on line ");
         PRINT_ERROR(line_no);
         PRINT_ERROR("\n");
+        TEST_FAIL();
     }
 }
 
