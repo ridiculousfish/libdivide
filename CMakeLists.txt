@@ -342,10 +342,15 @@ install(EXPORT libdivideConfig
         NAMESPACE libdivide::
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/libdivide")
 
+set(_libdivide_write_basic_package_version_file_options)
+if(NOT CMAKE_VERSION VERSION_LESS "3.14")
+    list(APPEND _libdivide_write_basic_package_version_file_options ARCH_INDEPENDENT)
+endif()
 write_basic_package_version_file(
     "${CMAKE_CURRENT_BINARY_DIR}/libdivideConfigVersion.cmake"
     VERSION ${LIBDIVIDE_VERSION}
-    COMPATIBILITY SameMajorVersion)
+    COMPATIBILITY SameMajorVersion
+    ${_libdivide_write_basic_package_version_file_options})
 
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libdivideConfigVersion.cmake"
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/libdivide")
