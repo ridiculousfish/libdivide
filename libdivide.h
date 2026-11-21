@@ -2769,18 +2769,18 @@ static LIBDIVIDE_INLINE __m256i libdivide_s64_shift_right_vec256(__m256i v, int 
 static LIBDIVIDE_INLINE __m256i libdivide_mullhi_u32_vec256(__m256i a, __m256i b) {
     __m256i hi_product_0Z2Z = _mm256_srli_epi64(_mm256_mul_epu32(a, b), 32);
     __m256i a1X3X = _mm256_srli_epi64(a, 32);
-    __m256i mask = _mm256_set_epi32(-1, 0, -1, 0, -1, 0, -1, 0);
-    __m256i hi_product_Z1Z3 = _mm256_and_si256(_mm256_mul_epu32(a1X3X, b), mask);
-    return _mm256_or_si256(hi_product_0Z2Z, hi_product_Z1Z3);
+    __m256i product_X1X3 = _mm256_mul_epu32(a1X3X, b);
+    // Take the odd 32-bit lanes (the high halves) from the second product.
+    return _mm256_blend_epi32(hi_product_0Z2Z, product_X1X3, 0xAA);
 }
 
 // b is one 32-bit value repeated.
 static LIBDIVIDE_INLINE __m256i libdivide_mullhi_s32_vec256(__m256i a, __m256i b) {
     __m256i hi_product_0Z2Z = _mm256_srli_epi64(_mm256_mul_epi32(a, b), 32);
     __m256i a1X3X = _mm256_srli_epi64(a, 32);
-    __m256i mask = _mm256_set_epi32(-1, 0, -1, 0, -1, 0, -1, 0);
-    __m256i hi_product_Z1Z3 = _mm256_and_si256(_mm256_mul_epi32(a1X3X, b), mask);
-    return _mm256_or_si256(hi_product_0Z2Z, hi_product_Z1Z3);
+    __m256i product_X1X3 = _mm256_mul_epi32(a1X3X, b);
+    // Take the odd 32-bit lanes (the high halves) from the second product.
+    return _mm256_blend_epi32(hi_product_0Z2Z, product_X1X3, 0xAA);
 }
 
 // Here, y is assumed to contain one 64-bit value repeated.
@@ -2906,17 +2906,17 @@ __m256i libdivide_s16_do_vec256(__m256i numers, const struct libdivide_s16_t *de
         __m256i q = _mm256_add_epi16(
             numers, _mm256_and_si256(_mm256_srai_epi16(numers, 15), roundToZeroTweak));
         q = _mm256_srai_epi16(q, shift);
-        __m256i sign = _mm256_set1_epi16((int8_t)more >> 7);
-        // q = (q ^ sign) - sign;
-        q = _mm256_sub_epi16(_mm256_xor_si256(q, sign), sign);
+        // Negate q if the divisor is negative: -1 negates, +1 keeps.
+        __m256i negate = _mm256_set1_epi16(((int8_t)more >> 7) | 1);
+        q = _mm256_sign_epi16(q, negate);
         return q;
     } else {
         __m256i q = _mm256_mulhi_epi16(numers, _mm256_set1_epi16(denom->magic));
         if (more & LIBDIVIDE_ADD_MARKER) {
             // must be arithmetic shift
-            __m256i sign = _mm256_set1_epi16((int8_t)more >> 7);
-            // q += ((numer ^ sign) - sign);
-            q = _mm256_add_epi16(q, _mm256_sub_epi16(_mm256_xor_si256(numers, sign), sign));
+            // q += (divisor negative ? -numer : numer); -1 negates, +1 keeps.
+            __m256i negate = _mm256_set1_epi16(((int8_t)more >> 7) | 1);
+            q = _mm256_add_epi16(q, _mm256_sign_epi16(numers, negate));
         }
         // q >>= shift
         q = _mm256_srai_epi16(q, more & LIBDIVIDE_16_SHIFT_MASK);
@@ -2930,8 +2930,8 @@ __m256i libdivide_s16_branchfree_do_vec256(
     int16_t magic = denom->magic;
     uint8_t more = denom->more;
     uint8_t shift = more & LIBDIVIDE_16_SHIFT_MASK;
-    // must be arithmetic shift
-    __m256i sign = _mm256_set1_epi16((int8_t)more >> 7);
+    // -1 if the divisor is negative, else +1
+    __m256i negate = _mm256_set1_epi16(((int8_t)more >> 7) | 1);
     __m256i q = _mm256_mulhi_epi16(numers, _mm256_set1_epi16(magic));
     q = _mm256_add_epi16(q, numers);  // q += numers
 
@@ -2943,7 +2943,7 @@ __m256i libdivide_s16_branchfree_do_vec256(
     __m256i mask = _mm256_set1_epi16(((uint16_t)1 << shift) - is_power_of_2);
     q = _mm256_add_epi16(q, _mm256_and_si256(q_sign, mask));  // q = q + (q_sign & mask)
     q = _mm256_srai_epi16(q, shift);                          // q >>= shift
-    q = _mm256_sub_epi16(_mm256_xor_si256(q, sign), sign);    // q = (q ^ sign) - sign
+    q = _mm256_sign_epi16(q, negate);                         // q = d < 0 ? -q : q
     return q;
 }
 
@@ -2959,17 +2959,17 @@ __m256i libdivide_s32_do_vec256(__m256i numers, const struct libdivide_s32_t *de
         __m256i q = _mm256_add_epi32(
             numers, _mm256_and_si256(_mm256_srai_epi32(numers, 31), roundToZeroTweak));
         q = _mm256_srai_epi32(q, shift);
-        __m256i sign = _mm256_set1_epi32((int8_t)more >> 7);
-        // q = (q ^ sign) - sign;
-        q = _mm256_sub_epi32(_mm256_xor_si256(q, sign), sign);
+        // Negate q if the divisor is negative: -1 negates, +1 keeps.
+        __m256i negate = _mm256_set1_epi32(((int8_t)more >> 7) | 1);
+        q = _mm256_sign_epi32(q, negate);
         return q;
     } else {
         __m256i q = libdivide_mullhi_s32_vec256(numers, _mm256_set1_epi32(denom->magic));
         if (more & LIBDIVIDE_ADD_MARKER) {
             // must be arithmetic shift
-            __m256i sign = _mm256_set1_epi32((int8_t)more >> 7);
-            // q += ((numer ^ sign) - sign);
-            q = _mm256_add_epi32(q, _mm256_sub_epi32(_mm256_xor_si256(numers, sign), sign));
+            // q += (divisor negative ? -numer : numer); -1 negates, +1 keeps.
+            __m256i negate = _mm256_set1_epi32(((int8_t)more >> 7) | 1);
+            q = _mm256_add_epi32(q, _mm256_sign_epi32(numers, negate));
         }
         // q >>= shift
         q = _mm256_srai_epi32(q, more & LIBDIVIDE_32_SHIFT_MASK);
@@ -2983,8 +2983,8 @@ __m256i libdivide_s32_branchfree_do_vec256(
     int32_t magic = denom->magic;
     uint8_t more = denom->more;
     uint8_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
-    // must be arithmetic shift
-    __m256i sign = _mm256_set1_epi32((int8_t)more >> 7);
+    // -1 if the divisor is negative, else +1
+    __m256i negate = _mm256_set1_epi32(((int8_t)more >> 7) | 1);
     __m256i q = libdivide_mullhi_s32_vec256(numers, _mm256_set1_epi32(magic));
     q = _mm256_add_epi32(q, numers);  // q += numers
 
@@ -2996,7 +2996,7 @@ __m256i libdivide_s32_branchfree_do_vec256(
     __m256i mask = _mm256_set1_epi32(((uint32_t)1 << shift) - is_power_of_2);
     q = _mm256_add_epi32(q, _mm256_and_si256(q_sign, mask));  // q = q + (q_sign & mask)
     q = _mm256_srai_epi32(q, shift);                          // q >>= shift
-    q = _mm256_sub_epi32(_mm256_xor_si256(q, sign), sign);    // q = (q ^ sign) - sign
+    q = _mm256_sign_epi32(q, negate);                         // q = d < 0 ? -q : q
     return q;
 }
 
@@ -3010,8 +3010,9 @@ __m256i libdivide_s64_do_vec256(__m256i numers, const struct libdivide_s64_t *de
         uint64_t mask = ((uint64_t)1 << shift) - 1;
         __m256i roundToZeroTweak = _mm256_set1_epi64x(mask);
         // q = numer + ((numer >> 63) & roundToZeroTweak);
-        __m256i q = _mm256_add_epi64(
-            numers, _mm256_and_si256(libdivide_s64_signbits_vec256(numers), roundToZeroTweak));
+        // numer >> 63 as a single compare (no multiply here to share a shuffle with)
+        __m256i numer_sign = _mm256_cmpgt_epi64(_mm256_setzero_si256(), numers);
+        __m256i q = _mm256_add_epi64(numers, _mm256_and_si256(numer_sign, roundToZeroTweak));
         q = libdivide_s64_shift_right_vec256(q, shift);
         __m256i sign = _mm256_set1_epi32((int8_t)more >> 7);
         // q = (q ^ sign) - sign;
@@ -3048,7 +3049,7 @@ __m256i libdivide_s64_branchfree_do_vec256(
     // If q is negative, we want to add either (2**shift)-1 if d is
     // a power of 2, or (2**shift) if it is not a power of 2.
     uint32_t is_power_of_2 = (magic == 0);
-    __m256i q_sign = libdivide_s64_signbits_vec256(q);  // q_sign = q >> 63
+    __m256i q_sign = _mm256_cmpgt_epi64(_mm256_setzero_si256(), q);  // q_sign = q >> 63
     __m256i mask = _mm256_set1_epi64x(((uint64_t)1 << shift) - is_power_of_2);
     q = _mm256_add_epi64(q, _mm256_and_si256(q_sign, mask));  // q = q + (q_sign & mask)
     q = libdivide_s64_shift_right_vec256(q, shift);           // q >>= shift
