@@ -2765,6 +2765,18 @@ static LIBDIVIDE_INLINE __m256i libdivide_s64_shift_right_vec256(__m256i v, int 
     return result;
 }
 
+// Arithmetic shift right by amt, then negate if sign is -1 (sign must be 0 or -1).
+// (x ^ m) - m sign-extends x = v >> amt. With every bit of m flipped the same two
+// operations give the negated result, because (~a) - (~m) == m - a.
+static LIBDIVIDE_INLINE __m256i libdivide_s64_shift_right_negate_vec256(
+    __m256i v, int amt, int sign) {
+    const int b = 64 - amt;
+    __m256i m = _mm256_set1_epi64x((int64_t)(((uint64_t)1 << (b - 1)) ^ (uint64_t)(int64_t)sign));
+    __m256i x = _mm256_srli_epi64(v, amt);
+    __m256i result = _mm256_sub_epi64(_mm256_xor_si256(x, m), m);
+    return result;
+}
+
 // Here, b is assumed to contain one 32-bit value repeated.
 static LIBDIVIDE_INLINE __m256i libdivide_mullhi_u32_vec256(__m256i a, __m256i b) {
     __m256i hi_product_0Z2Z = _mm256_srli_epi64(_mm256_mul_epu32(a, b), 32);
@@ -2825,7 +2837,9 @@ __m256i libdivide_u16_do_vec256(__m256i numers, const struct libdivide_u16_t *de
     } else {
         __m256i q = _mm256_mulhi_epu16(numers, _mm256_set1_epi16(denom->magic));
         if (more & LIBDIVIDE_ADD_MARKER) {
-            __m256i t = _mm256_adds_epu16(_mm256_srli_epi16(_mm256_subs_epu16(numers, q), 1), q);
+            // t = ((numer - q) >> 1) + q, which is floor((numer + q) / 2). vpavgw rounds
+            // up, so average with q - 1 (saturating at 0) instead.
+            __m256i t = _mm256_avg_epu16(numers, _mm256_subs_epu16(q, _mm256_set1_epi16(1)));
             return _mm256_srli_epi16(t, (more & LIBDIVIDE_16_SHIFT_MASK));
         } else {
             return _mm256_srli_epi16(q, more);
@@ -3013,10 +3027,8 @@ __m256i libdivide_s64_do_vec256(__m256i numers, const struct libdivide_s64_t *de
         // numer >> 63 as a single compare (no multiply here to share a shuffle with)
         __m256i numer_sign = _mm256_cmpgt_epi64(_mm256_setzero_si256(), numers);
         __m256i q = _mm256_add_epi64(numers, _mm256_and_si256(numer_sign, roundToZeroTweak));
-        q = libdivide_s64_shift_right_vec256(q, shift);
-        __m256i sign = _mm256_set1_epi32((int8_t)more >> 7);
-        // q = (q ^ sign) - sign;
-        q = _mm256_sub_epi64(_mm256_xor_si256(q, sign), sign);
+        // q >>= shift, negated if the divisor is negative
+        q = libdivide_s64_shift_right_negate_vec256(q, shift, (int8_t)more >> 7);
         return q;
     } else {
         __m256i q = libdivide_mullhi_s64_vec256(numers, _mm256_set1_epi64x(magic));
@@ -3038,8 +3050,6 @@ __m256i libdivide_s64_branchfree_do_vec256(
     int64_t magic = denom->magic;
     uint8_t more = denom->more;
     uint8_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
-    // must be arithmetic shift
-    __m256i sign = _mm256_set1_epi32((int8_t)more >> 7);
 
     // libdivide_mullhi_s64(numers, magic);
     __m256i q = libdivide_mullhi_s64_vec256(numers, _mm256_set1_epi64x(magic));
@@ -3052,8 +3062,8 @@ __m256i libdivide_s64_branchfree_do_vec256(
     __m256i q_sign = _mm256_cmpgt_epi64(_mm256_setzero_si256(), q);  // q_sign = q >> 63
     __m256i mask = _mm256_set1_epi64x(((uint64_t)1 << shift) - is_power_of_2);
     q = _mm256_add_epi64(q, _mm256_and_si256(q_sign, mask));  // q = q + (q_sign & mask)
-    q = libdivide_s64_shift_right_vec256(q, shift);           // q >>= shift
-    q = _mm256_sub_epi64(_mm256_xor_si256(q, sign), sign);    // q = (q ^ sign) - sign
+    // q >>= shift, negated if the divisor is negative
+    q = libdivide_s64_shift_right_negate_vec256(q, shift, (int8_t)more >> 7);
     return q;
 }
 
