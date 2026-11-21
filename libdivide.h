@@ -2476,31 +2476,30 @@ static LIBDIVIDE_INLINE __m512i libdivide_s64_branchfree_do_vec512(
 
 //////// Internal Utility Functions
 
-static LIBDIVIDE_INLINE __m512i libdivide_s64_signbits_vec512(__m512i v) {
-    ;
-    return _mm512_srai_epi64(v, 63);
-}
-
 static LIBDIVIDE_INLINE __m512i libdivide_s64_shift_right_vec512(__m512i v, int amt) {
     return _mm512_srai_epi64(v, amt);
 }
 
 // Here, b is assumed to contain one 32-bit value repeated.
 static LIBDIVIDE_INLINE __m512i libdivide_mullhi_u32_vec512(__m512i a, __m512i b) {
-    __m512i hi_product_0Z2Z = _mm512_srli_epi64(_mm512_mul_epu32(a, b), 32);
+    __m512i product_0X2X = _mm512_mul_epu32(a, b);
     __m512i a1X3X = _mm512_srli_epi64(a, 32);
-    __m512i mask = _mm512_set_epi32(-1, 0, -1, 0, -1, 0, -1, 0, -1, 0, -1, 0, -1, 0, -1, 0);
-    __m512i hi_product_Z1Z3 = _mm512_and_si512(_mm512_mul_epu32(a1X3X, b), mask);
-    return _mm512_or_si512(hi_product_0Z2Z, hi_product_Z1Z3);
+    __m512i product_1X3X = _mm512_mul_epu32(a1X3X, b);
+    // The odd lanes of product_1X3X already hold their high halves. Copy the high
+    // half of each even product down into the even lanes with a merge-masked shuffle.
+    return _mm512_mask_shuffle_epi32(
+        product_1X3X, 0x5555, product_0X2X, (_MM_PERM_ENUM)_MM_SHUFFLE(3, 3, 1, 1));
 }
 
 // b is one 32-bit value repeated.
 static LIBDIVIDE_INLINE __m512i libdivide_mullhi_s32_vec512(__m512i a, __m512i b) {
-    __m512i hi_product_0Z2Z = _mm512_srli_epi64(_mm512_mul_epi32(a, b), 32);
+    __m512i product_0X2X = _mm512_mul_epi32(a, b);
     __m512i a1X3X = _mm512_srli_epi64(a, 32);
-    __m512i mask = _mm512_set_epi32(-1, 0, -1, 0, -1, 0, -1, 0, -1, 0, -1, 0, -1, 0, -1, 0);
-    __m512i hi_product_Z1Z3 = _mm512_and_si512(_mm512_mul_epi32(a1X3X, b), mask);
-    return _mm512_or_si512(hi_product_0Z2Z, hi_product_Z1Z3);
+    __m512i product_1X3X = _mm512_mul_epi32(a1X3X, b);
+    // The odd lanes of product_1X3X already hold their high halves. Copy the high
+    // half of each even product down into the even lanes with a merge-masked shuffle.
+    return _mm512_mask_shuffle_epi32(
+        product_1X3X, 0x5555, product_0X2X, (_MM_PERM_ENUM)_MM_SHUFFLE(3, 3, 1, 1));
 }
 
 // Here, y is assumed to contain one 64-bit value repeated.
@@ -2529,21 +2528,51 @@ static LIBDIVIDE_INLINE __m512i libdivide_mullhi_u64_vec512(__m512i x, __m512i y
 // y is one 64-bit value repeated.
 static LIBDIVIDE_INLINE __m512i libdivide_mullhi_s64_vec512(__m512i x, __m512i y) {
     __m512i p = libdivide_mullhi_u64_vec512(x, y);
-    __m512i t1 = _mm512_and_si512(libdivide_s64_signbits_vec512(x), y);
-    __m512i t2 = _mm512_and_si512(libdivide_s64_signbits_vec512(y), x);
-    p = _mm512_sub_epi64(p, t1);
-    p = _mm512_sub_epi64(p, t2);
+    __m512i zero = _mm512_setzero_si512();
+    // p -= (x < 0 ? y : 0);
+    p = _mm512_mask_sub_epi64(p, _mm512_cmplt_epi64_mask(x, zero), p, y);
+    // p -= (y < 0 ? x : 0);
+    p = _mm512_mask_sub_epi64(p, _mm512_cmplt_epi64_mask(y, zero), p, x);
     return p;
 }
 
 ////////// UINT16
 
+#if defined(__AVX512BW__)
+
+__m512i libdivide_u16_do_vec512(__m512i numers, const struct libdivide_u16_t *denom) {
+    uint8_t more = denom->more;
+    if (!denom->magic) {
+        return _mm512_srli_epi16(numers, more);
+    } else {
+        __m512i q = _mm512_mulhi_epu16(numers, _mm512_set1_epi16(denom->magic));
+        if (more & LIBDIVIDE_ADD_MARKER) {
+            __m512i t = _mm512_adds_epu16(_mm512_srli_epi16(_mm512_subs_epu16(numers, q), 1), q);
+            return _mm512_srli_epi16(t, (more & LIBDIVIDE_16_SHIFT_MASK));
+        } else {
+            return _mm512_srli_epi16(q, more);
+        }
+    }
+}
+
+__m512i libdivide_u16_branchfree_do_vec512(
+    __m512i numers, const struct libdivide_u16_branchfree_t *denom) {
+    __m512i q = _mm512_mulhi_epu16(numers, _mm512_set1_epi16(denom->magic));
+    __m512i t = _mm512_adds_epu16(_mm512_srli_epi16(_mm512_subs_epu16(numers, q), 1), q);
+    return _mm512_srli_epi16(t, denom->more);
+}
+
+#else
+
+// AVX512F alone has no 16-bit shifts or multiplies: divide lane by lane.
 __m512i libdivide_u16_do_vec512(__m512i numers, const struct libdivide_u16_t *denom){
     SIMPLE_VECTOR_DIVISION(uint16_t, __m512i, u16)}
 
 __m512i libdivide_u16_branchfree_do_vec512(
     __m512i numers, const struct libdivide_u16_branchfree_t *denom){
     SIMPLE_VECTOR_DIVISION(uint16_t, __m512i, u16_branchfree)}
+
+#endif
 
 ////////// UINT32
 
@@ -2601,6 +2630,63 @@ __m512i libdivide_u64_branchfree_do_vec512(
 
 ////////// SINT16
 
+#if defined(__AVX512BW__)
+
+__m512i libdivide_s16_do_vec512(__m512i numers, const struct libdivide_s16_t *denom) {
+    uint8_t more = denom->more;
+    __m512i zero = _mm512_setzero_si512();
+    // The divisor's sign is the same in every lane: all ones if it is negative.
+    __mmask32 negative = (__mmask32)((int8_t)more >> 7);
+    if (!denom->magic) {
+        uint16_t shift = more & LIBDIVIDE_16_SHIFT_MASK;
+        uint16_t mask = ((uint16_t)1 << shift) - 1;
+        __m512i roundToZeroTweak = _mm512_set1_epi16(mask);
+        // q = numer + (numer < 0 ? roundToZeroTweak : 0);
+        __m512i q = _mm512_mask_add_epi16(
+            numers, _mm512_cmplt_epi16_mask(numers, zero), numers, roundToZeroTweak);
+        q = _mm512_srai_epi16(q, shift);
+        // q = negative ? -q : q;
+        q = _mm512_mask_sub_epi16(q, negative, zero, q);
+        return q;
+    } else {
+        __m512i q = _mm512_mulhi_epi16(numers, _mm512_set1_epi16(denom->magic));
+        if (more & LIBDIVIDE_ADD_MARKER) {
+            // q += negative ? -numer : numer;
+            q = _mm512_mask_sub_epi16(_mm512_add_epi16(q, numers), negative, q, numers);
+        }
+        // q >>= shift
+        q = _mm512_srai_epi16(q, more & LIBDIVIDE_16_SHIFT_MASK);
+        q = _mm512_add_epi16(q, _mm512_srli_epi16(q, 15));  // q += (q < 0)
+        return q;
+    }
+}
+
+__m512i libdivide_s16_branchfree_do_vec512(
+    __m512i numers, const struct libdivide_s16_branchfree_t *denom) {
+    int16_t magic = denom->magic;
+    uint8_t more = denom->more;
+    uint8_t shift = more & LIBDIVIDE_16_SHIFT_MASK;
+    __m512i zero = _mm512_setzero_si512();
+    // The divisor's sign is the same in every lane: all ones if it is negative.
+    __mmask32 negative = (__mmask32)((int8_t)more >> 7);
+    __m512i q = _mm512_mulhi_epi16(numers, _mm512_set1_epi16(magic));
+    q = _mm512_add_epi16(q, numers);  // q += numers
+
+    // If q is non-negative, we have nothing to do
+    // If q is negative, we want to add either (2**shift)-1 if d is
+    // a power of 2, or (2**shift) if it is not a power of 2
+    uint16_t is_power_of_2 = (magic == 0);
+    __m512i mask = _mm512_set1_epi16(((uint16_t)1 << shift) - is_power_of_2);
+    // q += (q < 0 ? mask : 0)
+    q = _mm512_mask_add_epi16(q, _mm512_cmplt_epi16_mask(q, zero), q, mask);
+    q = _mm512_srai_epi16(q, shift);                  // q >>= shift
+    q = _mm512_mask_sub_epi16(q, negative, zero, q);  // q = negative ? -q : q
+    return q;
+}
+
+#else
+
+// AVX512F alone has no 16-bit shifts or multiplies: divide lane by lane.
 __m512i libdivide_s16_do_vec512(__m512i numers, const struct libdivide_s16_t *denom){
     SIMPLE_VECTOR_DIVISION(int16_t, __m512i, s16)}
 
@@ -2608,29 +2694,31 @@ __m512i libdivide_s16_branchfree_do_vec512(
     __m512i numers, const struct libdivide_s16_branchfree_t *denom){
     SIMPLE_VECTOR_DIVISION(int16_t, __m512i, s16_branchfree)}
 
+#endif
+
 ////////// SINT32
 
 __m512i libdivide_s32_do_vec512(__m512i numers, const struct libdivide_s32_t *denom) {
     uint8_t more = denom->more;
+    __m512i zero = _mm512_setzero_si512();
+    // The divisor's sign is the same in every lane: all ones if it is negative.
+    __mmask16 negative = (__mmask16)((int8_t)more >> 7);
     if (!denom->magic) {
         uint32_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
         uint32_t mask = ((uint32_t)1 << shift) - 1;
         __m512i roundToZeroTweak = _mm512_set1_epi32(mask);
-        // q = numer + ((numer >> 31) & roundToZeroTweak);
-        __m512i q = _mm512_add_epi32(
-            numers, _mm512_and_si512(_mm512_srai_epi32(numers, 31), roundToZeroTweak));
+        // q = numer + (numer < 0 ? roundToZeroTweak : 0);
+        __m512i q = _mm512_mask_add_epi32(
+            numers, _mm512_cmplt_epi32_mask(numers, zero), numers, roundToZeroTweak);
         q = _mm512_srai_epi32(q, shift);
-        __m512i sign = _mm512_set1_epi32((int8_t)more >> 7);
-        // q = (q ^ sign) - sign;
-        q = _mm512_sub_epi32(_mm512_xor_si512(q, sign), sign);
+        // q = negative ? -q : q;
+        q = _mm512_mask_sub_epi32(q, negative, zero, q);
         return q;
     } else {
         __m512i q = libdivide_mullhi_s32_vec512(numers, _mm512_set1_epi32(denom->magic));
         if (more & LIBDIVIDE_ADD_MARKER) {
-            // must be arithmetic shift
-            __m512i sign = _mm512_set1_epi32((int8_t)more >> 7);
-            // q += ((numer ^ sign) - sign);
-            q = _mm512_add_epi32(q, _mm512_sub_epi32(_mm512_xor_si512(numers, sign), sign));
+            // q += negative ? -numer : numer;
+            q = _mm512_mask_sub_epi32(_mm512_add_epi32(q, numers), negative, q, numers);
         }
         // q >>= shift
         q = _mm512_srai_epi32(q, more & LIBDIVIDE_32_SHIFT_MASK);
@@ -2644,8 +2732,9 @@ __m512i libdivide_s32_branchfree_do_vec512(
     int32_t magic = denom->magic;
     uint8_t more = denom->more;
     uint8_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
-    // must be arithmetic shift
-    __m512i sign = _mm512_set1_epi32((int8_t)more >> 7);
+    __m512i zero = _mm512_setzero_si512();
+    // The divisor's sign is the same in every lane: all ones if it is negative.
+    __mmask16 negative = (__mmask16)((int8_t)more >> 7);
     __m512i q = libdivide_mullhi_s32_vec512(numers, _mm512_set1_epi32(magic));
     q = _mm512_add_epi32(q, numers);  // q += numers
 
@@ -2653,11 +2742,11 @@ __m512i libdivide_s32_branchfree_do_vec512(
     // If q is negative, we want to add either (2**shift)-1 if d is
     // a power of 2, or (2**shift) if it is not a power of 2
     uint32_t is_power_of_2 = (magic == 0);
-    __m512i q_sign = _mm512_srai_epi32(q, 31);  // q_sign = q >> 31
     __m512i mask = _mm512_set1_epi32(((uint32_t)1 << shift) - is_power_of_2);
-    q = _mm512_add_epi32(q, _mm512_and_si512(q_sign, mask));  // q = q + (q_sign & mask)
-    q = _mm512_srai_epi32(q, shift);                          // q >>= shift
-    q = _mm512_sub_epi32(_mm512_xor_si512(q, sign), sign);    // q = (q ^ sign) - sign
+    // q += (q < 0 ? mask : 0)
+    q = _mm512_mask_add_epi32(q, _mm512_cmplt_epi32_mask(q, zero), q, mask);
+    q = _mm512_srai_epi32(q, shift);                  // q >>= shift
+    q = _mm512_mask_sub_epi32(q, negative, zero, q);  // q = negative ? -q : q
     return q;
 }
 
@@ -2666,25 +2755,25 @@ __m512i libdivide_s32_branchfree_do_vec512(
 __m512i libdivide_s64_do_vec512(__m512i numers, const struct libdivide_s64_t *denom) {
     uint8_t more = denom->more;
     int64_t magic = denom->magic;
+    __m512i zero = _mm512_setzero_si512();
+    // The divisor's sign is the same in every lane: all ones if it is negative.
+    __mmask8 negative = (__mmask8)((int8_t)more >> 7);
     if (magic == 0) {  // shift path
         uint32_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
         uint64_t mask = ((uint64_t)1 << shift) - 1;
         __m512i roundToZeroTweak = _mm512_set1_epi64(mask);
-        // q = numer + ((numer >> 63) & roundToZeroTweak);
-        __m512i q = _mm512_add_epi64(
-            numers, _mm512_and_si512(libdivide_s64_signbits_vec512(numers), roundToZeroTweak));
+        // q = numer + (numer < 0 ? roundToZeroTweak : 0);
+        __m512i q = _mm512_mask_add_epi64(
+            numers, _mm512_cmplt_epi64_mask(numers, zero), numers, roundToZeroTweak);
         q = libdivide_s64_shift_right_vec512(q, shift);
-        __m512i sign = _mm512_set1_epi32((int8_t)more >> 7);
-        // q = (q ^ sign) - sign;
-        q = _mm512_sub_epi64(_mm512_xor_si512(q, sign), sign);
+        // q = negative ? -q : q;
+        q = _mm512_mask_sub_epi64(q, negative, zero, q);
         return q;
     } else {
         __m512i q = libdivide_mullhi_s64_vec512(numers, _mm512_set1_epi64(magic));
         if (more & LIBDIVIDE_ADD_MARKER) {
-            // must be arithmetic shift
-            __m512i sign = _mm512_set1_epi32((int8_t)more >> 7);
-            // q += ((numer ^ sign) - sign);
-            q = _mm512_add_epi64(q, _mm512_sub_epi64(_mm512_xor_si512(numers, sign), sign));
+            // q += negative ? -numer : numer;
+            q = _mm512_mask_sub_epi64(_mm512_add_epi64(q, numers), negative, q, numers);
         }
         // q >>= denom->mult_path.shift
         q = libdivide_s64_shift_right_vec512(q, more & LIBDIVIDE_64_SHIFT_MASK);
@@ -2698,8 +2787,9 @@ __m512i libdivide_s64_branchfree_do_vec512(
     int64_t magic = denom->magic;
     uint8_t more = denom->more;
     uint8_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
-    // must be arithmetic shift
-    __m512i sign = _mm512_set1_epi32((int8_t)more >> 7);
+    __m512i zero = _mm512_setzero_si512();
+    // The divisor's sign is the same in every lane: all ones if it is negative.
+    __mmask8 negative = (__mmask8)((int8_t)more >> 7);
 
     // libdivide_mullhi_s64(numers, magic);
     __m512i q = libdivide_mullhi_s64_vec512(numers, _mm512_set1_epi64(magic));
@@ -2709,11 +2799,11 @@ __m512i libdivide_s64_branchfree_do_vec512(
     // If q is negative, we want to add either (2**shift)-1 if d is
     // a power of 2, or (2**shift) if it is not a power of 2.
     uint32_t is_power_of_2 = (magic == 0);
-    __m512i q_sign = libdivide_s64_signbits_vec512(q);  // q_sign = q >> 63
     __m512i mask = _mm512_set1_epi64(((uint64_t)1 << shift) - is_power_of_2);
-    q = _mm512_add_epi64(q, _mm512_and_si512(q_sign, mask));  // q = q + (q_sign & mask)
-    q = libdivide_s64_shift_right_vec512(q, shift);           // q >>= shift
-    q = _mm512_sub_epi64(_mm512_xor_si512(q, sign), sign);    // q = (q ^ sign) - sign
+    // q += (q < 0 ? mask : 0)
+    q = _mm512_mask_add_epi64(q, _mm512_cmplt_epi64_mask(q, zero), q, mask);
+    q = libdivide_s64_shift_right_vec512(q, shift);   // q >>= shift
+    q = _mm512_mask_sub_epi64(q, negative, zero, q);  // q = negative ? -q : q
     return q;
 }
 
