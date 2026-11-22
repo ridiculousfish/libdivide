@@ -2718,7 +2718,10 @@ __m512i libdivide_s32_do_vec512(__m512i numers, const struct libdivide_s32_t *de
         __m512i q = libdivide_mullhi_s32_vec512(numers, _mm512_set1_epi32(denom->magic));
         if (more & LIBDIVIDE_ADD_MARKER) {
             // q += negative ? -numer : numer;
-            q = _mm512_mask_sub_epi32(_mm512_add_epi32(q, numers), negative, q, numers);
+            // A scalar branch, not the mask: compilers turn the masked form into an unconditional
+            // add that the plain multiply path then pays for on every call.
+            q = (more & LIBDIVIDE_NEGATIVE_DIVISOR) ? _mm512_sub_epi32(q, numers)
+                                                    : _mm512_add_epi32(q, numers);
         }
         // q >>= shift
         q = _mm512_srai_epi32(q, more & LIBDIVIDE_32_SHIFT_MASK);
@@ -2773,7 +2776,10 @@ __m512i libdivide_s64_do_vec512(__m512i numers, const struct libdivide_s64_t *de
         __m512i q = libdivide_mullhi_s64_vec512(numers, _mm512_set1_epi64(magic));
         if (more & LIBDIVIDE_ADD_MARKER) {
             // q += negative ? -numer : numer;
-            q = _mm512_mask_sub_epi64(_mm512_add_epi64(q, numers), negative, q, numers);
+            // A scalar branch, not the mask: compilers turn the masked form into an unconditional
+            // add that the plain multiply path then pays for on every call.
+            q = (more & LIBDIVIDE_NEGATIVE_DIVISOR) ? _mm512_sub_epi64(q, numers)
+                                                    : _mm512_add_epi64(q, numers);
         }
         // q >>= denom->mult_path.shift
         q = libdivide_s64_shift_right_vec512(q, more & LIBDIVIDE_64_SHIFT_MASK);
