@@ -1904,14 +1904,11 @@ static LIBDIVIDE_INLINE uint64x2_t libdivide_mullhi_u64_vec128(uint64x2_t x, uin
 }
 
 static LIBDIVIDE_INLINE int64x2_t libdivide_mullhi_s64_vec128(int64x2_t x, int64_t sy) {
-    int64x2_t p = vreinterpretq_s64_u64(
-        libdivide_mullhi_u64_vec128(vreinterpretq_u64_s64(x), (uint64_t)(sy)));
-    int64x2_t y = vdupq_n_s64(sy);
-    int64x2_t t1 = vandq_s64(libdivide_s64_signbits(x), y);
-    int64x2_t t2 = vandq_s64(libdivide_s64_signbits(y), x);
-    p = vsubq_s64(p, t1);
-    p = vsubq_s64(p, t2);
-    return p;
+    // NEON has no 64-bit high multiply, but AArch64 has a scalar one (smulh). Two lane moves and two
+    // smulh beat the unsigned emulation below plus its two sign corrections.
+    int64_t lo = libdivide_mullhi_s64(vgetq_lane_s64(x, 0), sy);
+    int64_t hi = libdivide_mullhi_s64(vgetq_lane_s64(x, 1), sy);
+    return vcombine_s64(vcreate_s64((uint64_t)lo), vcreate_s64((uint64_t)hi));
 }
 
 ////////// UINT16
