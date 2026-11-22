@@ -1873,34 +1873,11 @@ static LIBDIVIDE_INLINE int32x4_t libdivide_mullhi_s32_vec128(int32x4_t a, int32
 }
 
 static LIBDIVIDE_INLINE uint64x2_t libdivide_mullhi_u64_vec128(uint64x2_t x, uint64_t sy) {
-    // full 128 bits product is:
-    // x0*y0 + (x0*y1 << 32) + (x1*y0 << 32) + (x1*y1 << 64)
-    // Note x0,y0,x1,y1 are all conceptually uint32, products are 32x32->64.
-
-    // Get low and high words. x0 contains low 32 bits, x1 is high 32 bits.
-    uint64x2_t y = vdupq_n_u64(sy);
-    uint32x2_t x0 = vmovn_u64(x);
-    uint32x2_t y0 = vmovn_u64(y);
-    uint32x2_t x1 = vshrn_n_u64(x, 32);
-    uint32x2_t y1 = vshrn_n_u64(y, 32);
-
-    // Compute x0*y0.
-    uint64x2_t x0y0 = vmull_u32(x0, y0);
-    uint64x2_t x0y0_hi = vshrq_n_u64(x0y0, 32);
-
-    // Compute other intermediate products.
-    uint64x2_t temp = vmlal_u32(x0y0_hi, x1, y0);  // temp = x0y0_hi + x1*y0;
-    // We want to split temp into its low 32 bits and high 32 bits, both
-    // in the low half of 64 bit registers.
-    // Use shifts to avoid needing a reg for the mask.
-    uint64x2_t temp_lo = vshrq_n_u64(vshlq_n_u64(temp, 32), 32);  // temp_lo = temp & 0xFFFFFFFF;
-    uint64x2_t temp_hi = vshrq_n_u64(temp, 32);                   // temp_hi = temp >> 32;
-
-    temp_lo = vmlal_u32(temp_lo, x0, y1);  // temp_lo += x0*y0
-    temp_lo = vshrq_n_u64(temp_lo, 32);    // temp_lo >>= 32
-    temp_hi = vmlal_u32(temp_hi, x1, y1);  // temp_hi += x1*y1
-    uint64x2_t result = vaddq_u64(temp_hi, temp_lo);
-    return result;
+    // NEON has no 64-bit high multiply, but AArch64 has a scalar one (umulh). Two lane moves and two
+    // umulh beat emulating it with four 32x32->64 multiplies and the shifts and adds that combine them.
+    uint64_t lo = libdivide_mullhi_u64(vgetq_lane_u64(x, 0), sy);
+    uint64_t hi = libdivide_mullhi_u64(vgetq_lane_u64(x, 1), sy);
+    return vcombine_u64(vcreate_u64(lo), vcreate_u64(hi));
 }
 
 static LIBDIVIDE_INLINE int64x2_t libdivide_mullhi_s64_vec128(int64x2_t x, int64_t sy) {
