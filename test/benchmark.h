@@ -350,6 +350,9 @@ NOINLINE TestResult test_one(const random_numerators<IntT> &vals, IntT denom) {
         }
 
 #if defined(x86_VECTOR_TYPE) || defined(LIBDIVIDE_SVE) || defined(LIBDIVIDE_NEON)
+        // Untimed run first: on Skylake-SP and Ice Lake the first 512-bit instructions after scalar
+        // code run slowly for tens of microseconds, which would otherwise land in the timed run.
+        (void)time_function(vals, div_bfull, sum_quotients_vec);
         tresult = time_function(vals, div_bfull, sum_quotients_vec);
         min_my_time_vector = (std::min)(min_my_time_vector, tresult.time);
         check_result(tresult.result, expected, __LINE__);
