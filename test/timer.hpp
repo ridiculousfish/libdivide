@@ -10,7 +10,7 @@
 #elif defined(__AVR__)
 #include <Arduino.h>
 #else
-#include <sys/time.h>
+#include <time.h>
 #endif
 
 #define MILLIS_PER_SEC 1000ULL
@@ -27,8 +27,8 @@ private:
     uint64_t start_time;
     uint64_t end_time;
 #else
-    struct timeval start_time;
-    struct timeval end_time;
+    struct timespec start_time;
+    struct timespec end_time;
 #endif
 
 public:
@@ -45,7 +45,7 @@ public:
 #elif defined(__AVR__)
         start_time = micros();
 #else 
-        gettimeofday(&start_time, NULL);
+        clock_gettime(CLOCK_MONOTONIC, &start_time);
 #endif
     }
 
@@ -55,7 +55,7 @@ public:
 #elif defined(__AVR__)
         end_time = micros();
 #else 
-        gettimeofday(&end_time, NULL);
+        clock_gettime(CLOCK_MONOTONIC, &end_time);
 #endif        
     }
 
@@ -67,7 +67,7 @@ public:
 #elif defined(__AVR__)
         return (uint64_t)((end_time-start_time) * (NANOS_PER_SEC/MICROS_PER_SEC));
 #else 
-        return (uint64_t)(((end_time.tv_sec - start_time.tv_sec) * NANOS_PER_SEC) + ((end_time.tv_usec - start_time.tv_usec) * MICROS_PER_SEC));
+        return (uint64_t)(((end_time.tv_sec - start_time.tv_sec) * NANOS_PER_SEC) + (end_time.tv_nsec - start_time.tv_nsec));
 #endif 
     }
 };
