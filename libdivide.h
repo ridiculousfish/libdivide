@@ -1996,17 +1996,13 @@ int32x4_t libdivide_s32_do_vec128(int32x4_t numers, const struct libdivide_s32_t
         // q = numer + ((numer >> 31) & roundToZeroTweak);
         int32x4_t q = vaddq_s32(numers, vandq_s32(vshrq_n_s32(numers, 31), roundToZeroTweak));
         q = libdivide_s32_neon_sra(q, shift);
-        int32x4_t sign = vdupq_n_s32((int8_t)more >> 7);
-        // q = (q ^ sign) - sign;
-        q = vsubq_s32(veorq_s32(q, sign), sign);
+        if ((int8_t)more < 0) q = vnegq_s32(q);  // loop-invariant branch on the divisor's sign
         return q;
     } else {
         int32x4_t q = libdivide_mullhi_s32_vec128(numers, denom->magic);
         if (more & LIBDIVIDE_ADD_MARKER) {
-            // must be arithmetic shift
-            int32x4_t sign = vdupq_n_s32((int8_t)more >> 7);
-            // q += ((numer ^ sign) - sign);
-            q = vaddq_s32(q, vsubq_s32(veorq_s32(numers, sign), sign));
+            // q += (d < 0 ? -numer : numer), as a loop-invariant branch
+            q = ((int8_t)more < 0) ? vsubq_s32(q, numers) : vaddq_s32(q, numers);
         }
         // q >>= shift
         q = libdivide_s32_neon_sra(q, more & LIBDIVIDE_32_SHIFT_MASK);
@@ -2051,17 +2047,13 @@ int64x2_t libdivide_s64_do_vec128(int64x2_t numers, const struct libdivide_s64_t
         int64x2_t q =
             vaddq_s64(numers, vandq_s64(libdivide_s64_signbits(numers), roundToZeroTweak));
         q = libdivide_s64_neon_sra(q, shift);
-        // q = (q ^ sign) - sign;
-        int64x2_t sign = vreinterpretq_s64_s8(vdupq_n_s8((int8_t)more >> 7));
-        q = vsubq_s64(veorq_s64(q, sign), sign);
+        if ((int8_t)more < 0) q = vnegq_s64(q);  // loop-invariant branch on the divisor's sign
         return q;
     } else {
         int64x2_t q = libdivide_mullhi_s64_vec128(numers, magic);
         if (more & LIBDIVIDE_ADD_MARKER) {
-            // must be arithmetic shift
-            int64x2_t sign = vdupq_n_s64((int8_t)more >> 7);  // TODO: no need to widen
-            // q += ((numer ^ sign) - sign);
-            q = vaddq_s64(q, vsubq_s64(veorq_s64(numers, sign), sign));
+            // q += (d < 0 ? -numer : numer), as a loop-invariant branch
+            q = ((int8_t)more < 0) ? vsubq_s64(q, numers) : vaddq_s64(q, numers);
         }
         // q >>= denom->mult_path.shift
         q = libdivide_s64_neon_sra(q, more & LIBDIVIDE_64_SHIFT_MASK);
