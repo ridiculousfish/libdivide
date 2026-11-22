@@ -1934,9 +1934,9 @@ uint32x4_t libdivide_u32_do_vec128(uint32x4_t numers, const struct libdivide_u32
         if (more & LIBDIVIDE_ADD_MARKER) {
             // uint32_t t = ((numer - q) >> 1) + q;
             // return t >> denom->shift;
-            // Note we can use halving-subtract to avoid the shift.
+            // q <= numer, so ((numer - q) >> 1) + q == (numer + q) >> 1: one halving add.
             uint8_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
-            uint32x4_t t = vaddq_u32(vhsubq_u32(numers, q), q);
+            uint32x4_t t = vhaddq_u32(numers, q);
             return libdivide_u32_neon_srl(t, shift);
         } else {
             return libdivide_u32_neon_srl(q, more);
@@ -1947,7 +1947,7 @@ uint32x4_t libdivide_u32_do_vec128(uint32x4_t numers, const struct libdivide_u32
 uint32x4_t libdivide_u32_branchfree_do_vec128(
     uint32x4_t numers, const struct libdivide_u32_branchfree_t *denom) {
     uint32x4_t q = libdivide_mullhi_u32_vec128(numers, denom->magic);
-    uint32x4_t t = vaddq_u32(vhsubq_u32(numers, q), q);
+    uint32x4_t t = vhaddq_u32(numers, q);  // ((numers - q) >> 1) + q, as q <= numers
     return libdivide_u32_neon_srl(t, denom->more);
 }
 
