@@ -1867,9 +1867,9 @@ static LIBDIVIDE_INLINE uint32x4_t libdivide_mullhi_u32_vec128(uint32x4_t a, uin
 }
 
 static LIBDIVIDE_INLINE int32x4_t libdivide_mullhi_s32_vec128(int32x4_t a, int32_t b) {
-    int32x4_t w1 = vreinterpretq_s32_s64(vmull_n_s32(vget_low_s32(a), b));  // [_, x0, _, x1]
-    int32x4_t w2 = vreinterpretq_s32_s64(vmull_high_n_s32(a, b));           //[_, x2, _, x3]
-    return vuzp2q_s32(w1, w2);                                              // [x0, x1, x2, x3]
+    // vqdmulh gives floor(2ab / 2^32) = floor(ab / 2^31); one more arithmetic shift gives floor(ab / 2^32).
+    // It saturates only for a == b == INT32_MIN, and no divisor's magic number is INT32_MIN.
+    return vshrq_n_s32(vqdmulhq_n_s32(a, b), 1);
 }
 
 static LIBDIVIDE_INLINE uint64x2_t libdivide_mullhi_u64_vec128(uint64x2_t x, uint64_t sy) {
