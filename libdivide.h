@@ -1836,6 +1836,11 @@ static LIBDIVIDE_INLINE int64x2_t libdivide_s64_branchfree_do_vec128(
 
 // Logical right shift by runtime value.
 // NEON implements right shift as left shits by negative values.
+static LIBDIVIDE_INLINE uint16x8_t libdivide_u16_neon_srl(uint16x8_t v, uint8_t amt) {
+    int16_t wamt = (int16_t)(amt);
+    return vshlq_u16(v, vdupq_n_s16((int16_t)(-wamt)));
+}
+
 static LIBDIVIDE_INLINE uint32x4_t libdivide_u32_neon_srl(uint32x4_t v, uint8_t amt) {
     int32_t wamt = (int32_t)(amt);
     return vshlq_u32(v, vdupq_n_s32(-wamt));
@@ -1847,6 +1852,11 @@ static LIBDIVIDE_INLINE uint64x2_t libdivide_u64_neon_srl(uint64x2_t v, uint8_t 
 }
 
 // Arithmetic right shift by runtime value.
+static LIBDIVIDE_INLINE int16x8_t libdivide_s16_neon_sra(int16x8_t v, uint8_t amt) {
+    int16_t wamt = (int16_t)(amt);
+    return vshlq_s16(v, vdupq_n_s16((int16_t)(-wamt)));
+}
+
 static LIBDIVIDE_INLINE int32x4_t libdivide_s32_neon_sra(int32x4_t v, uint8_t amt) {
     int32_t wamt = (int32_t)(amt);
     return vshlq_s32(v, vdupq_n_s32(-wamt));
@@ -1858,6 +1868,19 @@ static LIBDIVIDE_INLINE int64x2_t libdivide_s64_neon_sra(int64x2_t v, uint8_t am
 }
 
 static LIBDIVIDE_INLINE int64x2_t libdivide_s64_signbits(int64x2_t v) { return vshrq_n_s64(v, 63); }
+
+static LIBDIVIDE_INLINE uint16x8_t libdivide_mullhi_u16_vec128(uint16x8_t a, uint16_t b) {
+    // Desire is [x0, x1, ..., x7]
+    uint16x8_t w1 = vreinterpretq_u16_u32(vmull_n_u16(vget_low_u16(a), b));  // [_, x0, ..., _, x3]
+    uint16x8_t w2 = vreinterpretq_u16_u32(vmull_high_n_u16(a, b));           // [_, x4, ..., _, x7]
+    return vuzp2q_u16(w1, w2);                                               // [x0, x1, ..., x7]
+}
+
+static LIBDIVIDE_INLINE int16x8_t libdivide_mullhi_s16_vec128(int16x8_t a, int16_t b) {
+    int16x8_t w1 = vreinterpretq_s16_s32(vmull_n_s16(vget_low_s16(a), b));  // [_, x0, ..., _, x3]
+    int16x8_t w2 = vreinterpretq_s16_s32(vmull_high_n_s16(a, b));           // [_, x4, ..., _, x7]
+    return vuzp2q_s16(w1, w2);                                              // [x0, x1, ..., x7]
+}
 
 static LIBDIVIDE_INLINE uint32x4_t libdivide_mullhi_u32_vec128(uint32x4_t a, uint32_t b) {
     // Desire is [x0, x1, x2, x3]
@@ -1916,12 +1939,31 @@ static LIBDIVIDE_INLINE int64x2_t libdivide_mullhi_s64_vec128(int64x2_t x, int64
 
 ////////// UINT16
 
-uint16x8_t libdivide_u16_do_vec128(uint16x8_t numers, const struct libdivide_u16_t *denom){
-    SIMPLE_VECTOR_DIVISION(uint16_t, uint16x8_t, u16)}
+uint16x8_t libdivide_u16_do_vec128(uint16x8_t numers, const struct libdivide_u16_t *denom) {
+    uint8_t more = denom->more;
+    if (!denom->magic) {
+        return libdivide_u16_neon_srl(numers, more);
+    } else {
+        uint16x8_t q = libdivide_mullhi_u16_vec128(numers, denom->magic);
+        if (more & LIBDIVIDE_ADD_MARKER) {
+            // uint16_t t = ((numer - q) >> 1) + q;
+            // return t >> denom->shift;
+            // Since numer >= q this is the halving add (numer + q) >> 1.
+            uint8_t shift = more & LIBDIVIDE_16_SHIFT_MASK;
+            uint16x8_t t = vhaddq_u16(numers, q);
+            return libdivide_u16_neon_srl(t, shift);
+        } else {
+            return libdivide_u16_neon_srl(q, more);
+        }
+    }
+}
 
 uint16x8_t libdivide_u16_branchfree_do_vec128(
-    uint16x8_t numers, const struct libdivide_u16_branchfree_t *denom){
-    SIMPLE_VECTOR_DIVISION(uint16_t, uint16x8_t, u16_branchfree)}
+    uint16x8_t numers, const struct libdivide_u16_branchfree_t *denom) {
+    uint16x8_t q = libdivide_mullhi_u16_vec128(numers, denom->magic);
+    uint16x8_t t = vhaddq_u16(numers, q);  // ((numer - q) >> 1) + q
+    return libdivide_u16_neon_srl(t, denom->more);
+}
 
 ////////// UINT32
 
@@ -1981,12 +2023,56 @@ uint64x2_t libdivide_u64_branchfree_do_vec128(
 
 ////////// SINT16
 
-int16x8_t libdivide_s16_do_vec128(int16x8_t numers, const struct libdivide_s16_t *denom){
-    SIMPLE_VECTOR_DIVISION(int16_t, int16x8_t, s16)}
+int16x8_t libdivide_s16_do_vec128(int16x8_t numers, const struct libdivide_s16_t *denom) {
+    uint8_t more = denom->more;
+    if (!denom->magic) {
+        uint8_t shift = more & LIBDIVIDE_16_SHIFT_MASK;
+        uint16_t mask = (uint16_t)(((uint16_t)1 << shift) - 1);
+        int16x8_t roundToZeroTweak = vdupq_n_s16((int16_t)mask);
+        // q = numer + ((numer >> 15) & roundToZeroTweak);
+        int16x8_t q = vaddq_s16(numers, vandq_s16(vshrq_n_s16(numers, 15), roundToZeroTweak));
+        q = libdivide_s16_neon_sra(q, shift);
+        int16x8_t sign = vdupq_n_s16((int16_t)((int8_t)more >> 7));
+        // q = (q ^ sign) - sign;
+        q = vsubq_s16(veorq_s16(q, sign), sign);
+        return q;
+    } else {
+        int16x8_t q = libdivide_mullhi_s16_vec128(numers, denom->magic);
+        if (more & LIBDIVIDE_ADD_MARKER) {
+            // must be arithmetic shift
+            int16x8_t sign = vdupq_n_s16((int16_t)((int8_t)more >> 7));
+            // q += ((numer ^ sign) - sign);
+            q = vaddq_s16(q, vsubq_s16(veorq_s16(numers, sign), sign));
+        }
+        // q >>= shift
+        q = libdivide_s16_neon_sra(q, more & LIBDIVIDE_16_SHIFT_MASK);
+        q = vaddq_s16(
+            q, vreinterpretq_s16_u16(vshrq_n_u16(vreinterpretq_u16_s16(q), 15)));  // q += (q < 0)
+        return q;
+    }
+}
 
 int16x8_t libdivide_s16_branchfree_do_vec128(
-    int16x8_t numers, const struct libdivide_s16_branchfree_t *denom){
-    SIMPLE_VECTOR_DIVISION(int16_t, int16x8_t, s16_branchfree)}
+    int16x8_t numers, const struct libdivide_s16_branchfree_t *denom) {
+    int16_t magic = denom->magic;
+    uint8_t more = denom->more;
+    uint8_t shift = more & LIBDIVIDE_16_SHIFT_MASK;
+    // must be arithmetic shift
+    int16x8_t sign = vdupq_n_s16((int16_t)((int8_t)more >> 7));
+    int16x8_t q = libdivide_mullhi_s16_vec128(numers, magic);
+    q = vaddq_s16(q, numers);  // q += numers
+
+    // If q is non-negative, we have nothing to do
+    // If q is negative, we want to add either (2**shift)-1 if d is
+    // a power of 2, or (2**shift) if it is not a power of 2
+    uint16_t is_power_of_2 = (magic == 0);
+    int16x8_t q_sign = vshrq_n_s16(q, 15);  // q_sign = q >> 15
+    int16x8_t mask = vdupq_n_s16((int16_t)(((uint16_t)1 << shift) - is_power_of_2));
+    q = vaddq_s16(q, vandq_s16(q_sign, mask));  // q = q + (q_sign & mask)
+    q = libdivide_s16_neon_sra(q, shift);       // q >>= shift
+    q = vsubq_s16(veorq_s16(q, sign), sign);    // q = (q ^ sign) - sign
+    return q;
+}
 
 ////////// SINT32
 
