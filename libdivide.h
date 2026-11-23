@@ -2701,8 +2701,6 @@ __m512i libdivide_s16_branchfree_do_vec512(
 __m512i libdivide_s32_do_vec512(__m512i numers, const struct libdivide_s32_t *denom) {
     uint8_t more = denom->more;
     __m512i zero = _mm512_setzero_si512();
-    // The divisor's sign is the same in every lane: all ones if it is negative.
-    __mmask16 negative = (__mmask16)((int8_t)more >> 7);
     if (!denom->magic) {
         uint32_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
         uint32_t mask = ((uint32_t)1 << shift) - 1;
@@ -2711,8 +2709,10 @@ __m512i libdivide_s32_do_vec512(__m512i numers, const struct libdivide_s32_t *de
         __m512i q = _mm512_mask_add_epi32(
             numers, _mm512_cmplt_epi32_mask(numers, zero), numers, roundToZeroTweak);
         q = _mm512_srai_epi32(q, shift);
-        // q = negative ? -q : q;
-        q = _mm512_mask_sub_epi32(q, negative, zero, q);
+        // q = d < 0 ? -q : q, as a scalar branch on the divisor's sign like the multiply+add
+        // path below: with the divider re-read every iteration, the mask form rebuilds a mask
+        // register from it each time.
+        if (more & LIBDIVIDE_NEGATIVE_DIVISOR) q = _mm512_sub_epi32(zero, q);
         return q;
     } else {
         __m512i q = libdivide_mullhi_s32_vec512(numers, _mm512_set1_epi32(denom->magic));
@@ -2759,8 +2759,6 @@ __m512i libdivide_s64_do_vec512(__m512i numers, const struct libdivide_s64_t *de
     uint8_t more = denom->more;
     int64_t magic = denom->magic;
     __m512i zero = _mm512_setzero_si512();
-    // The divisor's sign is the same in every lane: all ones if it is negative.
-    __mmask8 negative = (__mmask8)((int8_t)more >> 7);
     if (magic == 0) {  // shift path
         uint32_t shift = more & LIBDIVIDE_64_SHIFT_MASK;
         uint64_t mask = ((uint64_t)1 << shift) - 1;
@@ -2769,8 +2767,10 @@ __m512i libdivide_s64_do_vec512(__m512i numers, const struct libdivide_s64_t *de
         __m512i q = _mm512_mask_add_epi64(
             numers, _mm512_cmplt_epi64_mask(numers, zero), numers, roundToZeroTweak);
         q = libdivide_s64_shift_right_vec512(q, shift);
-        // q = negative ? -q : q;
-        q = _mm512_mask_sub_epi64(q, negative, zero, q);
+        // q = d < 0 ? -q : q, as a scalar branch on the divisor's sign like the multiply+add
+        // path below: with the divider re-read every iteration, the mask form rebuilds a mask
+        // register from it each time.
+        if (more & LIBDIVIDE_NEGATIVE_DIVISOR) q = _mm512_sub_epi64(zero, q);
         return q;
     } else {
         __m512i q = libdivide_mullhi_s64_vec512(numers, _mm512_set1_epi64(magic));
