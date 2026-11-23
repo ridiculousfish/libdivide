@@ -1867,51 +1867,25 @@ static LIBDIVIDE_INLINE uint32x4_t libdivide_mullhi_u32_vec128(uint32x4_t a, uin
 }
 
 static LIBDIVIDE_INLINE int32x4_t libdivide_mullhi_s32_vec128(int32x4_t a, int32_t b) {
-    int32x4_t w1 = vreinterpretq_s32_s64(vmull_n_s32(vget_low_s32(a), b));  // [_, x0, _, x1]
-    int32x4_t w2 = vreinterpretq_s32_s64(vmull_high_n_s32(a, b));           //[_, x2, _, x3]
-    return vuzp2q_s32(w1, w2);                                              // [x0, x1, x2, x3]
+    // vqdmulh gives floor(2ab / 2^32) = floor(ab / 2^31); one more arithmetic shift gives floor(ab / 2^32).
+    // It saturates only for a == b == INT32_MIN, and no divisor's magic number is INT32_MIN.
+    return vshrq_n_s32(vqdmulhq_n_s32(a, b), 1);
 }
 
 static LIBDIVIDE_INLINE uint64x2_t libdivide_mullhi_u64_vec128(uint64x2_t x, uint64_t sy) {
-    // full 128 bits product is:
-    // x0*y0 + (x0*y1 << 32) + (x1*y0 << 32) + (x1*y1 << 64)
-    // Note x0,y0,x1,y1 are all conceptually uint32, products are 32x32->64.
-
-    // Get low and high words. x0 contains low 32 bits, x1 is high 32 bits.
-    uint64x2_t y = vdupq_n_u64(sy);
-    uint32x2_t x0 = vmovn_u64(x);
-    uint32x2_t y0 = vmovn_u64(y);
-    uint32x2_t x1 = vshrn_n_u64(x, 32);
-    uint32x2_t y1 = vshrn_n_u64(y, 32);
-
-    // Compute x0*y0.
-    uint64x2_t x0y0 = vmull_u32(x0, y0);
-    uint64x2_t x0y0_hi = vshrq_n_u64(x0y0, 32);
-
-    // Compute other intermediate products.
-    uint64x2_t temp = vmlal_u32(x0y0_hi, x1, y0);  // temp = x0y0_hi + x1*y0;
-    // We want to split temp into its low 32 bits and high 32 bits, both
-    // in the low half of 64 bit registers.
-    // Use shifts to avoid needing a reg for the mask.
-    uint64x2_t temp_lo = vshrq_n_u64(vshlq_n_u64(temp, 32), 32);  // temp_lo = temp & 0xFFFFFFFF;
-    uint64x2_t temp_hi = vshrq_n_u64(temp, 32);                   // temp_hi = temp >> 32;
-
-    temp_lo = vmlal_u32(temp_lo, x0, y1);  // temp_lo += x0*y0
-    temp_lo = vshrq_n_u64(temp_lo, 32);    // temp_lo >>= 32
-    temp_hi = vmlal_u32(temp_hi, x1, y1);  // temp_hi += x1*y1
-    uint64x2_t result = vaddq_u64(temp_hi, temp_lo);
-    return result;
+    // NEON has no 64-bit high multiply, but AArch64 has a scalar one (umulh). Two lane moves and two
+    // umulh beat emulating it with four 32x32->64 multiplies and the shifts and adds that combine them.
+    uint64_t lo = libdivide_mullhi_u64(vgetq_lane_u64(x, 0), sy);
+    uint64_t hi = libdivide_mullhi_u64(vgetq_lane_u64(x, 1), sy);
+    return vcombine_u64(vcreate_u64(lo), vcreate_u64(hi));
 }
 
 static LIBDIVIDE_INLINE int64x2_t libdivide_mullhi_s64_vec128(int64x2_t x, int64_t sy) {
-    int64x2_t p = vreinterpretq_s64_u64(
-        libdivide_mullhi_u64_vec128(vreinterpretq_u64_s64(x), (uint64_t)(sy)));
-    int64x2_t y = vdupq_n_s64(sy);
-    int64x2_t t1 = vandq_s64(libdivide_s64_signbits(x), y);
-    int64x2_t t2 = vandq_s64(libdivide_s64_signbits(y), x);
-    p = vsubq_s64(p, t1);
-    p = vsubq_s64(p, t2);
-    return p;
+    // NEON has no 64-bit high multiply, but AArch64 has a scalar one (smulh). Two lane moves and two
+    // smulh beat the unsigned emulation below plus its two sign corrections.
+    int64_t lo = libdivide_mullhi_s64(vgetq_lane_s64(x, 0), sy);
+    int64_t hi = libdivide_mullhi_s64(vgetq_lane_s64(x, 1), sy);
+    return vcombine_s64(vcreate_s64((uint64_t)lo), vcreate_s64((uint64_t)hi));
 }
 
 ////////// UINT16
@@ -1934,9 +1908,9 @@ uint32x4_t libdivide_u32_do_vec128(uint32x4_t numers, const struct libdivide_u32
         if (more & LIBDIVIDE_ADD_MARKER) {
             // uint32_t t = ((numer - q) >> 1) + q;
             // return t >> denom->shift;
-            // Note we can use halving-subtract to avoid the shift.
+            // q <= numer, so ((numer - q) >> 1) + q == (numer + q) >> 1: one halving add.
             uint8_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
-            uint32x4_t t = vaddq_u32(vhsubq_u32(numers, q), q);
+            uint32x4_t t = vhaddq_u32(numers, q);
             return libdivide_u32_neon_srl(t, shift);
         } else {
             return libdivide_u32_neon_srl(q, more);
@@ -1947,7 +1921,7 @@ uint32x4_t libdivide_u32_do_vec128(uint32x4_t numers, const struct libdivide_u32
 uint32x4_t libdivide_u32_branchfree_do_vec128(
     uint32x4_t numers, const struct libdivide_u32_branchfree_t *denom) {
     uint32x4_t q = libdivide_mullhi_u32_vec128(numers, denom->magic);
-    uint32x4_t t = vaddq_u32(vhsubq_u32(numers, q), q);
+    uint32x4_t t = vhaddq_u32(numers, q);  // ((numers - q) >> 1) + q, as q <= numers
     return libdivide_u32_neon_srl(t, denom->more);
 }
 
@@ -1999,17 +1973,13 @@ int32x4_t libdivide_s32_do_vec128(int32x4_t numers, const struct libdivide_s32_t
         // q = numer + ((numer >> 31) & roundToZeroTweak);
         int32x4_t q = vaddq_s32(numers, vandq_s32(vshrq_n_s32(numers, 31), roundToZeroTweak));
         q = libdivide_s32_neon_sra(q, shift);
-        int32x4_t sign = vdupq_n_s32((int8_t)more >> 7);
-        // q = (q ^ sign) - sign;
-        q = vsubq_s32(veorq_s32(q, sign), sign);
+        if ((int8_t)more < 0) q = vnegq_s32(q);  // loop-invariant branch on the divisor's sign
         return q;
     } else {
         int32x4_t q = libdivide_mullhi_s32_vec128(numers, denom->magic);
         if (more & LIBDIVIDE_ADD_MARKER) {
-            // must be arithmetic shift
-            int32x4_t sign = vdupq_n_s32((int8_t)more >> 7);
-            // q += ((numer ^ sign) - sign);
-            q = vaddq_s32(q, vsubq_s32(veorq_s32(numers, sign), sign));
+            // q += (d < 0 ? -numer : numer), as a loop-invariant branch
+            q = ((int8_t)more < 0) ? vsubq_s32(q, numers) : vaddq_s32(q, numers);
         }
         // q >>= shift
         q = libdivide_s32_neon_sra(q, more & LIBDIVIDE_32_SHIFT_MASK);
@@ -2054,17 +2024,13 @@ int64x2_t libdivide_s64_do_vec128(int64x2_t numers, const struct libdivide_s64_t
         int64x2_t q =
             vaddq_s64(numers, vandq_s64(libdivide_s64_signbits(numers), roundToZeroTweak));
         q = libdivide_s64_neon_sra(q, shift);
-        // q = (q ^ sign) - sign;
-        int64x2_t sign = vreinterpretq_s64_s8(vdupq_n_s8((int8_t)more >> 7));
-        q = vsubq_s64(veorq_s64(q, sign), sign);
+        if ((int8_t)more < 0) q = vnegq_s64(q);  // loop-invariant branch on the divisor's sign
         return q;
     } else {
         int64x2_t q = libdivide_mullhi_s64_vec128(numers, magic);
         if (more & LIBDIVIDE_ADD_MARKER) {
-            // must be arithmetic shift
-            int64x2_t sign = vdupq_n_s64((int8_t)more >> 7);  // TODO: no need to widen
-            // q += ((numer ^ sign) - sign);
-            q = vaddq_s64(q, vsubq_s64(veorq_s64(numers, sign), sign));
+            // q += (d < 0 ? -numer : numer), as a loop-invariant branch
+            q = ((int8_t)more < 0) ? vsubq_s64(q, numers) : vaddq_s64(q, numers);
         }
         // q >>= denom->mult_path.shift
         q = libdivide_s64_neon_sra(q, more & LIBDIVIDE_64_SHIFT_MASK);
