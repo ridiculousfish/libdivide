@@ -3,6 +3,7 @@
 
 #include <inttypes.h>
 #include <stdio.h>
+#include <string.h>
 #if defined(__AVR__)
 #include "avr_type_helpers.h"
 #else
@@ -116,7 +117,11 @@ NOINLINE uint64_t sum_quotients_vec(const random_numerators<IntT> &vals, const D
         numers = numers / div;
         sumX4 = add_vector<sizeof(IntT)>(sumX4, numers);
     }
-    return unsigned_sum_vals((const IntT *)&sumX4, count);
+    // Copy the lanes out rather than reading the vector through an IntT pointer, which breaks
+    // strict aliasing: GCC -O3 then reads stale lanes and the result check fails.
+    IntT lanes[sizeof(x86_VECTOR_TYPE) / sizeof(IntT)];
+    memcpy(lanes, &sumX4, sizeof lanes);
+    return unsigned_sum_vals(lanes, count);
 }
 
 #elif defined(LIBDIVIDE_SVE)
@@ -257,7 +262,9 @@ NOINLINE uint64_t sum_quotients_vec(const random_numerators<IntT> &vals, const D
         numers = numers / div;
         sumX4 = NeonVecFuncs<IntT>::add(sumX4, numers);
     }
-    return unsigned_sum_vals((const IntT *)&sumX4, count);
+    IntT lanes[sizeof(NeonVectorType) / sizeof(IntT)];
+    memcpy(lanes, &sumX4, sizeof lanes);
+    return unsigned_sum_vals(lanes, count);
 }
 
 #endif
@@ -343,6 +350,9 @@ NOINLINE TestResult test_one(const random_numerators<IntT> &vals, IntT denom) {
         }
 
 #if defined(x86_VECTOR_TYPE) || defined(LIBDIVIDE_SVE) || defined(LIBDIVIDE_NEON)
+        // Untimed run first: on Skylake-SP and Ice Lake the first 512-bit instructions after scalar
+        // code run slowly for tens of microseconds, which would otherwise land in the timed run.
+        (void)time_function(vals, div_bfull, sum_quotients_vec);
         tresult = time_function(vals, div_bfull, sum_quotients_vec);
         min_my_time_vector = (std::min)(min_my_time_vector, tresult.time);
         check_result(tresult.result, expected, __LINE__);
